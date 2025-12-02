@@ -1,0 +1,4202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武将データ管理システム</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-input: #22222f;
+            --border-color: #2a2a3a;
+            --border-accent: #4a3a2a;
+            --text-primary: #e8e4dc;
+            --text-secondary: #9a9490;
+            --text-muted: #6a6560;
+            --accent-gold: #c9a227;
+            --accent-gold-dim: #8a7020;
+            --accent-red: #b83c3c;
+            --accent-green: #3cb878;
+            --accent-blue: #3c8cb8;
+            --status-complete: #2a6a4a;
+            --status-partial: #6a5a2a;
+            --status-empty: #4a2a2a;
+            --shadow-glow: 0 0 30px rgba(201, 162, 39, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1510 0%, #0a0a0f 100%);
+            border-bottom: 2px solid var(--accent-gold-dim);
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='%23c9a227' stroke-width='0.5' opacity='0.1'/%3E%3C/svg%3E");
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            text-shadow: 0 0 20px rgba(201, 162, 39, 0.3);
+            position: relative;
+            letter-spacing: 0.2em;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            position: relative;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Progress Overview */
+        .progress-overview {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .progress-overview h2 {
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .progress-item {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 0.8rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .progress-item.complete {
+            border-color: var(--accent-green);
+            background: var(--status-complete);
+        }
+
+        .progress-item.partial {
+            border-color: var(--accent-gold);
+            background: var(--status-partial);
+        }
+
+        .progress-item.empty {
+            border-color: var(--accent-red);
+            background: var(--status-empty);
+        }
+
+        .progress-item .label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-item .status {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 0.3rem;
+        }
+
+        /* Form Sections */
+        .section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            border-color: var(--border-accent);
+        }
+
+        .section-header {
+            background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            user-select: none;
+        }
+
+        .section-header h3 {
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .section-header .status-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            background: var(--status-empty);
+            color: var(--text-secondary);
+        }
+
+        .section-header .status-badge.complete {
+            background: var(--status-complete);
+            color: var(--accent-green);
+        }
+
+        .section-header .status-badge.partial {
+            background: var(--status-partial);
+            color: var(--accent-gold);
+        }
+
+        .section-header .toggle-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+            color: var(--text-secondary);
+        }
+
+        .section.collapsed .section-header .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            padding: 1.5rem;
+            display: block;
+        }
+
+        .section.collapsed .section-content {
+            display: none;
+        }
+
+        /* Form Elements */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.7rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.2);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Checkbox & Radio Styles */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .checkbox-item, .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-input);
+            padding: 0.5rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-item:hover, .radio-item:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        .checkbox-item input, .radio-item input {
+            accent-color: var(--accent-gold);
+            width: 16px;
+            height: 16px;
+        }
+
+        .checkbox-item label, .radio-item label {
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* Equipment Card */
+        .equipment-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .equipment-card h4 {
+            color: var(--accent-gold);
+            font-size: 0.95rem;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .equipment-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.8rem;
+            align-items: end;
+        }
+
+        /* SP General Card */
+        .sp-card {
+            background: linear-gradient(135deg, var(--bg-input) 0%, #1a1520 100%);
+            border: 1px solid var(--border-accent);
+            border-radius: 10px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .sp-card h4 {
+            color: var(--accent-gold);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sp-card h4::before {
+            content: '★';
+            color: var(--accent-gold);
+        }
+
+        /* Skill Grid */
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 0.6rem;
+        }
+
+        .skill-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .skill-item input[type="checkbox"] {
+            accent-color: var(--accent-gold);
+        }
+
+        .skill-item label {
+            font-size: 0.8rem;
+            flex: 1;
+        }
+
+        /* Flower Formation Grid */
+        .flower-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .flower-item {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            gap: 0.8rem;
+            background: var(--bg-input);
+            padding: 0.7rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .flower-item .name {
+            font-size: 0.85rem;
+        }
+
+        .flower-item .effect {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .flower-item .checkboxes {
+            display: flex;
+            gap: 0.8rem;
+        }
+
+        .flower-item .checkboxes label {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Tactic Card */
+        .tactic-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr auto auto;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .tactic-card .name {
+            font-weight: 500;
+        }
+
+        .tactic-card input[type="number"] {
+            width: 70px;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        .tactic-card select {
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        /* Admin Section */
+        .admin-section {
+            background: linear-gradient(135deg, #1a1015 0%, #0a0a0f 100%);
+            border: 2px solid var(--accent-red);
+            border-radius: 12px;
+            margin-top: 2rem;
+            overflow: hidden;
+        }
+
+        .admin-header {
+            background: rgba(184, 60, 60, 0.1);
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h3 {
+            color: var(--accent-red);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .admin-password {
+            padding: 1.5rem;
+            display: none;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admin-password.show {
+            display: block;
+        }
+
+        .admin-password input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.7rem 1rem;
+            color: var(--text-primary);
+            width: 200px;
+            margin-right: 0.5rem;
+        }
+
+        .admin-password button {
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .admin-password button:hover {
+            background: #d04040;
+        }
+
+        .admin-content {
+            padding: 1.5rem;
+            display: none;
+        }
+
+        .admin-content.show {
+            display: block;
+        }
+
+        .admin-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .admin-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.7rem 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .admin-btn:hover {
+            border-color: var(--accent-gold);
+            background: var(--bg-secondary);
+        }
+
+        .admin-btn.primary {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+            border-color: var(--accent-gold);
+        }
+
+        .admin-btn.primary:hover {
+            background: #dab530;
+        }
+
+        .admin-btn.danger {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .admin-btn.danger:hover {
+            background: rgba(184, 60, 60, 0.2);
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .data-table th, .data-table td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: var(--bg-secondary);
+            color: var(--accent-gold);
+            font-weight: 500;
+        }
+
+        .data-table tr:hover {
+            background: var(--bg-input);
+        }
+
+        .data-table .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .data-table .actions button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* General List Editor */
+        .general-list {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .general-list h4 {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .general-categories {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        @media (max-width: 1024px) {
+            .general-categories {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .general-categories {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .general-category {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .general-category-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .general-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .general-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-card);
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .general-item .general-name {
+            flex: 1;
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .general-item .general-name:hover {
+            background: var(--bg-input);
+        }
+
+        /* State: Owned (所持) */
+        .general-item.owned {
+            border-color: var(--accent-blue);
+            background: rgba(60, 140, 184, 0.1);
+        }
+
+        .general-item.owned .general-name {
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .general-item.owned .general-name::before {
+            content: '◇ ';
+        }
+
+        /* State: Formed (編成) */
+        .general-item.formed {
+            border-color: var(--accent-green);
+            background: rgba(60, 184, 120, 0.1);
+        }
+
+        .general-item.formed .general-name {
+            color: var(--accent-green);
+            font-weight: 500;
+        }
+
+        .general-item.formed .general-name::before {
+            content: '✓ ';
+        }
+
+        .general-item .status-badge {
+            font-size: 0.6rem;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            display: none;
+        }
+
+        .general-item.owned .status-badge {
+            display: inline-block;
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .general-item.owned .status-badge::after {
+            content: '所持';
+        }
+
+        .general-item.formed .status-badge {
+            display: inline-block;
+            background: var(--accent-green);
+            color: var(--bg-primary);
+        }
+
+        .general-item.formed .status-badge::after {
+            content: '編成';
+        }
+
+        .general-item input[type="number"] {
+            width: 45px;
+            padding: 0.2rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        /* Custom General Input */
+        .custom-general {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px dashed var(--border-color);
+        }
+
+        .custom-general h5 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.8rem;
+        }
+
+        .custom-general-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .custom-general-row input {
+            flex: 1;
+            padding: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+        }
+
+        .custom-general-row input:first-child {
+            flex: 2;
+        }
+
+        .custom-general-row button {
+            padding: 0.5rem 1rem;
+            background: var(--accent-gold-dim);
+            border: none;
+            border-radius: 4px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        /* Submit Button */
+        .submit-section {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--accent-gold) 0%, #a08020 100%);
+            color: var(--bg-primary);
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(201, 162, 39, 0.3);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(201, 162, 39, 0.4);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--accent-gold);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            display: none;
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .toast.success {
+            border-color: var(--accent-green);
+        }
+
+        .toast.error {
+            border-color: var(--accent-red);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Comparison Section */
+        .comparison-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .comparison-section h4 {
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-selector {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .user-selector h5 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.8rem;
+        }
+
+        .user-checkbox-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .user-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--bg-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .user-checkbox-item:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        .user-checkbox-item.selected {
+            border-color: var(--accent-gold);
+            background: rgba(201, 162, 39, 0.1);
+        }
+
+        .user-checkbox-item input {
+            accent-color: var(--accent-gold);
+        }
+
+        .user-checkbox-item label {
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .compare-btn {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .compare-btn:hover {
+            background: #4a9cc8;
+        }
+
+        .compare-btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .comparison-results {
+            display: none;
+        }
+
+        .comparison-results.show {
+            display: block;
+        }
+
+        .comparison-category {
+            background: var(--bg-input);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .comparison-category-header {
+            padding: 0.8rem 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .comparison-category-header.overlap {
+            background: linear-gradient(90deg, rgba(184, 60, 60, 0.2) 0%, var(--bg-input) 100%);
+            border-left: 3px solid var(--accent-red);
+        }
+
+        .comparison-category-header.unused {
+            background: linear-gradient(90deg, rgba(60, 140, 184, 0.2) 0%, var(--bg-input) 100%);
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .comparison-category-header.inconsistent {
+            background: linear-gradient(90deg, rgba(201, 162, 39, 0.2) 0%, var(--bg-input) 100%);
+            border-left: 3px solid var(--accent-gold);
+        }
+
+        .comparison-category-header h5 {
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comparison-category-header .count {
+            font-size: 0.8rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .comparison-category-content {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .comparison-item {
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .comparison-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .comparison-item .item-name {
+            font-weight: 500;
+            min-width: 150px;
+        }
+
+        .comparison-item .item-type {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding: 0.2rem 0.5rem;
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+
+        .comparison-item .users-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        .comparison-item .user-tag {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            background: var(--accent-gold-dim);
+            color: var(--text-primary);
+        }
+
+        .comparison-item .user-tag.warning {
+            background: var(--accent-red);
+        }
+
+        .no-issues {
+            text-align: center;
+            padding: 2rem;
+            color: var(--accent-green);
+        }
+
+        .no-issues .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Comparison Sub-categories */
+        .comparison-subcategory {
+            margin-bottom: 0.8rem;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .comparison-subcategory-header {
+            padding: 0.6rem 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            user-select: none;
+        }
+
+        .comparison-subcategory-header .subcat-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .comparison-subcategory-header .subcat-count {
+            font-size: 0.75rem;
+            padding: 0.1rem 0.5rem;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .comparison-subcategory-content {
+            padding: 0.8rem;
+            display: none;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .comparison-subcategory-content.show {
+            display: block;
+        }
+
+        /* Sub-category colors by type */
+        .subcat-weapon {
+            background: linear-gradient(90deg, rgba(184, 80, 60, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid #b85040;
+        }
+        .subcat-spgeneral {
+            background: linear-gradient(90deg, rgba(201, 162, 39, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid var(--accent-gold);
+        }
+        .subcat-general {
+            background: linear-gradient(90deg, rgba(100, 160, 100, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid #64a064;
+        }
+        .subcat-academy {
+            background: linear-gradient(90deg, rgba(80, 140, 180, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid #508cb4;
+        }
+        .subcat-mask {
+            background: linear-gradient(90deg, rgba(140, 100, 180, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid #8c64b4;
+        }
+        .subcat-flower {
+            background: linear-gradient(90deg, rgba(220, 120, 160, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid #dc78a0;
+        }
+        .subcat-horse {
+            background: linear-gradient(90deg, rgba(160, 120, 80, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid #a07850;
+        }
+        .subcat-tactic {
+            background: linear-gradient(90deg, rgba(60, 140, 184, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid var(--accent-blue);
+        }
+        .subcat-asura {
+            background: linear-gradient(90deg, rgba(180, 60, 60, 0.15) 0%, var(--bg-secondary) 100%);
+            border-left: 3px solid #b43c3c;
+        }
+
+        .comparison-subcategory .comparison-item {
+            margin-bottom: 0.4rem;
+            padding: 0.6rem 0.8rem;
+        }
+
+        .selected-users-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .selected-user-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .selected-user-badge .remove {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .selected-user-badge .remove:hover {
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .equipment-row {
+                grid-template-columns: 1fr;
+            }
+
+            .tactic-card {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .flower-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .progress-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Summary Section */
+        .summary-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-section h2 {
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .summary-item {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid var(--border-color);
+        }
+
+        .summary-item .label {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .summary-item .stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+        }
+
+        .summary-item .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-secondary);
+        }
+
+        .summary-item .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .summary-item .stat-value {
+            font-weight: 600;
+            color: var(--accent-gold);
+        }
+
+        /* Formation Counter */
+        .formation-counter {
+            background: linear-gradient(135deg, rgba(60, 184, 120, 0.1) 0%, var(--bg-card) 100%);
+            border: 1px solid var(--accent-green);
+            border-radius: 8px;
+            padding: 0.8rem 1.2rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .formation-counter .label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .formation-counter .count {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .formation-counter .count span {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        /* Bulk Select Button */
+        .bulk-select-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .bulk-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .bulk-btn:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        .bulk-btn.active {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+            border-color: var(--accent-gold);
+        }
+
+        /* Floating Navigation */
+        .floating-nav {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 999;
+        }
+
+        .floating-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(201, 162, 39, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .floating-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .floating-menu {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem;
+            display: none;
+            flex-direction: column;
+            gap: 0.3rem;
+            min-width: 160px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .floating-menu.show {
+            display: flex;
+        }
+
+        .floating-menu-item {
+            background: var(--bg-input);
+            border: none;
+            color: var(--text-primary);
+            padding: 0.6rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .floating-menu-item:hover {
+            background: var(--accent-gold-dim);
+            color: var(--accent-gold);
+        }
+
+        /* 3-level hierarchy for comparison */
+        .comparison-level-2 {
+            margin-left: 1rem;
+            border-left: 2px solid var(--border-color);
+            padding-left: 0.5rem;
+        }
+
+        .comparison-level-3 {
+            margin-left: 1rem;
+            padding-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>武将データ管理</h1>
+        <p>ゲームデータ入力・管理システム</p>
+    </header>
+
+    <main class="container">
+        <!-- Progress Overview -->
+        <div class="progress-overview">
+            <h2>📊 入力状況</h2>
+            <div class="progress-grid" id="progressGrid">
+                <div class="progress-item empty" data-section="basic">
+                    <div class="label">基礎データ</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="weapon">
+                    <div class="label">兵器</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="spGeneral">
+                    <div class="label">SP武将</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="general">
+                    <div class="label">武将</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="academy">
+                    <div class="label">軍学道場</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="asura">
+                    <div class="label">阿修羅</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="armor">
+                    <div class="label">核心具足</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="flower">
+                    <div class="label">花陣</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="horse">
+                    <div class="label">軍馬</div>
+                    <div class="status">未入力</div>
+                </div>
+                <div class="progress-item empty" data-section="tactic">
+                    <div class="label">戦法</div>
+                    <div class="status">未入力</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Basic Data Section -->
+        <div class="section" id="basicSection">
+            <div class="section-header" onclick="toggleSection('basicSection')">
+                <h3>
+                    <span>📋</span>
+                    基礎データ
+                    <span class="status-badge" id="basicStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ユーザー名 *</label>
+                        <input type="text" id="userName" placeholder="ユーザー名を入力" onchange="updateProgress()">
+                    </div>
+                    <div class="form-group">
+                        <label>兵種 *</label>
+                        <select id="unitType" onchange="updateProgress()">
+                            <option value="">選択してください</option>
+                            <option value="horse">馬</option>
+                            <option value="infantry">歩</option>
+                            <option value="bow">弓</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weapon Section -->
+        <div class="section" id="weaponSection">
+            <div class="section-header" onclick="toggleSection('weaponSection')">
+                <h3>
+                    <span>⚔️</span>
+                    ① 兵器
+                    <span class="status-badge" id="weaponStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <!-- Bulk Select -->
+                <div class="bulk-select-bar">
+                    <button class="bulk-btn" onclick="bulkSelectWeapons('owned')">全て所持ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectWeapons('clear')">クリア</button>
+                </div>
+
+                <div class="equipment-card">
+                    <h4>赤鬼</h4>
+                    <div class="equipment-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <select id="akoniStatus" onchange="updateProgress()">
+                                <option value="">未所持</option>
+                                <option value="owned">所持</option>
+                                <option value="equipped">装備中</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>昇級レベル</label>
+                            <input type="number" id="akoniUpgrade" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>改装レベル</label>
+                            <input type="number" id="akoniMod" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-card">
+                    <h4>隕石</h4>
+                    <div class="equipment-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <select id="insekiStatus" onchange="updateProgress()">
+                                <option value="">未所持</option>
+                                <option value="owned">所持</option>
+                                <option value="equipped">装備中</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>昇級レベル</label>
+                            <input type="number" id="insekiUpgrade" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>改装レベル</label>
+                            <input type="number" id="insekiMod" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-card">
+                    <h4>般若</h4>
+                    <div class="equipment-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <select id="hanyaStatus" onchange="updateProgress()">
+                                <option value="">未所持</option>
+                                <option value="owned">所持</option>
+                                <option value="equipped">装備中</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>昇級レベル</label>
+                            <input type="number" id="hanyaUpgrade" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>改装レベル</label>
+                            <input type="number" id="hanyaMod" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SP General Section -->
+        <div class="section" id="spGeneralSection">
+            <div class="section-header" onclick="toggleSection('spGeneralSection')">
+                <h3>
+                    <span>👑</span>
+                    ②-1 SP武将
+                    <span class="status-badge" id="spGeneralStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <!-- Formation Counter -->
+                <div class="formation-counter">
+                    <span class="label">👥 編成中武将数（SP武将＋武将）</span>
+                    <span class="count" id="totalFormationCount">0<span>人</span></span>
+                </div>
+
+                <div class="sp-card">
+                    <h4>SP織田信長</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="nobunagaFormed" onchange="updateProgress()">
+                                    <label for="nobunagaFormed">編成済</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="nobunagaOwned" onchange="updateProgress()">
+                                    <label for="nobunagaOwned">所持</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>足跡レベル</label>
+                            <input type="text" id="nobunagaFootprint" placeholder="レベルを入力" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>副将名</label>
+                            <input type="text" id="nobunagaDeputy" placeholder="副将の名前" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sp-card">
+                    <h4>SP豊臣秀吉</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="hideyoshiFormed" onchange="updateProgress()">
+                                    <label for="hideyoshiFormed">編成済</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="hideyoshiOwned" onchange="updateProgress()">
+                                    <label for="hideyoshiOwned">所持</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>足跡レベル</label>
+                            <input type="text" id="hideyoshiFootprint" placeholder="レベルを入力" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>副将名</label>
+                            <input type="text" id="hideyoshiDeputy" placeholder="副将の名前" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sp-card">
+                    <h4>SP徳川家康</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="ieyasuFormed" onchange="updateProgress()">
+                                    <label for="ieyasuFormed">編成済</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="ieyasuOwned" onchange="updateProgress()">
+                                    <label for="ieyasuOwned">所持</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>足跡レベル</label>
+                            <input type="text" id="ieyasuFootprint" placeholder="レベルを入力" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>副将名</label>
+                            <input type="text" id="ieyasuDeputy" placeholder="副将の名前" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- General Section -->
+        <div class="section" id="generalSection">
+            <div class="section-header" onclick="toggleSection('generalSection')">
+                <h3>
+                    <span>🎖️</span>
+                    ②-2 武将
+                    <span class="status-badge" id="generalStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    各武将の覚醒レベルを入力してください（0〜12、デフォルト: 10）<br>
+                    <span style="color: var(--accent-gold); font-size: 0.8rem;">
+                        💡 操作方法：武将名をクリックで状態切替 → 1回目:所持 / 2回目:編成 / 3回目:なし
+                    </span>
+                </p>
+
+                <!-- Bulk Select Buttons -->
+                <div class="bulk-select-bar">
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'owned')">全員所持ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'clear')">全員クリア</button>
+                    <span style="color: var(--text-muted); font-size: 0.75rem; padding: 0.4rem;">|</span>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('want', 'owned')">欲しい武将ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('gather', 'owned')">集結武将ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('alltype', 'owned')">全兵種ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('horse', 'owned')">馬用ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('infantry', 'owned')">歩用ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('bow', 'owned')">弓用ON</button>
+                </div>
+
+                <div class="general-list">
+                    <h4>編成武将リスト</h4>
+                    <div class="general-categories" id="generalGrid">
+                        <!-- Will be populated by JS -->
+                    </div>
+                </div>
+
+                <div class="custom-general">
+                    <h5>リスト外の武将を追加（全ユーザー共通）</h5>
+                    <div id="customGenerals">
+                        <div class="custom-general-row">
+                            <input type="text" placeholder="武将名" class="customGeneralName">
+                            <input type="number" placeholder="覚醒Lv" min="0" max="12" value="10" class="customGeneralLevel">
+                            <button onclick="addCustomGeneral()">リストに追加</button>
+                        </div>
+                    </div>
+                    <div id="customGeneralsList" style="margin-top: 0.8rem; display: none;">
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">追加済み武将:</p>
+                        <div id="customGeneralsDisplay" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academy Section -->
+        <div class="section" id="academySection">
+            <div class="section-header" onclick="toggleSection('academySection')">
+                <h3>
+                    <span>📚</span>
+                    ③ 軍学道場
+                    <span class="status-badge" id="academyStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="equipment-card">
+                    <h4>極伝レベル</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>剣</label>
+                            <input type="number" id="gokudenSword" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>体</label>
+                            <input type="number" id="gokudenBody" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>技</label>
+                            <input type="number" id="gokudenTech" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>心１</label>
+                            <input type="number" id="gokudenHeart1" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>心２</label>
+                            <input type="number" id="gokudenHeart2" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-card">
+                    <h4>極伝兵法</h4>
+                    <!-- Bulk Select -->
+                    <div class="bulk-select-bar" style="margin-bottom: 0.8rem;">
+                        <button class="bulk-btn" onclick="bulkSelectAcademy('owned')">全て所持ON</button>
+                        <button class="bulk-btn" onclick="bulkSelectAcademy('clear')">クリア</button>
+                    </div>
+                    <div class="flower-grid">
+                        <div class="flower-item">
+                            <div class="name">紅葉</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenMomiji_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenMomiji_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">盤石</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenBanseki_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenBanseki_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">獅子の洞入り</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenShishi_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenShishi_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">天狗抄</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenTengu_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenTengu_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">攻撃</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenAttack_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenAttack_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">防御</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenDefense_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenDefense_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">連撃</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenCombo_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenCombo_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">抵抗</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenResist_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenResist_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">楯突</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenShield_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenShield_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">貫通</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenPierce_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenPierce_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">回避</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenEvade_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenEvade_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">命中</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenAccuracy_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenAccuracy_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div class="name">障壁</div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="gokudenBarrier_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="gokudenBarrier_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asura Section -->
+        <div class="section" id="asuraSection">
+            <div class="section-header" onclick="toggleSection('asuraSection')">
+                <h3>
+                    <span>👹</span>
+                    ④ 阿修羅
+                    <span class="status-badge" id="asuraStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="equipment-card">
+                    <h4>30レベルスキル</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>スキルレベル（デフォルト: 10）</label>
+                            <input type="number" id="asura30Level" min="1" value="10" onchange="updateProgress()">
+                        </div>
+                    </div>
+                    <div class="skill-grid" style="margin-top: 0.8rem;">
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura30_1" onchange="updateProgress()">
+                            <label for="asura30_1">厄憑</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura30_2" onchange="updateProgress()">
+                            <label for="asura30_2">金剛の鎧</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura30_3" onchange="updateProgress()">
+                            <label for="asura30_3">稲田巡礼</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-card">
+                    <h4>60レベルスキル</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>スキルレベル（デフォルト: 10）</label>
+                            <input type="number" id="asura60Level" min="1" value="10" onchange="updateProgress()">
+                        </div>
+                    </div>
+                    <div class="skill-grid" style="margin-top: 0.8rem;">
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura60_1" onchange="updateProgress()">
+                            <label for="asura60_1">移花接木</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura60_2" onchange="updateProgress()">
+                            <label for="asura60_2">攻守転換</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura60_3" onchange="updateProgress()">
+                            <label for="asura60_3">風助火勢</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura60_4" onchange="updateProgress()">
+                            <label for="asura60_4">俊敏狡猾</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura60_5" onchange="updateProgress()">
+                            <label for="asura60_5">守攻転換</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-card">
+                    <h4>90レベルスキル</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>スキルレベル（デフォルト: 10）</label>
+                            <input type="number" id="asura90Level" min="1" value="10" onchange="updateProgress()">
+                        </div>
+                    </div>
+                    <div class="skill-grid" style="margin-top: 0.8rem;">
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura90_1" onchange="updateProgress()">
+                            <label for="asura90_1">破心断骨</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura90_2" onchange="updateProgress()">
+                            <label for="asura90_2">適時出撃</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura90_3" onchange="updateProgress()">
+                            <label for="asura90_3">麒麟の清め</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura90_4" onchange="updateProgress()">
+                            <label for="asura90_4">隠刃</label>
+                        </div>
+                        <div class="skill-item">
+                            <input type="checkbox" id="asura90_5" onchange="updateProgress()">
+                            <label for="asura90_5">血戮</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Armor Section -->
+        <div class="section" id="armorSection">
+            <div class="section-header" onclick="toggleSection('armorSection')">
+                <h3>
+                    <span>🛡️</span>
+                    ⑤ 核心具足
+                    <span class="status-badge" id="armorStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>周辺具足合計レベル（デフォルト: 80）</label>
+                        <input type="number" id="armorTotalLevel" min="0" value="80" onchange="updateProgress()">
+                    </div>
+                </div>
+
+                <div class="equipment-card" style="margin-top: 1rem;">
+                    <h4>核心具足（お面）</h4>
+                    <!-- Bulk Select -->
+                    <div class="bulk-select-bar" style="margin-bottom: 0.8rem;">
+                        <button class="bulk-btn" onclick="bulkSelectMasks('owned')">全て所持ON</button>
+                        <button class="bulk-btn" onclick="bulkSelectMasks('clear')">クリア</button>
+                    </div>
+                    <div class="flower-grid">
+                        <div class="flower-item">
+                            <div>
+                                <div class="name">玄狐神使</div>
+                            </div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="mask_genko_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="mask_genko_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div>
+                                <div class="name">金麒麟</div>
+                            </div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="mask_kirin_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="mask_kirin_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div>
+                                <div class="name">霊棘</div>
+                            </div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="mask_reikyo_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="mask_reikyo_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div>
+                                <div class="name">金猿</div>
+                            </div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="mask_kinen_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="mask_kinen_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div>
+                                <div class="name">般若</div>
+                            </div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="mask_hanya_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="mask_hanya_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                        <div class="flower-item">
+                            <div>
+                                <div class="name">鬼王</div>
+                            </div>
+                            <div class="checkboxes">
+                                <label><input type="checkbox" id="mask_kiou_equipped" onchange="updateProgress()"> 装備</label>
+                                <label><input type="checkbox" id="mask_kiou_owned" onchange="updateProgress()"> 所持</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flower Formation Section -->
+        <div class="section" id="flowerSection">
+            <div class="section-header" onclick="toggleSection('flowerSection')">
+                <h3>
+                    <span>🌸</span>
+                    ⑥ 花陣
+                    <span class="status-badge" id="flowerStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <!-- Bulk Select -->
+                <div class="bulk-select-bar">
+                    <button class="bulk-btn" onclick="bulkSelectFlowers('owned')">全て所持ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectFlowers('clear')">クリア</button>
+                </div>
+                <div class="flower-grid" id="flowerGrid">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Horse Section -->
+        <div class="section" id="horseSection">
+            <div class="section-header" onclick="toggleSection('horseSection')">
+                <h3>
+                    <span>🐴</span>
+                    ⑦ 軍馬
+                    <span class="status-badge" id="horseStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content">
+                <div class="equipment-card">
+                    <h4>駒・加護（ダメージ減）</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>金スキル数</label>
+                            <input type="number" id="horse_kago_gold" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>銀スキル数</label>
+                            <input type="number" id="horse_kago_silver" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-card">
+                    <h4>駒・鼓舞（ダメージ増）</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>金スキル数</label>
+                            <input type="number" id="horse_kobu_gold" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>銀スキル数</label>
+                            <input type="number" id="horse_kobu_silver" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="equipment-card">
+                    <h4>駒・反撃（ダメージ跳ね返し）</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>金スキル数</label>
+                            <input type="number" id="horse_hangeki_gold" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>銀スキル数</label>
+                            <input type="number" id="horse_hangeki_silver" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tactic Section -->
+        <div class="section" id="tacticSection">
+            <div class="section-header" onclick="toggleSection('tacticSection')">
+                <h3>
+                    <span>📜</span>
+                    ⑧ 戦法
+                    <span class="status-badge" id="tacticStatus">未入力</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="section-content" id="tacticContent">
+                <!-- Bulk Select (will be added by JS before tactic cards) -->
+            </div>
+        </div>
+
+        <!-- Submit Section -->
+        <div class="submit-section">
+            <button class="submit-btn" onclick="submitData()">データを保存</button>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="summary-section">
+            <h2>📈 入力サマリー</h2>
+            <div class="summary-grid" id="summaryGrid">
+                <div class="summary-item" style="border-left-color: #b85040;">
+                    <span class="label">① 兵器</span>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">装備</span>
+                            <span class="stat-value" id="summary_weapon_equipped">0/3</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">所持+装備</span>
+                            <span class="stat-value" id="summary_weapon_total">0/3</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-item" style="border-left-color: var(--accent-gold);">
+                    <span class="label">②-1 SP武将</span>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">編成</span>
+                            <span class="stat-value" id="summary_sp_equipped">0/3</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">所持+編成</span>
+                            <span class="stat-value" id="summary_sp_total">0/3</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-item" style="border-left-color: #64a064;">
+                    <span class="label">②-2 武将</span>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">編成</span>
+                            <span class="stat-value" id="summary_general_equipped">0/0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">所持+編成</span>
+                            <span class="stat-value" id="summary_general_total">0/0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-item" style="border-left-color: #508cb4;">
+                    <span class="label">③ 極伝兵法</span>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">装備</span>
+                            <span class="stat-value" id="summary_academy_equipped">0/13</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">所持+装備</span>
+                            <span class="stat-value" id="summary_academy_total">0/13</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-item" style="border-left-color: #b43c3c;">
+                    <span class="label">④ 阿修羅</span>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">装備</span>
+                            <span class="stat-value" id="summary_asura_equipped">0/13</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-item" style="border-left-color: #8c64b4;">
+                    <span class="label">⑤ 核心具足</span>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">装備</span>
+                            <span class="stat-value" id="summary_mask_equipped">0/6</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">所持+装備</span>
+                            <span class="stat-value" id="summary_mask_total">0/6</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-item" style="border-left-color: #dc78a0;">
+                    <span class="label">⑥ 花陣</span>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">装備</span>
+                            <span class="stat-value" id="summary_flower_equipped">0/32</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">所持+装備</span>
+                            <span class="stat-value" id="summary_flower_total">0/32</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="summary-item" style="border-left-color: #3c8cb8;">
+                    <span class="label">⑧ 戦法</span>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">装備</span>
+                            <span class="stat-value" id="summary_tactic_equipped">0/6</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">所持+装備</span>
+                            <span class="stat-value" id="summary_tactic_total">0/6</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Section -->
+        <div class="admin-section" id="adminSection">
+            <div class="admin-header" onclick="toggleAdminPassword()">
+                <h3>
+                    <span>🔐</span>
+                    管理者エリア
+                </h3>
+                <span class="toggle-icon" id="adminToggle">▼</span>
+            </div>
+            <div class="admin-password" id="adminPassword">
+                <input type="password" id="adminPwd" placeholder="パスワードを入力">
+                <button onclick="verifyPassword()">ログイン</button>
+            </div>
+            <div class="admin-content" id="adminContent">
+                <div class="admin-actions">
+                    <button class="admin-btn primary" onclick="exportAllData()">📤 全データエクスポート</button>
+                    <button class="admin-btn" onclick="document.getElementById('importFile').click()">📥 データインポート</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                    <button class="admin-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
+                </div>
+
+                <h4 style="color: var(--accent-gold); margin-bottom: 1rem;">保存済みデータ一覧</h4>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>ユーザー名</th>
+                                <th>兵種</th>
+                                <th>更新日時</th>
+                                <th>完成度</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Comparison Section -->
+                <div class="comparison-section">
+                    <h4>📊 ユーザー比較分析</h4>
+                    
+                    <div class="user-selector">
+                        <h5>比較するユーザーを選択（最大10人）</h5>
+                        <div class="user-checkbox-grid" id="userCheckboxGrid">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="selected-users-display" id="selectedUsersDisplay">
+                            <!-- Selected users shown here -->
+                        </div>
+                        <button class="compare-btn" id="compareBtn" onclick="runComparison()" disabled>比較分析を実行</button>
+                    </div>
+
+                    <div class="comparison-results" id="comparisonResults">
+                        <!-- Overlap Section -->
+                        <div class="comparison-category" id="overlapCategory">
+                            <div class="comparison-category-header overlap" onclick="toggleComparisonCategory('overlapCategory')">
+                                <h5>
+                                    <span>📋</span>
+                                    編成/装備中の項目
+                                    <span class="count" id="overlapCount">0件</span>
+                                </h5>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="comparison-category-content" id="overlapContent">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Unused Section -->
+                        <div class="comparison-category" id="unusedCategory">
+                            <div class="comparison-category-header unused" onclick="toggleComparisonCategory('unusedCategory')">
+                                <h5>
+                                    <span>❓</span>
+                                    誰も装備していない項目
+                                    <span class="count" id="unusedCount">0件</span>
+                                </h5>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="comparison-category-content" id="unusedContent">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Inconsistent Section -->
+                        <div class="comparison-category" id="inconsistentCategory">
+                            <div class="comparison-category-header inconsistent" onclick="toggleComparisonCategory('inconsistentCategory')">
+                                <h5>
+                                    <span>📦</span>
+                                    所持しているが未装備の項目
+                                    <span class="count" id="inconsistentCount">0件</span>
+                                </h5>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                            <div class="comparison-category-content" id="inconsistentContent">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Navigation -->
+    <div class="floating-nav">
+        <div class="floating-menu" id="floatingMenu">
+            <button class="floating-menu-item" onclick="scrollToSection('weaponSection')">① 兵器</button>
+            <button class="floating-menu-item" onclick="scrollToSection('spGeneralSection')">②-1 SP武将</button>
+            <button class="floating-menu-item" onclick="scrollToSection('generalSection')">②-2 武将</button>
+            <button class="floating-menu-item" onclick="scrollToSection('academySection')">③ 軍学道場</button>
+            <button class="floating-menu-item" onclick="scrollToSection('asuraSection')">④ 阿修羅</button>
+            <button class="floating-menu-item" onclick="scrollToSection('armorSection')">⑤ 核心具足</button>
+            <button class="floating-menu-item" onclick="scrollToSection('flowerSection')">⑥ 花陣</button>
+            <button class="floating-menu-item" onclick="scrollToSection('horseSection')">⑦ 軍馬</button>
+            <button class="floating-menu-item" onclick="scrollToSection('tacticSection')">⑧ 戦法</button>
+        </div>
+        <button class="floating-btn" onclick="toggleFloatingMenu()">☰</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Configuration
+        const ADMIN_PASSWORD = 'admin123'; // パスワードを変更してください
+
+        // Flower formations data
+        const flowerFormations = [
+            { id: 'higanbana', name: '彼岸花', effect: '攻撃UP' },
+            { id: 'sekichiku', name: '石竹', effect: '貫通UP' },
+            { id: 'kikyo', name: '桔梗', effect: '連撃UP' },
+            { id: 'shobu', name: '菖蒲', effect: '障壁UP' },
+            { id: 'nozen', name: '凌霄', effect: '障壁Down' },
+            { id: 'oniyuri', name: '鬼百合', effect: '攻撃Down' },
+            { id: 'matsuyoi', name: '待宵', effect: '抵抗UP' },
+            { id: 'koho', name: '香蒲', effect: '連撃UP' },
+            { id: 'tsubaki', name: '椿', effect: '兵回復' },
+            { id: 'hakubai', name: '白梅', effect: '防御UP' },
+            { id: 'bara', name: '薔薇', effect: '抵抗Down' },
+            { id: 'hagi', name: '萩', effect: '貫通Down' },
+            { id: 'suzuran', name: '鈴蘭', effect: '防御Down' },
+            { id: 'sekko', name: '雪光', effect: '防御→攻撃転換' },
+            { id: 'yugao', name: '夕顔', effect: '攻撃→防御転換' },
+            { id: 'asagao', name: '朝顔', effect: '抵抗→連撃転換' },
+            { id: 'maizuru', name: '舞鶴', effect: '連撃→抵抗転換' },
+            { id: 'nemu', name: '合歓', effect: '貫通→楯突転換' },
+            { id: 'ryuga', name: '龍牙', effect: '楯突→貫通転換' },
+            { id: 'tensei', name: '天星', effect: '攻撃転換' },
+            { id: 'rindo', name: '竜胆', effect: '防御転換' },
+            { id: 'tona', name: '十菜', effect: '命中UP' },
+            { id: 'akashi', name: '明石', effect: '回避UP' },
+            { id: 'toyo', name: '桃夭', effect: '回避Down' },
+            { id: 'mandara', name: '曼荼羅', effect: '貫通UP' },
+            { id: 'udonge', name: '優曇華', effect: '楯突UP' },
+            { id: 'yaezakura', name: '八重桜', effect: '貫通転換' },
+            { id: 'suisen', name: '水仙', effect: '楯突変換' },
+            { id: 'kocho', name: '胡蝶', effect: '貫通UP' },
+            { id: 'kaigyo', name: '海業', effect: '貫通UP' },
+            { id: 'shakuyaku', name: '芍薬', effect: '貫通UP' },
+            { id: 'washio', name: '鷲尾', effect: '抵抗Down' }
+        ];
+
+        // Tactics data
+        const tactics = [
+            { id: 'tsurinobuse', name: '釣り野伏' },
+            { id: 'kagemusha', name: '影武者' },
+            { id: 'kibateppo', name: '騎馬鉄砲' },
+            { id: 'kitsutsuki', name: '啄木鳥' },
+            { id: 'kurumagai', name: '車懸り' },
+            { id: 'sandanuchi', name: '三段打ち' }
+        ];
+
+        // General list with categories
+        const generalCategories = [
+            {
+                title: 'この辺は一人は欲しい武将',
+                generals: ['鈴木重秀', '寿桂尼', 'おつやの方', '鍋島直茂', '加藤清正', '吉川広家', '加藤嘉明', '足利義昭', '真柄直隆', '加藤段蔵', '山内一豊']
+            },
+            {
+                title: '集結で使う武将',
+                generals: ['北条早雲', '織田信長', '本多忠勝', '北条氏康', '山本勘助', '毛利元就', '島津家久', '堀秀政', '真田幸村', '黒田官兵衛', '徳川家康', '村井貞勝', '上泉信綱', '真田幸隆', '柳生宗厳', '太田道灌']
+            },
+            {
+                title: '全兵種対応武将',
+                generals: ['井伊直虎', '櫛橋光', '直江兼続', '豊臣秀吉', '尼子経久', '立花宗茂', '緋村剣心', '神谷薫', '宇喜多直家', '井伊直政', '森長可', '果心居士', '藤堂高虎', '秋山信友', '榊原康政', '三浦按針', '上杉景勝']
+            },
+            {
+                title: '馬用',
+                generals: ['武田信玄', '伊達政宗', '北条氏綱', '山中鹿之介', '甲斐姫', '山県昌景', '義姫', '高坂昌信', '真田信之', '綾御前', '柿崎景家', '佐々成政']
+            },
+            {
+                title: '歩用',
+                generals: ['宮本武蔵', 'リヴァイ', '淀', '小早川', '細川忠興', '武田信繁', '三好長慶', '千代', '北条綱成', 'ねね', '高橋紹運', '愛姫', '福島正則', '伊達成実']
+            },
+            {
+                title: '弓用',
+                generals: ['斎藤利三', '赤井直正', '出雲阿国', '伊達植宗', '春日局', '織田信忠', '島津歳久', '天草四郎']
+            }
+        ];
+
+        // Flatten generals for backwards compatibility
+        const generals = generalCategories.flatMap(cat => cat.generals);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initFlowerGrid();
+            initTacticSection();
+            initGeneralGrid();
+            updateCustomGeneralsDisplay();
+            loadSavedData();
+            updateProgress();
+            updateSummary();
+            updateFormationCount();
+        });
+
+        // Initialize flower grid
+        function initFlowerGrid() {
+            const grid = document.getElementById('flowerGrid');
+            grid.innerHTML = flowerFormations.map(f => `
+                <div class="flower-item">
+                    <div>
+                        <div class="name">${f.name}</div>
+                        <div class="effect">${f.effect}</div>
+                    </div>
+                    <div class="checkboxes">
+                        <label><input type="checkbox" id="flower_${f.id}_equipped" onchange="updateProgress()"> 装備</label>
+                        <label><input type="checkbox" id="flower_${f.id}_owned" onchange="updateProgress()"> 所持</label>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize tactic section
+        function initTacticSection() {
+            const content = document.getElementById('tacticContent');
+            const bulkSelectHtml = `
+                <div class="bulk-select-bar">
+                    <button class="bulk-btn" onclick="bulkSelectTactics('owned')">全て所持ON</button>
+                    <button class="bulk-btn" onclick="bulkSelectTactics('clear')">クリア</button>
+                </div>
+            `;
+            const tacticsHtml = tactics.map(t => `
+                <div class="tactic-card">
+                    <div class="name">${t.name}</div>
+                    <div class="form-group">
+                        <label>レベル</label>
+                        <input type="number" id="tactic_${t.id}_level" value="80" min="1" onchange="updateProgress()">
+                    </div>
+                    <div class="form-group">
+                        <label>昇段</label>
+                        <select id="tactic_${t.id}_rank" onchange="updateProgress()">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="tactic_${t.id}_equipped" onchange="updateProgress()">
+                        <label>装備</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="tactic_${t.id}_owned" onchange="updateProgress()">
+                        <label>所持</label>
+                    </div>
+                </div>
+            `).join('');
+            content.innerHTML = bulkSelectHtml + tacticsHtml;
+        }
+
+        // Initialize general grid with categories
+        function initGeneralGrid() {
+            const grid = document.getElementById('generalGrid');
+            const allGenerals = getAllGenerals();
+            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
+            
+            let globalIndex = 0;
+            let html = '';
+            
+            // Add predefined categories
+            generalCategories.forEach(cat => {
+                html += `
+                    <div class="general-category">
+                        <div class="general-category-title">●${cat.title}</div>
+                        <div class="general-grid">
+                            ${cat.generals.map(g => {
+                                const index = globalIndex++;
+                                return `
+                                    <div class="general-item" id="generalItem_${index}" data-general="${g}" data-state="0">
+                                        <span class="general-name" onclick="toggleGeneralState(${index})">${g}</span>
+                                        <span class="status-badge"></span>
+                                        <input type="number" id="general_${index}" min="0" max="12" value="10" onchange="updateProgress()">
+                                        <input type="hidden" id="generalState_${index}" value="0">
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Add custom generals category if any exist
+            if (customGenerals.length > 0) {
+                html += `
+                    <div class="general-category" id="customGeneralCategory">
+                        <div class="general-category-title">●追加武将</div>
+                        <div class="general-grid" id="customGeneralGrid">
+                            ${customGenerals.map(g => {
+                                const index = globalIndex++;
+                                return `
+                                    <div class="general-item" id="generalItem_${index}" data-general="${g}" data-state="0">
+                                        <span class="general-name" onclick="toggleGeneralState(${index})">${g}</span>
+                                        <span class="status-badge"></span>
+                                        <input type="number" id="general_${index}" min="0" max="12" value="10" onchange="updateProgress()">
+                                        <input type="hidden" id="generalState_${index}" value="0">
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = html;
+        }
+
+        // Get all generals including custom ones
+        function getAllGenerals() {
+            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
+            return [...generals, ...customGenerals];
+        }
+
+        // Get total general count for indexing
+        function getGeneralIndex(generalName) {
+            const allGenerals = getAllGenerals();
+            return allGenerals.indexOf(generalName);
+        }
+
+        // Toggle general state: 0 (none) -> 1 (owned) -> 2 (formed) -> 0 (none)
+        function toggleGeneralState(index) {
+            const item = document.getElementById(`generalItem_${index}`);
+            const hiddenInput = document.getElementById(`generalState_${index}`);
+            let currentState = parseInt(item.dataset.state || '0');
+            
+            // Cycle through states: 0 -> 1 -> 2 -> 0
+            currentState = (currentState + 1) % 3;
+            
+            item.dataset.state = currentState;
+            hiddenInput.value = currentState;
+            
+            // Update visual classes
+            item.classList.remove('owned', 'formed');
+            if (currentState === 1) {
+                item.classList.add('owned');
+            } else if (currentState === 2) {
+                item.classList.add('formed');
+            }
+            
+            updateProgress();
+        }
+
+        // Legacy function for compatibility
+        function toggleGeneralFormed(index) {
+            toggleGeneralState(index);
+        }
+
+        // Toggle section
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            section.classList.toggle('collapsed');
+        }
+
+        // Toggle admin password
+        function toggleAdminPassword() {
+            const pwd = document.getElementById('adminPassword');
+            const content = document.getElementById('adminContent');
+            if (!content.classList.contains('show')) {
+                pwd.classList.toggle('show');
+            }
+        }
+
+        // Verify password
+        function verifyPassword() {
+            const pwd = document.getElementById('adminPwd').value;
+            if (pwd === ADMIN_PASSWORD) {
+                document.getElementById('adminPassword').classList.remove('show');
+                document.getElementById('adminContent').classList.add('show');
+                refreshDataTable();
+                showToast('管理者モードにログインしました', 'success');
+            } else {
+                showToast('パスワードが正しくありません', 'error');
+            }
+        }
+
+        // Update progress
+        function updateProgress() {
+            const sections = {
+                basic: checkBasicComplete(),
+                weapon: checkWeaponComplete(),
+                spGeneral: checkSPGeneralComplete(),
+                general: checkGeneralComplete(),
+                academy: checkAcademyComplete(),
+                asura: checkAsuraComplete(),
+                armor: checkArmorComplete(),
+                flower: checkFlowerComplete(),
+                horse: checkHorseComplete(),
+                tactic: checkTacticComplete()
+            };
+
+            for (const [key, value] of Object.entries(sections)) {
+                const item = document.querySelector(`.progress-item[data-section="${key}"]`);
+                const badge = document.getElementById(`${key}Status`);
+                
+                item.classList.remove('complete', 'partial', 'empty');
+                badge.classList.remove('complete', 'partial');
+                
+                if (value === 'complete') {
+                    item.classList.add('complete');
+                    badge.classList.add('complete');
+                    item.querySelector('.status').textContent = '完了';
+                    badge.textContent = '完了';
+                } else if (value === 'partial') {
+                    item.classList.add('partial');
+                    badge.classList.add('partial');
+                    item.querySelector('.status').textContent = '入力中';
+                    badge.textContent = '入力中';
+                } else {
+                    item.classList.add('empty');
+                    item.querySelector('.status').textContent = '未入力';
+                    badge.textContent = '未入力';
+                }
+            }
+        }
+
+        // Check functions for each section
+        function checkBasicComplete() {
+            const name = document.getElementById('userName').value;
+            const unit = document.getElementById('unitType').value;
+            if (name && unit) return 'complete';
+            if (name || unit) return 'partial';
+            return 'empty';
+        }
+
+        function checkWeaponComplete() {
+            const weapons = ['akoni', 'inseki', 'hanya'];
+            let hasAny = false;
+            let hasAll = true;
+            
+            weapons.forEach(w => {
+                const status = document.getElementById(`${w}Status`).value;
+                if (status) hasAny = true;
+                else hasAll = false;
+            });
+            
+            if (hasAll) return 'complete';
+            if (hasAny) return 'partial';
+            return 'empty';
+        }
+
+        function checkSPGeneralComplete() {
+            const sps = ['nobunaga', 'hideyoshi', 'ieyasu'];
+            let hasAny = false;
+            
+            sps.forEach(sp => {
+                if (document.getElementById(`${sp}Owned`).checked ||
+                    document.getElementById(`${sp}Formed`).checked ||
+                    document.getElementById(`${sp}Footprint`).value ||
+                    document.getElementById(`${sp}Deputy`).value) {
+                    hasAny = true;
+                }
+            });
+            
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkGeneralComplete() {
+            let hasAny = false;
+            const allGenerals = getAllGenerals();
+            for (let i = 0; i < allGenerals.length; i++) {
+                const el = document.getElementById(`general_${i}`);
+                const stateEl = document.getElementById(`generalState_${i}`);
+                if ((el && el.value) || (stateEl && parseInt(stateEl.value) > 0)) hasAny = true;
+            }
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkAcademyComplete() {
+            const fields = ['gokudenSword', 'gokudenBody', 'gokudenTech', 'gokudenHeart1', 'gokudenHeart2'];
+            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
+            
+            let hasAny = false;
+            fields.forEach(f => {
+                if (document.getElementById(f).value) hasAny = true;
+            });
+            gokudenHeiho.forEach(h => {
+                if (document.getElementById(`gokuden${h}_equipped`)?.checked) hasAny = true;
+                if (document.getElementById(`gokuden${h}_owned`)?.checked) hasAny = true;
+            });
+            
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkAsuraComplete() {
+            const checks = ['asura30_1', 'asura30_2', 'asura30_3',
+                           'asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5',
+                           'asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'];
+            
+            let hasAny = false;
+            checks.forEach(c => {
+                if (document.getElementById(c).checked) hasAny = true;
+            });
+            
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkArmorComplete() {
+            const masks = ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'];
+            let hasAny = false;
+            
+            masks.forEach(m => {
+                if (document.getElementById(`mask_${m}_equipped`).checked ||
+                    document.getElementById(`mask_${m}_owned`).checked) {
+                    hasAny = true;
+                }
+            });
+            
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkFlowerComplete() {
+            let hasAny = false;
+            flowerFormations.forEach(f => {
+                if (document.getElementById(`flower_${f.id}_equipped`).checked ||
+                    document.getElementById(`flower_${f.id}_owned`).checked) {
+                    hasAny = true;
+                }
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkHorseComplete() {
+            const fields = ['horse_kago_gold', 'horse_kago_silver',
+                           'horse_kobu_gold', 'horse_kobu_silver',
+                           'horse_hangeki_gold', 'horse_hangeki_silver'];
+            let hasAny = false;
+            fields.forEach(f => {
+                if (document.getElementById(f).value) hasAny = true;
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkTacticComplete() {
+            let hasAny = false;
+            tactics.forEach(t => {
+                if (document.getElementById(`tactic_${t.id}_equipped`).checked ||
+                    document.getElementById(`tactic_${t.id}_owned`).checked) {
+                    hasAny = true;
+                }
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        // Collect all form data
+        function collectFormData() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                basic: {
+                    userName: document.getElementById('userName').value,
+                    unitType: document.getElementById('unitType').value
+                },
+                weapons: {},
+                spGenerals: {},
+                generals: {},
+                academy: {},
+                asura: {},
+                armor: {},
+                flowers: {},
+                horse: {},
+                tactics: {}
+            };
+
+            // Weapons
+            ['akoni', 'inseki', 'hanya'].forEach(w => {
+                data.weapons[w] = {
+                    status: document.getElementById(`${w}Status`).value,
+                    upgrade: document.getElementById(`${w}Upgrade`).value,
+                    mod: document.getElementById(`${w}Mod`).value
+                };
+            });
+
+            // SP Generals
+            ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
+                data.spGenerals[sp] = {
+                    owned: document.getElementById(`${sp}Owned`).checked,
+                    formed: document.getElementById(`${sp}Formed`).checked,
+                    footprint: document.getElementById(`${sp}Footprint`).value,
+                    deputy: document.getElementById(`${sp}Deputy`).value
+                };
+            });
+
+            // Generals
+            const allGenerals = getAllGenerals();
+            for (let i = 0; i < allGenerals.length; i++) {
+                const levelEl = document.getElementById(`general_${i}`);
+                const stateEl = document.getElementById(`generalState_${i}`);
+                if (levelEl) {
+                    const state = stateEl ? parseInt(stateEl.value) : 0;
+                    data.generals[allGenerals[i]] = {
+                        level: levelEl.value,
+                        owned: state >= 1,  // state 1 or 2 means owned
+                        formed: state === 2  // state 2 means formed
+                    };
+                }
+            }
+
+            // Academy
+            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
+            data.academy = {
+                sword: document.getElementById('gokudenSword').value,
+                body: document.getElementById('gokudenBody').value,
+                tech: document.getElementById('gokudenTech').value,
+                heart1: document.getElementById('gokudenHeart1').value,
+                heart2: document.getElementById('gokudenHeart2').value,
+                heiho: {}
+            };
+            gokudenHeiho.forEach(h => {
+                data.academy.heiho[h.toLowerCase()] = {
+                    equipped: document.getElementById(`gokuden${h}_equipped`)?.checked || false,
+                    owned: document.getElementById(`gokuden${h}_owned`)?.checked || false
+                };
+            });
+
+            // Asura
+            data.asura = {
+                level30: document.getElementById('asura30Level').value,
+                level60: document.getElementById('asura60Level').value,
+                level90: document.getElementById('asura90Level').value,
+                skills30: ['asura30_1', 'asura30_2', 'asura30_3'].map(id => document.getElementById(id).checked),
+                skills60: ['asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5'].map(id => document.getElementById(id).checked),
+                skills90: ['asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'].map(id => document.getElementById(id).checked)
+            };
+
+            // Armor
+            data.armor = {
+                totalLevel: document.getElementById('armorTotalLevel').value,
+                masks: {}
+            };
+            ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'].forEach(m => {
+                data.armor.masks[m] = {
+                    equipped: document.getElementById(`mask_${m}_equipped`).checked,
+                    owned: document.getElementById(`mask_${m}_owned`).checked
+                };
+            });
+
+            // Flowers
+            flowerFormations.forEach(f => {
+                data.flowers[f.id] = {
+                    equipped: document.getElementById(`flower_${f.id}_equipped`).checked,
+                    owned: document.getElementById(`flower_${f.id}_owned`).checked
+                };
+            });
+
+            // Horse
+            data.horse = {
+                kago: {
+                    gold: document.getElementById('horse_kago_gold').value,
+                    silver: document.getElementById('horse_kago_silver').value
+                },
+                kobu: {
+                    gold: document.getElementById('horse_kobu_gold').value,
+                    silver: document.getElementById('horse_kobu_silver').value
+                },
+                hangeki: {
+                    gold: document.getElementById('horse_hangeki_gold').value,
+                    silver: document.getElementById('horse_hangeki_silver').value
+                }
+            };
+
+            // Tactics
+            tactics.forEach(t => {
+                data.tactics[t.id] = {
+                    level: document.getElementById(`tactic_${t.id}_level`).value,
+                    rank: document.getElementById(`tactic_${t.id}_rank`).value,
+                    equipped: document.getElementById(`tactic_${t.id}_equipped`).checked,
+                    owned: document.getElementById(`tactic_${t.id}_owned`).checked
+                };
+            });
+
+            return data;
+        }
+
+        // Load data into form
+        function loadDataToForm(data) {
+            // Basic
+            document.getElementById('userName').value = data.basic?.userName || '';
+            document.getElementById('unitType').value = data.basic?.unitType || '';
+
+            // Weapons
+            if (data.weapons) {
+                ['akoni', 'inseki', 'hanya'].forEach(w => {
+                    if (data.weapons[w]) {
+                        document.getElementById(`${w}Status`).value = data.weapons[w].status || '';
+                        document.getElementById(`${w}Upgrade`).value = data.weapons[w].upgrade || '';
+                        document.getElementById(`${w}Mod`).value = data.weapons[w].mod || '';
+                    }
+                });
+            }
+
+            // SP Generals
+            if (data.spGenerals) {
+                ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
+                    if (data.spGenerals[sp]) {
+                        document.getElementById(`${sp}Owned`).checked = data.spGenerals[sp].owned || false;
+                        document.getElementById(`${sp}Formed`).checked = data.spGenerals[sp].formed || false;
+                        document.getElementById(`${sp}Footprint`).value = data.spGenerals[sp].footprint || '';
+                        document.getElementById(`${sp}Deputy`).value = data.spGenerals[sp].deputy || '';
+                    }
+                });
+            }
+
+            // Generals
+            if (data.generals) {
+                const allGenerals = getAllGenerals();
+                for (let i = 0; i < allGenerals.length; i++) {
+                    const levelEl = document.getElementById(`general_${i}`);
+                    const stateEl = document.getElementById(`generalState_${i}`);
+                    const itemEl = document.getElementById(`generalItem_${i}`);
+                    const generalData = data.generals[allGenerals[i]];
+                    
+                    if (levelEl && generalData) {
+                        // Handle both old format (just level) and new format (object)
+                        if (typeof generalData === 'object') {
+                            levelEl.value = generalData.level || 10;
+                            if (stateEl && itemEl) {
+                                // Determine state from owned/formed
+                                let state = 0;
+                                if (generalData.formed) {
+                                    state = 2;
+                                } else if (generalData.owned) {
+                                    state = 1;
+                                }
+                                stateEl.value = state;
+                                itemEl.dataset.state = state;
+                                
+                                itemEl.classList.remove('owned', 'formed');
+                                if (state === 1) {
+                                    itemEl.classList.add('owned');
+                                } else if (state === 2) {
+                                    itemEl.classList.add('formed');
+                                }
+                            }
+                        } else {
+                            levelEl.value = generalData;
+                        }
+                    }
+                }
+            }
+
+            // Academy
+            if (data.academy) {
+                document.getElementById('gokudenSword').value = data.academy.sword || '';
+                document.getElementById('gokudenBody').value = data.academy.body || '';
+                document.getElementById('gokudenTech').value = data.academy.tech || '';
+                document.getElementById('gokudenHeart1').value = data.academy.heart1 || '';
+                document.getElementById('gokudenHeart2').value = data.academy.heart2 || '';
+                
+                // Handle new heiho format
+                if (data.academy.heiho) {
+                    const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
+                    gokudenHeiho.forEach(h => {
+                        const hData = data.academy.heiho[h.toLowerCase()];
+                        if (hData) {
+                            const equippedEl = document.getElementById(`gokuden${h}_equipped`);
+                            const ownedEl = document.getElementById(`gokuden${h}_owned`);
+                            if (equippedEl) equippedEl.checked = hData.equipped || false;
+                            if (ownedEl) ownedEl.checked = hData.owned || false;
+                        }
+                    });
+                } else {
+                    // Handle old format for backwards compatibility
+                    const oldMapping = { momiji: 'Momiji', banseki: 'Banseki', shishi: 'Shishi', tengu: 'Tengu' };
+                    Object.entries(oldMapping).forEach(([oldKey, newKey]) => {
+                        if (data.academy[oldKey]) {
+                            const equippedEl = document.getElementById(`gokuden${newKey}_equipped`);
+                            const ownedEl = document.getElementById(`gokuden${newKey}_owned`);
+                            if (equippedEl) equippedEl.checked = true;
+                            if (ownedEl) ownedEl.checked = true;
+                        }
+                    });
+                }
+            }
+
+            // Asura
+            if (data.asura) {
+                document.getElementById('asura30Level').value = data.asura.level30 || 10;
+                document.getElementById('asura60Level').value = data.asura.level60 || 10;
+                document.getElementById('asura90Level').value = data.asura.level90 || 10;
+                
+                if (data.asura.skills30) {
+                    ['asura30_1', 'asura30_2', 'asura30_3'].forEach((id, i) => {
+                        document.getElementById(id).checked = data.asura.skills30[i] || false;
+                    });
+                }
+                if (data.asura.skills60) {
+                    ['asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5'].forEach((id, i) => {
+                        document.getElementById(id).checked = data.asura.skills60[i] || false;
+                    });
+                }
+                if (data.asura.skills90) {
+                    ['asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'].forEach((id, i) => {
+                        document.getElementById(id).checked = data.asura.skills90[i] || false;
+                    });
+                }
+            }
+
+            // Armor
+            if (data.armor) {
+                document.getElementById('armorTotalLevel').value = data.armor.totalLevel || 80;
+                if (data.armor.masks) {
+                    ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'].forEach(m => {
+                        if (data.armor.masks[m]) {
+                            document.getElementById(`mask_${m}_equipped`).checked = data.armor.masks[m].equipped || false;
+                            document.getElementById(`mask_${m}_owned`).checked = data.armor.masks[m].owned || false;
+                        }
+                    });
+                }
+            }
+
+            // Flowers
+            if (data.flowers) {
+                flowerFormations.forEach(f => {
+                    if (data.flowers[f.id]) {
+                        document.getElementById(`flower_${f.id}_equipped`).checked = data.flowers[f.id].equipped || false;
+                        document.getElementById(`flower_${f.id}_owned`).checked = data.flowers[f.id].owned || false;
+                    }
+                });
+            }
+
+            // Horse
+            if (data.horse) {
+                document.getElementById('horse_kago_gold').value = data.horse.kago?.gold || '';
+                document.getElementById('horse_kago_silver').value = data.horse.kago?.silver || '';
+                document.getElementById('horse_kobu_gold').value = data.horse.kobu?.gold || '';
+                document.getElementById('horse_kobu_silver').value = data.horse.kobu?.silver || '';
+                document.getElementById('horse_hangeki_gold').value = data.horse.hangeki?.gold || '';
+                document.getElementById('horse_hangeki_silver').value = data.horse.hangeki?.silver || '';
+            }
+
+            // Tactics
+            if (data.tactics) {
+                tactics.forEach(t => {
+                    if (data.tactics[t.id]) {
+                        document.getElementById(`tactic_${t.id}_level`).value = data.tactics[t.id].level || 80;
+                        document.getElementById(`tactic_${t.id}_rank`).value = data.tactics[t.id].rank || 0;
+                        document.getElementById(`tactic_${t.id}_equipped`).checked = data.tactics[t.id].equipped || false;
+                        document.getElementById(`tactic_${t.id}_owned`).checked = data.tactics[t.id].owned || false;
+                    }
+                });
+            }
+
+            updateProgress();
+        }
+
+        // Submit data
+        function submitData() {
+            const data = collectFormData();
+            
+            if (!data.basic.userName) {
+                showToast('ユーザー名を入力してください', 'error');
+                return;
+            }
+
+            // Save to localStorage
+            let allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+            allData[data.basic.userName] = data;
+            localStorage.setItem('gameData', JSON.stringify(allData));
+
+            showToast('データを保存しました', 'success');
+            refreshDataTable();
+        }
+
+        // Load saved data for current user
+        function loadSavedData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userName = urlParams.get('user');
+            
+            if (userName) {
+                const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+                if (allData[userName]) {
+                    loadDataToForm(allData[userName]);
+                }
+            }
+        }
+
+        // Admin functions
+        function refreshDataTable() {
+            const tbody = document.getElementById('dataTableBody');
+            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+            
+            tbody.innerHTML = Object.entries(allData).map(([name, data]) => {
+                const unitTypeMap = { horse: '馬', infantry: '歩', bow: '弓' };
+                const date = new Date(data.timestamp).toLocaleString('ja-JP');
+                const completeness = calculateCompleteness(data);
+                
+                return `
+                    <tr>
+                        <td>${name}</td>
+                        <td>${unitTypeMap[data.basic?.unitType] || '-'}</td>
+                        <td>${date}</td>
+                        <td>${completeness}%</td>
+                        <td class="actions">
+                            <button onclick="editUser('${name}')">編集</button>
+                            <button onclick="deleteUser('${name}')">削除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function calculateCompleteness(data) {
+            let score = 0;
+            let total = 10;
+
+            if (data.basic?.userName && data.basic?.unitType) score++;
+            if (Object.values(data.weapons || {}).some(w => w.status)) score++;
+            if (Object.values(data.spGenerals || {}).some(sp => sp.owned || sp.formed)) score++;
+            if (Object.values(data.generals || {}).some(g => g)) score++;
+            if (Object.values(data.academy || {}).some(a => a)) score++;
+            if (data.asura?.skills30?.some(s => s) || data.asura?.skills60?.some(s => s) || data.asura?.skills90?.some(s => s)) score++;
+            if (Object.values(data.armor?.masks || {}).some(m => m.equipped || m.owned)) score++;
+            if (Object.values(data.flowers || {}).some(f => f.equipped || f.owned)) score++;
+            if (Object.values(data.horse || {}).some(h => h.gold || h.silver)) score++;
+            if (Object.values(data.tactics || {}).some(t => t.equipped || t.owned)) score++;
+
+            return Math.round((score / total) * 100);
+        }
+
+        function editUser(name) {
+            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+            if (allData[name]) {
+                loadDataToForm(allData[name]);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                showToast(`${name}のデータを読み込みました`, 'success');
+            }
+        }
+
+        function deleteUser(name) {
+            if (confirm(`${name}のデータを削除しますか？`)) {
+                const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+                delete allData[name];
+                localStorage.setItem('gameData', JSON.stringify(allData));
+                refreshDataTable();
+                showToast('データを削除しました', 'success');
+            }
+        }
+
+        function exportAllData() {
+            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+            const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `game_data_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('データをエクスポートしました', 'success');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        localStorage.setItem('gameData', JSON.stringify(data));
+                        refreshDataTable();
+                        showToast('データをインポートしました', 'success');
+                    } catch (err) {
+                        showToast('ファイルの読み込みに失敗しました', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('すべてのデータを削除しますか？この操作は取り消せません。')) {
+                localStorage.removeItem('gameData');
+                refreshDataTable();
+                showToast('すべてのデータを削除しました', 'success');
+            }
+        }
+
+        // Add custom general
+        function addCustomGeneral() {
+            const container = document.getElementById('customGenerals');
+            const inputs = container.querySelectorAll('.custom-general-row');
+            const lastRow = inputs[inputs.length - 1];
+            const nameInput = lastRow.querySelector('.customGeneralName');
+            const levelInput = lastRow.querySelector('.customGeneralLevel');
+            
+            const generalName = nameInput.value.trim();
+            
+            if (!generalName) {
+                showToast('武将名を入力してください', 'error');
+                return;
+            }
+
+            // Check if already exists
+            const allGenerals = getAllGenerals();
+            if (allGenerals.includes(generalName)) {
+                showToast('この武将は既に登録されています', 'error');
+                return;
+            }
+
+            // Save to localStorage
+            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
+            customGenerals.push(generalName);
+            localStorage.setItem('customGenerals', JSON.stringify(customGenerals));
+
+            // Reinitialize the grid to include new general
+            initGeneralGrid();
+
+            // Clear inputs
+            nameInput.value = '';
+            levelInput.value = '10';
+
+            updateCustomGeneralsDisplay();
+            showToast(`${generalName}を追加しました`, 'success');
+            updateProgress();
+        }
+
+        // Remove custom general (admin function)
+        function removeCustomGeneral(generalName) {
+            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
+            const index = customGenerals.indexOf(generalName);
+            if (index > -1) {
+                customGenerals.splice(index, 1);
+                localStorage.setItem('customGenerals', JSON.stringify(customGenerals));
+                initGeneralGrid();
+                updateCustomGeneralsDisplay();
+                showToast(`${generalName}を削除しました`, 'success');
+                updateProgress();
+            }
+        }
+
+        // Display custom generals list
+        function updateCustomGeneralsDisplay() {
+            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
+            const listContainer = document.getElementById('customGeneralsList');
+            const display = document.getElementById('customGeneralsDisplay');
+            
+            if (customGenerals.length === 0) {
+                listContainer.style.display = 'none';
+                return;
+            }
+
+            listContainer.style.display = 'block';
+            display.innerHTML = customGenerals.map(name => `
+                <span style="background: var(--accent-gold-dim); color: var(--text-primary); padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
+                    ${name}
+                    <span onclick="removeCustomGeneral('${name}')" style="cursor: pointer; opacity: 0.7;">✕</span>
+                </span>
+            `).join('');
+        }
+
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Comparison Functions
+        let selectedUsers = [];
+        const MAX_SELECTED_USERS = 10;
+
+        function refreshUserCheckboxGrid() {
+            const grid = document.getElementById('userCheckboxGrid');
+            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+            const users = Object.keys(allData);
+
+            if (users.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">保存済みユーザーがいません</p>';
+                return;
+            }
+
+            grid.innerHTML = users.map(name => `
+                <div class="user-checkbox-item ${selectedUsers.includes(name) ? 'selected' : ''}" onclick="toggleUserSelection('${name}')">
+                    <input type="checkbox" ${selectedUsers.includes(name) ? 'checked' : ''} onchange="event.stopPropagation()">
+                    <label>${name}</label>
+                </div>
+            `).join('');
+
+            updateSelectedUsersDisplay();
+            updateCompareButton();
+        }
+
+        function toggleUserSelection(userName) {
+            const index = selectedUsers.indexOf(userName);
+            if (index > -1) {
+                selectedUsers.splice(index, 1);
+            } else {
+                if (selectedUsers.length >= MAX_SELECTED_USERS) {
+                    showToast(`最大${MAX_SELECTED_USERS}人まで選択できます`, 'error');
+                    return;
+                }
+                selectedUsers.push(userName);
+            }
+            refreshUserCheckboxGrid();
+        }
+
+        function removeUserSelection(userName) {
+            const index = selectedUsers.indexOf(userName);
+            if (index > -1) {
+                selectedUsers.splice(index, 1);
+            }
+            refreshUserCheckboxGrid();
+        }
+
+        function updateSelectedUsersDisplay() {
+            const display = document.getElementById('selectedUsersDisplay');
+            if (selectedUsers.length === 0) {
+                display.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">ユーザーを選択してください</span>';
+            } else {
+                display.innerHTML = selectedUsers.map(name => `
+                    <div class="selected-user-badge">
+                        ${name}
+                        <span class="remove" onclick="removeUserSelection('${name}')">✕</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function updateCompareButton() {
+            const btn = document.getElementById('compareBtn');
+            btn.disabled = selectedUsers.length < 2;
+            btn.textContent = selectedUsers.length < 2 
+                ? '2人以上選択してください' 
+                : `${selectedUsers.length}人で比較分析を実行`;
+        }
+
+        function toggleComparisonCategory(categoryId) {
+            const category = document.getElementById(categoryId);
+            const content = category.querySelector('.comparison-category-content');
+            const icon = category.querySelector('.toggle-icon');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        function runComparison() {
+            if (selectedUsers.length < 2) {
+                showToast('2人以上のユーザーを選択してください', 'error');
+                return;
+            }
+
+            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+            const usersData = selectedUsers.map(name => ({ name, data: allData[name] }));
+
+            // Define all equippable items
+            const equippableItems = getEquippableItems();
+
+            // Analyze
+            const equipped = [];  // 編成/装備中の項目 (1件以上)
+            const unused = [];
+            const ownedNotEquipped = [];
+
+            equippableItems.forEach(item => {
+                const equippedBy = [];
+                const ownedBy = [];
+                const ownedButNotEquippedUsers = [];
+
+                usersData.forEach(({ name, data }) => {
+                    const status = getItemStatus(data, item);
+                    if (status.equipped) {
+                        equippedBy.push(name);
+                    }
+                    if (status.owned) {
+                        ownedBy.push(name);
+                        if (!status.equipped) {
+                            ownedButNotEquippedUsers.push(name);
+                        }
+                    }
+                });
+
+                // Check for equipped items (1+ users have item equipped)
+                if (equippedBy.length >= 1) {
+                    equipped.push({
+                        ...item,
+                        users: equippedBy
+                    });
+                }
+
+                // Check for unused items (no one has it equipped)
+                if (equippedBy.length === 0) {
+                    unused.push({
+                        ...item,
+                        ownedBy: ownedBy
+                    });
+                }
+
+                // Check for owned but not equipped
+                if (ownedButNotEquippedUsers.length > 0) {
+                    ownedNotEquipped.push({
+                        ...item,
+                        users: ownedButNotEquippedUsers
+                    });
+                }
+            });
+
+            // Display results
+            displayComparisonResults(equipped, unused, ownedNotEquipped);
+        }
+
+        function getEquippableItems() {
+            const items = [];
+
+            // Weapons
+            ['赤鬼', '隕石', '般若'].forEach((name, i) => {
+                items.push({ id: ['akoni', 'inseki', 'hanya'][i], name, type: '兵器', category: 'weapon' });
+            });
+
+            // SP Generals
+            const spGeneralNames = { nobunaga: 'SP織田信長', hideyoshi: 'SP豊臣秀吉', ieyasu: 'SP徳川家康' };
+            Object.entries(spGeneralNames).forEach(([id, name]) => {
+                items.push({ id, name, type: 'SP武将', category: 'spgeneral' });
+            });
+
+            // Regular Generals - with subcategory info
+            let globalIndex = 0;
+            generalCategories.forEach((cat, catIndex) => {
+                cat.generals.forEach((name, i) => {
+                    items.push({ 
+                        id: `general_${globalIndex}`, 
+                        name, 
+                        type: '武将', 
+                        category: 'general', 
+                        index: globalIndex, 
+                        generalName: name,
+                        subcategory: cat.title,
+                        subcategoryIndex: catIndex
+                    });
+                    globalIndex++;
+                });
+            });
+            // Add custom generals
+            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
+            customGenerals.forEach((name, i) => {
+                items.push({ 
+                    id: `general_${globalIndex}`, 
+                    name, 
+                    type: '武将', 
+                    category: 'general', 
+                    index: globalIndex, 
+                    generalName: name,
+                    subcategory: '追加武将',
+                    subcategoryIndex: generalCategories.length
+                });
+                globalIndex++;
+            });
+
+            // Academy - Gokuden Heiho
+            const gokudenHeiho = [
+                { id: 'momiji', name: '紅葉' },
+                { id: 'banseki', name: '盤石' },
+                { id: 'shishi', name: '獅子の洞入り' },
+                { id: 'tengu', name: '天狗抄' },
+                { id: 'attack', name: '攻撃' },
+                { id: 'defense', name: '防御' },
+                { id: 'combo', name: '連撃' },
+                { id: 'resist', name: '抵抗' },
+                { id: 'shield', name: '楯突' },
+                { id: 'pierce', name: '貫通' },
+                { id: 'evade', name: '回避' },
+                { id: 'accuracy', name: '命中' },
+                { id: 'barrier', name: '障壁' }
+            ];
+            gokudenHeiho.forEach(h => {
+                items.push({ id: h.id, name: h.name, type: '極伝兵法', category: 'academy' });
+            });
+
+            // Masks
+            const maskNames = { genko: '玄狐神使', kirin: '金麒麟', reikyo: '霊棘', kinen: '金猿', hanya: '般若', kiou: '鬼王' };
+            Object.entries(maskNames).forEach(([id, name]) => {
+                items.push({ id, name, type: '核心具足', category: 'mask' });
+            });
+
+            // Flowers
+            flowerFormations.forEach(f => {
+                items.push({ id: f.id, name: f.name, type: '花陣', category: 'flower', effect: f.effect });
+            });
+
+            // Tactics
+            tactics.forEach(t => {
+                items.push({ id: t.id, name: t.name, type: '戦法', category: 'tactic' });
+            });
+
+            // Asura skills - with parent category info
+            const asura30 = ['厄憑', '金剛の鎧', '稲田巡礼'];
+            const asura60 = ['移花接木', '攻守転換', '風助火勢', '俊敏狡猾', '守攻転換'];
+            const asura90 = ['破心断骨', '適時出撃', '麒麟の清め', '隠刃', '血戮'];
+            
+            asura30.forEach((name, i) => {
+                items.push({ id: `asura30_${i+1}`, name, type: '阿修羅30', category: 'asura', subcategory: 'asura30', index: i });
+            });
+            asura60.forEach((name, i) => {
+                items.push({ id: `asura60_${i+1}`, name, type: '阿修羅60', category: 'asura', subcategory: 'asura60', index: i });
+            });
+            asura90.forEach((name, i) => {
+                items.push({ id: `asura90_${i+1}`, name, type: '阿修羅90', category: 'asura', subcategory: 'asura90', index: i });
+            });
+
+            return items;
+        }
+
+        function getItemStatus(data, item) {
+            let equipped = false;
+            let owned = false;
+
+            switch(item.category) {
+                case 'weapon':
+                    const weaponData = data?.weapons?.[item.id];
+                    equipped = weaponData?.status === 'equipped';
+                    owned = weaponData?.status === 'owned' || weaponData?.status === 'equipped';
+                    break;
+
+                case 'spgeneral':
+                    const spData = data?.spGenerals?.[item.id];
+                    // 編成済 = equipped
+                    equipped = spData?.formed || false;
+                    owned = spData?.owned || false;
+                    break;
+
+                case 'general':
+                    const generalData = data?.generals?.[item.generalName];
+                    if (generalData && typeof generalData === 'object') {
+                        // 編成 = equipped
+                        equipped = generalData.formed || false;
+                        owned = generalData.owned || false;
+                    }
+                    break;
+
+                case 'academy':
+                    const heihoData = data?.academy?.heiho?.[item.id];
+                    equipped = heihoData?.equipped || false;
+                    owned = heihoData?.owned || false;
+                    break;
+
+                case 'mask':
+                    const maskData = data?.armor?.masks?.[item.id];
+                    equipped = maskData?.equipped || false;
+                    owned = maskData?.owned || false;
+                    break;
+
+                case 'flower':
+                    const flowerData = data?.flowers?.[item.id];
+                    equipped = flowerData?.equipped || false;
+                    owned = flowerData?.owned || false;
+                    break;
+
+                case 'tactic':
+                    const tacticData = data?.tactics?.[item.id];
+                    equipped = tacticData?.equipped || false;
+                    owned = tacticData?.owned || false;
+                    break;
+
+                case 'asura':
+                    // Handle asura with subcategory
+                    if (item.subcategory === 'asura30') {
+                        equipped = data?.asura?.skills30?.[item.index] || false;
+                    } else if (item.subcategory === 'asura60') {
+                        equipped = data?.asura?.skills60?.[item.index] || false;
+                    } else if (item.subcategory === 'asura90') {
+                        equipped = data?.asura?.skills90?.[item.index] || false;
+                    }
+                    owned = equipped; // Asura skills: if equipped, considered owned
+                    break;
+            }
+
+            return { equipped, owned };
+        }
+
+        function displayComparisonResults(overlaps, unused, ownedNotEquipped) {
+            const resultsDiv = document.getElementById('comparisonResults');
+            resultsDiv.classList.add('show');
+
+            // Category type mapping for styling with sort order
+            const categoryStyles = {
+                'weapon': { class: 'subcat-weapon', label: '① 兵器', icon: '⚔️', order: 1 },
+                'spgeneral': { class: 'subcat-spgeneral', label: '②-1 SP武将', icon: '👑', order: 2 },
+                'general': { class: 'subcat-general', label: '②-2 武将', icon: '🎖️', order: 3, hasSubcategory: true },
+                'academy': { class: 'subcat-academy', label: '③ 極伝兵法', icon: '📚', order: 4 },
+                'asura': { class: 'subcat-asura', label: '④ 阿修羅', icon: '👹', order: 5, hasSubcategory: true },
+                'mask': { class: 'subcat-mask', label: '⑤ 核心具足', icon: '🎭', order: 6 },
+                'flower': { class: 'subcat-flower', label: '⑥ 花陣', icon: '🌸', order: 7 },
+                'horse': { class: 'subcat-horse', label: '⑦ 軍馬', icon: '🐴', order: 8 },
+                'tactic': { class: 'subcat-tactic', label: '⑧ 戦法', icon: '📜', order: 9 }
+            };
+
+            // Asura subcategory labels
+            const asuraSubcatLabels = {
+                'asura30': '阿修羅30',
+                'asura60': '阿修羅60',
+                'asura90': '阿修羅90'
+            };
+
+            // General subcategory labels (from generalCategories)
+            const generalSubcatLabels = {};
+            generalCategories.forEach((cat, i) => {
+                generalSubcatLabels[cat.title] = cat.title;
+            });
+            generalSubcatLabels['追加武将'] = '追加武将';
+
+            // Helper function to group items by category
+            function groupByCategory(items) {
+                const groups = {};
+                items.forEach(item => {
+                    const cat = item.category;
+                    if (!groups[cat]) groups[cat] = [];
+                    groups[cat].push(item);
+                });
+                return groups;
+            }
+
+            // Helper function to group items by subcategory
+            function groupBySubcategory(items) {
+                const groups = {};
+                items.forEach(item => {
+                    const subcat = item.subcategory || 'default';
+                    if (!groups[subcat]) groups[subcat] = [];
+                    groups[subcat].push(item);
+                });
+                return groups;
+            }
+
+            // Sort categories by order
+            function sortCategories(groups) {
+                return Object.entries(groups).sort((a, b) => {
+                    const orderA = categoryStyles[a[0]]?.order || 99;
+                    const orderB = categoryStyles[b[0]]?.order || 99;
+                    return orderA - orderB;
+                });
+            }
+
+            // Render a single item
+            function renderItem(item) {
+                if (item.category === 'horse') {
+                    return `
+                        <div class="comparison-item">
+                            <div>
+                                <span class="item-name">${item.name}</span>
+                                <span class="item-type">${item.type}</span>
+                            </div>
+                            <div class="users-list">
+                                ${item.details.map(d => `<span class="user-tag">${d.user}: 金${d.gold} 銀${d.silver}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                if (item.users) {
+                    return `
+                        <div class="comparison-item">
+                            <div>
+                                <span class="item-name">${item.name}</span>
+                                <span class="item-type">${item.type}</span>
+                            </div>
+                            <div class="users-list">
+                                ${item.users.map(u => `<span class="user-tag">${u}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                if (item.ownedBy !== undefined) {
+                    return `
+                        <div class="comparison-item">
+                            <div>
+                                <span class="item-name">${item.name}</span>
+                                <span class="item-type">${item.type}</span>
+                            </div>
+                            <div class="users-list">
+                                ${item.ownedBy.length > 0 
+                                    ? item.ownedBy.map(u => `<span class="user-tag">${u}(所持)</span>`).join('') 
+                                    : '<span style="color: var(--text-muted); font-size: 0.8rem;">誰も所持していません</span>'}
+                            </div>
+                        </div>
+                    `;
+                }
+                return '';
+            }
+
+            // Render subcategories (3rd level)
+            function renderLevel3(items) {
+                return items.map(renderItem).join('');
+            }
+
+            // Render level 2 (subcategories within a category)
+            function renderLevel2(cat, items, style) {
+                const subcatGroups = groupBySubcategory(items);
+                
+                // For categories with subcategories (general, asura)
+                if (style.hasSubcategory && Object.keys(subcatGroups).length > 0) {
+                    const subcatLabels = cat === 'general' ? generalSubcatLabels : asuraSubcatLabels;
+                    
+                    // Sort subcategories
+                    let sortedSubcats;
+                    if (cat === 'general') {
+                        // Sort by category index
+                        sortedSubcats = Object.entries(subcatGroups).sort((a, b) => {
+                            const indexA = items.find(i => i.subcategory === a[0])?.subcategoryIndex ?? 99;
+                            const indexB = items.find(i => i.subcategory === b[0])?.subcategoryIndex ?? 99;
+                            return indexA - indexB;
+                        });
+                    } else {
+                        // Sort asura by 30, 60, 90
+                        const asuraOrder = { 'asura30': 1, 'asura60': 2, 'asura90': 3 };
+                        sortedSubcats = Object.entries(subcatGroups).sort((a, b) => {
+                            return (asuraOrder[a[0]] || 99) - (asuraOrder[b[0]] || 99);
+                        });
+                    }
+
+                    return sortedSubcats.map(([subcat, subItems]) => {
+                        const subcatId = `subcat2_${cat}_${subcat}_${Math.random().toString(36).substr(2, 9)}`;
+                        const label = subcatLabels[subcat] || subcat;
+                        
+                        return `
+                            <div class="comparison-level-2">
+                                <div class="comparison-subcategory-header" style="padding: 0.5rem 0.8rem; font-size: 0.85rem;" onclick="toggleSubcategory('${subcatId}')">
+                                    <span class="subcat-title">
+                                        <span>●</span>
+                                        ${label}
+                                        <span class="subcat-count">${subItems.length}件</span>
+                                    </span>
+                                    <span class="toggle-icon">▶</span>
+                                </div>
+                                <div class="comparison-subcategory-content comparison-level-3" id="${subcatId}">
+                                    ${renderLevel3(subItems)}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+                // For categories without subcategories
+                return renderLevel3(items);
+            }
+
+            // Helper function to render subcategories (top level)
+            function renderSubcategories(groups) {
+                if (Object.keys(groups).length === 0) {
+                    return '<div class="no-issues"><div class="icon">✓</div>該当なし</div>';
+                }
+
+                const sortedGroups = sortCategories(groups);
+
+                return sortedGroups.map(([cat, items]) => {
+                    const style = categoryStyles[cat] || { class: '', label: cat, icon: '📋', order: 99 };
+                    const subcatId = `subcat_${cat}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    return `
+                        <div class="comparison-subcategory">
+                            <div class="comparison-subcategory-header ${style.class}" onclick="toggleSubcategory('${subcatId}')">
+                                <span class="subcat-title">
+                                    <span>${style.icon}</span>
+                                    ${style.label}
+                                    <span class="subcat-count">${items.length}件</span>
+                                </span>
+                                <span class="toggle-icon">▶</span>
+                            </div>
+                            <div class="comparison-subcategory-content" id="${subcatId}">
+                                ${renderLevel2(cat, items, style)}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Add horse analysis to overlaps
+            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
+            const usersData = selectedUsers.map(name => ({ name, data: allData[name] }));
+            
+            // Calculate horse totals for each user
+            const horseAnalysis = analyzeHorseSkills(usersData);
+            
+            // Add horse overlap info
+            if (horseAnalysis.overlaps.length > 0) {
+                horseAnalysis.overlaps.forEach(item => {
+                    overlaps.push(item);
+                });
+            }
+
+            // Overlaps (編成/装備中の項目)
+            const overlapGroups = groupByCategory(overlaps);
+            document.getElementById('overlapCount').textContent = `${overlaps.length}件`;
+            document.getElementById('overlapContent').innerHTML = renderSubcategories(overlapGroups);
+
+            // Unused
+            const unusedGroups = groupByCategory(unused);
+            document.getElementById('unusedCount').textContent = `${unused.length}件`;
+            document.getElementById('unusedContent').innerHTML = renderSubcategories(unusedGroups);
+
+            // Owned but not equipped
+            const ownedNotEquippedGroups = groupByCategory(ownedNotEquipped);
+            document.getElementById('inconsistentCount').textContent = `${ownedNotEquipped.length}件`;
+            document.getElementById('inconsistentContent').innerHTML = renderSubcategories(ownedNotEquippedGroups);
+
+            showToast('比較分析が完了しました', 'success');
+        }
+
+        // Analyze horse skills
+        function analyzeHorseSkills(usersData) {
+            const overlaps = [];
+            const horseTypes = [
+                { key: 'kago', name: '駒・加護', type: 'ダメージ減' },
+                { key: 'kobu', name: '駒・鼓舞', type: 'ダメージ増' },
+                { key: 'hangeki', name: '駒・反撃', type: 'ダメージ跳ね返し' }
+            ];
+
+            horseTypes.forEach(horseType => {
+                const usersWithSkill = [];
+                
+                usersData.forEach(({ name, data }) => {
+                    const horseData = data?.horse?.[horseType.key];
+                    const gold = parseInt(horseData?.gold) || 0;
+                    const silver = parseInt(horseData?.silver) || 0;
+                    
+                    if (gold > 0 || silver > 0) {
+                        usersWithSkill.push({
+                            user: name,
+                            gold: gold,
+                            silver: silver
+                        });
+                    }
+                });
+
+                // If multiple users have this skill, it's an overlap
+                if (usersWithSkill.length > 1) {
+                    // Calculate totals
+                    const totalGold = usersWithSkill.reduce((sum, u) => sum + u.gold, 0);
+                    const totalSilver = usersWithSkill.reduce((sum, u) => sum + u.silver, 0);
+                    
+                    overlaps.push({
+                        name: `${horseType.name}（金計${totalGold} / 銀計${totalSilver}）`,
+                        type: horseType.type,
+                        category: 'horse',
+                        details: usersWithSkill
+                    });
+                }
+            });
+
+            return { overlaps };
+        }
+
+        // Toggle subcategory
+        function toggleSubcategory(subcatId) {
+            const content = document.getElementById(subcatId);
+            const header = content.previousElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+            
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                icon.textContent = '▶';
+            } else {
+                content.classList.add('show');
+                icon.textContent = '▼';
+            }
+        }
+
+        // Update refreshDataTable to also refresh user checkbox grid
+        const originalRefreshDataTable = refreshDataTable;
+        refreshDataTable = function() {
+            originalRefreshDataTable();
+            refreshUserCheckboxGrid();
+        };
+
+        // ========== Floating Navigation ==========
+        function toggleFloatingMenu() {
+            const menu = document.getElementById('floatingMenu');
+            menu.classList.toggle('show');
+        }
+
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Expand section if collapsed
+                if (section.classList.contains('collapsed')) {
+                    section.classList.remove('collapsed');
+                }
+            }
+            toggleFloatingMenu();
+        }
+
+        // Close floating menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const nav = document.querySelector('.floating-nav');
+            if (nav && !nav.contains(e.target)) {
+                document.getElementById('floatingMenu').classList.remove('show');
+            }
+        });
+
+        // ========== Bulk Select Functions ==========
+        function bulkSelectWeapons(action) {
+            const weapons = ['akoni', 'inseki', 'hanya'];
+            weapons.forEach(w => {
+                const select = document.getElementById(`${w}Status`);
+                if (select) {
+                    select.value = action === 'owned' ? 'owned' : '';
+                }
+            });
+            updateProgress();
+            updateSummary();
+        }
+
+        function bulkSelectGenerals(category, action) {
+            const categoryMap = {
+                'all': null,
+                'want': 0,
+                'gather': 1,
+                'alltype': 2,
+                'horse': 3,
+                'infantry': 4,
+                'bow': 5
+            };
+
+            const allGenerals = getAllGenerals();
+            let startIndex = 0;
+            
+            if (category === 'all') {
+                // All generals
+                for (let i = 0; i < allGenerals.length; i++) {
+                    setGeneralState(i, action === 'owned' ? 1 : 0);
+                }
+            } else {
+                // Specific category
+                const catIndex = categoryMap[category];
+                if (catIndex !== undefined && catIndex < generalCategories.length) {
+                    // Calculate start index
+                    for (let i = 0; i < catIndex; i++) {
+                        startIndex += generalCategories[i].generals.length;
+                    }
+                    const count = generalCategories[catIndex].generals.length;
+                    for (let i = startIndex; i < startIndex + count; i++) {
+                        setGeneralState(i, action === 'owned' ? 1 : 0);
+                    }
+                }
+            }
+            updateProgress();
+            updateSummary();
+            updateFormationCount();
+        }
+
+        function setGeneralState(index, state) {
+            const item = document.getElementById(`generalItem_${index}`);
+            const hiddenInput = document.getElementById(`generalState_${index}`);
+            
+            if (item && hiddenInput) {
+                item.dataset.state = state;
+                hiddenInput.value = state;
+                
+                item.classList.remove('owned', 'formed');
+                if (state === 1) {
+                    item.classList.add('owned');
+                } else if (state === 2) {
+                    item.classList.add('formed');
+                }
+            }
+        }
+
+        function bulkSelectAcademy(action) {
+            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
+            gokudenHeiho.forEach(h => {
+                const owned = document.getElementById(`gokuden${h}_owned`);
+                if (owned) {
+                    owned.checked = action === 'owned';
+                }
+                if (action === 'clear') {
+                    const equipped = document.getElementById(`gokuden${h}_equipped`);
+                    if (equipped) equipped.checked = false;
+                }
+            });
+            updateProgress();
+            updateSummary();
+        }
+
+        function bulkSelectMasks(action) {
+            const masks = ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'];
+            masks.forEach(m => {
+                const owned = document.getElementById(`mask_${m}_owned`);
+                if (owned) {
+                    owned.checked = action === 'owned';
+                }
+                if (action === 'clear') {
+                    const equipped = document.getElementById(`mask_${m}_equipped`);
+                    if (equipped) equipped.checked = false;
+                }
+            });
+            updateProgress();
+            updateSummary();
+        }
+
+        function bulkSelectFlowers(action) {
+            flowerFormations.forEach(f => {
+                const owned = document.getElementById(`flower_${f.id}_owned`);
+                if (owned) {
+                    owned.checked = action === 'owned';
+                }
+                if (action === 'clear') {
+                    const equipped = document.getElementById(`flower_${f.id}_equipped`);
+                    if (equipped) equipped.checked = false;
+                }
+            });
+            updateProgress();
+            updateSummary();
+        }
+
+        function bulkSelectTactics(action) {
+            tactics.forEach(t => {
+                const owned = document.getElementById(`tactic_${t.id}_owned`);
+                if (owned) {
+                    owned.checked = action === 'owned';
+                }
+                if (action === 'clear') {
+                    const equipped = document.getElementById(`tactic_${t.id}_equipped`);
+                    if (equipped) equipped.checked = false;
+                }
+            });
+            updateProgress();
+            updateSummary();
+        }
+
+        // ========== Formation Count ==========
+        function updateFormationCount() {
+            let count = 0;
+            
+            // SP Generals
+            ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
+                if (document.getElementById(`${sp}Formed`)?.checked) count++;
+            });
+            
+            // Regular Generals
+            const allGenerals = getAllGenerals();
+            for (let i = 0; i < allGenerals.length; i++) {
+                const state = document.getElementById(`generalState_${i}`)?.value;
+                if (state === '2') count++;
+            }
+            
+            document.getElementById('totalFormationCount').innerHTML = `${count}<span>人</span>`;
+        }
+
+        // ========== Summary Update ==========
+        function updateSummary() {
+            // Weapon
+            let weaponEquipped = 0, weaponTotal = 0;
+            ['akoni', 'inseki', 'hanya'].forEach(w => {
+                const status = document.getElementById(`${w}Status`)?.value;
+                if (status === 'equipped') { weaponEquipped++; weaponTotal++; }
+                else if (status === 'owned') { weaponTotal++; }
+            });
+            document.getElementById('summary_weapon_equipped').textContent = `${weaponEquipped}/3`;
+            document.getElementById('summary_weapon_total').textContent = `${weaponTotal}/3`;
+
+            // SP General
+            let spEquipped = 0, spTotal = 0;
+            ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
+                const formed = document.getElementById(`${sp}Formed`)?.checked;
+                const owned = document.getElementById(`${sp}Owned`)?.checked;
+                if (formed) { spEquipped++; spTotal++; }
+                else if (owned) { spTotal++; }
+            });
+            document.getElementById('summary_sp_equipped').textContent = `${spEquipped}/3`;
+            document.getElementById('summary_sp_total').textContent = `${spTotal}/3`;
+
+            // General
+            const allGenerals = getAllGenerals();
+            let generalEquipped = 0, generalTotal = 0;
+            for (let i = 0; i < allGenerals.length; i++) {
+                const state = parseInt(document.getElementById(`generalState_${i}`)?.value || '0');
+                if (state === 2) { generalEquipped++; generalTotal++; }
+                else if (state === 1) { generalTotal++; }
+            }
+            document.getElementById('summary_general_equipped').textContent = `${generalEquipped}/${allGenerals.length}`;
+            document.getElementById('summary_general_total').textContent = `${generalTotal}/${allGenerals.length}`;
+
+            // Academy
+            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
+            let academyEquipped = 0, academyTotal = 0;
+            gokudenHeiho.forEach(h => {
+                const equipped = document.getElementById(`gokuden${h}_equipped`)?.checked;
+                const owned = document.getElementById(`gokuden${h}_owned`)?.checked;
+                if (equipped) { academyEquipped++; academyTotal++; }
+                else if (owned) { academyTotal++; }
+            });
+            document.getElementById('summary_academy_equipped').textContent = `${academyEquipped}/13`;
+            document.getElementById('summary_academy_total').textContent = `${academyTotal}/13`;
+
+            // Asura
+            let asuraEquipped = 0;
+            ['asura30_1', 'asura30_2', 'asura30_3', 'asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5', 'asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'].forEach(id => {
+                if (document.getElementById(id)?.checked) asuraEquipped++;
+            });
+            document.getElementById('summary_asura_equipped').textContent = `${asuraEquipped}/13`;
+
+            // Mask
+            let maskEquipped = 0, maskTotal = 0;
+            ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'].forEach(m => {
+                const equipped = document.getElementById(`mask_${m}_equipped`)?.checked;
+                const owned = document.getElementById(`mask_${m}_owned`)?.checked;
+                if (equipped) { maskEquipped++; maskTotal++; }
+                else if (owned) { maskTotal++; }
+            });
+            document.getElementById('summary_mask_equipped').textContent = `${maskEquipped}/6`;
+            document.getElementById('summary_mask_total').textContent = `${maskTotal}/6`;
+
+            // Flower
+            let flowerEquipped = 0, flowerTotal = 0;
+            flowerFormations.forEach(f => {
+                const equipped = document.getElementById(`flower_${f.id}_equipped`)?.checked;
+                const owned = document.getElementById(`flower_${f.id}_owned`)?.checked;
+                if (equipped) { flowerEquipped++; flowerTotal++; }
+                else if (owned) { flowerTotal++; }
+            });
+            document.getElementById('summary_flower_equipped').textContent = `${flowerEquipped}/32`;
+            document.getElementById('summary_flower_total').textContent = `${flowerTotal}/32`;
+
+            // Tactic
+            let tacticEquipped = 0, tacticTotal = 0;
+            tactics.forEach(t => {
+                const equipped = document.getElementById(`tactic_${t.id}_equipped`)?.checked;
+                const owned = document.getElementById(`tactic_${t.id}_owned`)?.checked;
+                if (equipped) { tacticEquipped++; tacticTotal++; }
+                else if (owned) { tacticTotal++; }
+            });
+            document.getElementById('summary_tactic_equipped').textContent = `${tacticEquipped}/6`;
+            document.getElementById('summary_tactic_total').textContent = `${tacticTotal}/6`;
+        }
+
+        // Update progress to also update summary and formation count
+        const originalUpdateProgress = updateProgress;
+        updateProgress = function() {
+            originalUpdateProgress();
+            updateSummary();
+            updateFormationCount();
+        };
+    </script>
+</body>
+</html>
