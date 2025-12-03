@@ -2135,6 +2135,7 @@
         <!-- Submit Section -->
         <div class="submit-section">
             <button class="submit-btn" onclick="submitData()">データを保存</button>
+            <button class="submit-btn" onclick="startNewEntry()" style="background: var(--accent-blue); margin-left: 1rem;">新規入力</button>
         </div>
 
         <!-- Summary Section -->
@@ -3005,6 +3006,114 @@
         // Clear draft from localStorage
         function clearLocalDraft() {
             localStorage.removeItem(DRAFT_KEY);
+        }
+
+        // Start new entry - clear draft and reset form
+        function startNewEntry() {
+            if (!confirm('現在の入力内容をクリアして新規入力を開始しますか？')) {
+                return;
+            }
+
+            clearLocalDraft();
+            resetForm();
+            showToast('フォームをクリアしました', 'success');
+        }
+
+        // Reset all form fields
+        function resetForm() {
+            // Basic info
+            document.getElementById('username').value = '';
+            document.getElementById('troopType').value = '';
+
+            // Weapons
+            ['akoni', 'inseki', 'hanya'].forEach(w => {
+                document.getElementById(`${w}Status`).value = '';
+                document.getElementById(`${w}Upgrade`).value = '';
+                document.getElementById(`${w}Reform`).value = '';
+            });
+
+            // SP Generals
+            ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
+                document.getElementById(`${sp}Formed`).checked = false;
+                document.getElementById(`${sp}Owned`).checked = false;
+                document.getElementById(`${sp}Footprint`).value = '';
+                document.getElementById(`${sp}Deputy`).value = '';
+            });
+
+            // Generals - reset all to state 0
+            const allGenerals = getAllGenerals();
+            for (let i = 0; i < allGenerals.length; i++) {
+                const item = document.getElementById(`generalItem_${i}`);
+                if (item) {
+                    item.dataset.state = '0';
+                    item.className = 'general-item';
+                    const badge = item.querySelector('.status-badge');
+                    if (badge) badge.textContent = '';
+                }
+                const levelInput = document.getElementById(`general_${i}`);
+                if (levelInput) levelInput.value = '10';
+                const stateInput = document.getElementById(`generalState_${i}`);
+                if (stateInput) stateInput.value = '0';
+            }
+
+            // Academy
+            document.getElementById('gokudenSword').value = '';
+            document.getElementById('gokudenBody').value = '';
+            document.getElementById('gokudenTech').value = '';
+            document.getElementById('gokudenHeart1').value = '';
+            document.getElementById('gokudenHeart2').value = '';
+            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
+            gokudenHeiho.forEach(h => {
+                const equippedEl = document.getElementById(`gokuden${h}_equipped`);
+                const ownedEl = document.getElementById(`gokuden${h}_owned`);
+                if (equippedEl) equippedEl.checked = false;
+                if (ownedEl) ownedEl.checked = false;
+            });
+
+            // Asura
+            document.getElementById('asura30Level').value = '10';
+            document.getElementById('asura60Level').value = '10';
+            document.getElementById('asura90Level').value = '10';
+            ['asura30_1', 'asura30_2', 'asura30_3'].forEach(id => {
+                document.getElementById(id).checked = false;
+            });
+            ['asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5'].forEach(id => {
+                document.getElementById(id).checked = false;
+            });
+            ['asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'].forEach(id => {
+                document.getElementById(id).checked = false;
+            });
+
+            // Armor
+            document.getElementById('armorTotalLevel').value = '80';
+            ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'].forEach(m => {
+                document.getElementById(`mask_${m}_equipped`).checked = false;
+                document.getElementById(`mask_${m}_owned`).checked = false;
+            });
+
+            // Flowers
+            flowerFormations.forEach(f => {
+                document.getElementById(`flower_${f.id}_equipped`).checked = false;
+                document.getElementById(`flower_${f.id}_owned`).checked = false;
+            });
+
+            // Horse
+            ['kago', 'kobu', 'hangeki'].forEach(h => {
+                document.getElementById(`horse_${h}_gold`).value = '';
+                document.getElementById(`horse_${h}_silver`).value = '';
+            });
+
+            // Tactics
+            tactics.forEach(t => {
+                document.getElementById(`tactic_${t.id}_level`).value = '80';
+                document.getElementById(`tactic_${t.id}_rank`).value = '0';
+                document.getElementById(`tactic_${t.id}_equipped`).checked = false;
+                document.getElementById(`tactic_${t.id}_owned`).checked = false;
+            });
+
+            updateProgress();
+            updateSummary();
+            updateFormationCount();
         }
 
         // Check and restore draft on page load
