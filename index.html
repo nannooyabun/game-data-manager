@@ -2262,6 +2262,7 @@
                     <button class="admin-btn primary" onclick="exportAllData()">📤 全データエクスポート</button>
                     <button class="admin-btn" onclick="document.getElementById('importFile').click()">📥 データインポート</button>
                     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                    <button class="admin-btn" onclick="migrateFromLocalStorage()" style="background: var(--accent-blue);">🔄 LocalStorageから移行</button>
                     <button class="admin-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
                 </div>
 
@@ -2366,6 +2367,42 @@
 
     <div class="toast" id="toast"></div>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDu9WB_iA_2i5qL4uir8g__LmfAFTeuOYI",
+            authDomain: "game-data-manager-6f18b.firebaseapp.com",
+            databaseURL: "https://game-data-manager-6f18b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "game-data-manager-6f18b",
+            storageBucket: "game-data-manager-6f18b.firebasestorage.app",
+            messagingSenderId: "528465841462",
+            appId: "1:528465841462:web:3262de1288dfb1326b3797"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Make Firebase functions globally available
+        window.firebaseDB = {
+            database,
+            ref,
+            set,
+            get,
+            onValue,
+            remove
+        };
+
+        // Signal that Firebase is ready
+        window.firebaseReady = true;
+        document.dispatchEvent(new Event('firebaseReady'));
+    </script>
+
     <script>
         // Configuration
         const ADMIN_PASSWORD = 'admin123'; // パスワードを変更してください
@@ -2447,16 +2484,147 @@
         // Flatten generals for backwards compatibility
         const generals = generalCategories.flatMap(cat => cat.generals);
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        // Cache for data
+        let cachedGameData = {};
+        let cachedCustomGenerals = [];
+
+        // ========== Firebase Database Functions ==========
+        
+        // Get all game data
+        async function getGameData() {
+            if (!window.firebaseReady) {
+                return cachedGameData;
+            }
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const snapshot = await get(ref(database, 'gameData'));
+                cachedGameData = snapshot.exists() ? snapshot.val() : {};
+                return cachedGameData;
+            } catch (error) {
+                console.error('Error getting game data:', error);
+                return cachedGameData;
+            }
+        }
+
+        // Save user data
+        async function saveUserData(username, data) {
+            if (!window.firebaseReady) {
+                showToast('Firebase接続中...', 'error');
+                return false;
+            }
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `gameData/${username}`), data);
+                cachedGameData[username] = data;
+                return true;
+            } catch (error) {
+                console.error('Error saving data:', error);
+                showToast('保存エラー: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Delete user data
+        async function deleteUserData(username) {
+            if (!window.firebaseReady) return false;
+            try {
+                const { database, ref, remove } = window.firebaseDB;
+                await remove(ref(database, `gameData/${username}`));
+                delete cachedGameData[username];
+                return true;
+            } catch (error) {
+                console.error('Error deleting data:', error);
+                return false;
+            }
+        }
+
+        // Get custom generals
+        async function getCustomGenerals() {
+            if (!window.firebaseReady) {
+                return cachedCustomGenerals;
+            }
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const snapshot = await get(ref(database, 'customGenerals'));
+                cachedCustomGenerals = snapshot.exists() ? snapshot.val() : [];
+                return cachedCustomGenerals;
+            } catch (error) {
+                console.error('Error getting custom generals:', error);
+                return cachedCustomGenerals;
+            }
+        }
+
+        // Save custom generals
+        async function saveCustomGenerals(generalsList) {
+            if (!window.firebaseReady) return false;
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, 'customGenerals'), generalsList);
+                cachedCustomGenerals = generalsList;
+                return true;
+            } catch (error) {
+                console.error('Error saving custom generals:', error);
+                return false;
+            }
+        }
+
+        // Set up real-time listeners
+        function setupRealtimeListeners() {
+            if (!window.firebaseReady) return;
+            
+            const { database, ref, onValue } = window.firebaseDB;
+            
+            // Listen for game data changes
+            onValue(ref(database, 'gameData'), (snapshot) => {
+                cachedGameData = snapshot.exists() ? snapshot.val() : {};
+                refreshDataTable();
+                refreshUserCheckboxGrid();
+            });
+
+            // Listen for custom generals changes
+            onValue(ref(database, 'customGenerals'), (snapshot) => {
+                const newGenerals = snapshot.exists() ? snapshot.val() : [];
+                if (JSON.stringify(newGenerals) !== JSON.stringify(cachedCustomGenerals)) {
+                    cachedCustomGenerals = newGenerals;
+                    initGeneralGrid();
+                    updateCustomGeneralsDisplay();
+                }
+            });
+        }
+
+
+        // ========== Initialization ==========
+        
+        async function initializeGameApp() {
             initFlowerGrid();
             initTacticSection();
+            
+            // Load custom generals first
+            cachedCustomGenerals = await getCustomGenerals();
             initGeneralGrid();
             updateCustomGeneralsDisplay();
+            
+            // Load game data
+            cachedGameData = await getGameData();
             loadSavedData();
+            
             updateProgress();
             updateSummary();
             updateFormationCount();
+            
+            // Setup real-time sync
+            setupRealtimeListeners();
+            
+            showToast('データを同期しました', 'success');
+        }
+
+        // Wait for Firebase and DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.firebaseReady) {
+                initializeGameApp();
+            } else {
+                document.addEventListener('firebaseReady', initializeGameApp);
+            }
         });
 
         // Initialize flower grid
@@ -2476,7 +2644,6 @@
             `).join('');
         }
 
-        // Initialize tactic section
         function initTacticSection() {
             const content = document.getElementById('tacticContent');
             const bulkSelectHtml = `
@@ -2517,8 +2684,7 @@
         // Initialize general grid with categories
         function initGeneralGrid() {
             const grid = document.getElementById('generalGrid');
-            const allGenerals = getAllGenerals();
-            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
+            const customGenerals = cachedCustomGenerals || [];
             
             let globalIndex = 0;
             let html = '';
@@ -2572,8 +2738,7 @@
 
         // Get all generals including custom ones
         function getAllGenerals() {
-            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
-            return [...generals, ...customGenerals];
+            return [...generals, ...(cachedCustomGenerals || [])];
         }
 
         // Get total general count for indexing
@@ -2610,235 +2775,39 @@
             toggleGeneralState(index);
         }
 
-        // Toggle section
+        // Toggle section collapse
         function toggleSection(sectionId) {
             const section = document.getElementById(sectionId);
             section.classList.toggle('collapsed');
         }
 
-        // Toggle admin password
-        function toggleAdminPassword() {
-            const pwd = document.getElementById('adminPassword');
-            const content = document.getElementById('adminContent');
-            if (!content.classList.contains('show')) {
-                pwd.classList.toggle('show');
-            }
-        }
 
-        // Verify password
-        function verifyPassword() {
-            const pwd = document.getElementById('adminPwd').value;
-            if (pwd === ADMIN_PASSWORD) {
-                document.getElementById('adminPassword').classList.remove('show');
-                document.getElementById('adminContent').classList.add('show');
-                refreshDataTable();
-                showToast('管理者モードにログインしました', 'success');
-            } else {
-                showToast('パスワードが正しくありません', 'error');
-            }
-        }
+        // ========== Data Collection ==========
 
-        // Update progress
-        function updateProgress() {
-            const sections = {
-                basic: checkBasicComplete(),
-                weapon: checkWeaponComplete(),
-                spGeneral: checkSPGeneralComplete(),
-                general: checkGeneralComplete(),
-                academy: checkAcademyComplete(),
-                asura: checkAsuraComplete(),
-                armor: checkArmorComplete(),
-                flower: checkFlowerComplete(),
-                horse: checkHorseComplete(),
-                tactic: checkTacticComplete()
-            };
-
-            for (const [key, value] of Object.entries(sections)) {
-                const item = document.querySelector(`.progress-item[data-section="${key}"]`);
-                const badge = document.getElementById(`${key}Status`);
-                
-                item.classList.remove('complete', 'partial', 'empty');
-                badge.classList.remove('complete', 'partial');
-                
-                if (value === 'complete') {
-                    item.classList.add('complete');
-                    badge.classList.add('complete');
-                    item.querySelector('.status').textContent = '完了';
-                    badge.textContent = '完了';
-                } else if (value === 'partial') {
-                    item.classList.add('partial');
-                    badge.classList.add('partial');
-                    item.querySelector('.status').textContent = '入力中';
-                    badge.textContent = '入力中';
-                } else {
-                    item.classList.add('empty');
-                    item.querySelector('.status').textContent = '未入力';
-                    badge.textContent = '未入力';
-                }
-            }
-        }
-
-        // Check functions for each section
-        function checkBasicComplete() {
-            const name = document.getElementById('userName').value;
-            const unit = document.getElementById('unitType').value;
-            if (name && unit) return 'complete';
-            if (name || unit) return 'partial';
-            return 'empty';
-        }
-
-        function checkWeaponComplete() {
-            const weapons = ['akoni', 'inseki', 'hanya'];
-            let hasAny = false;
-            let hasAll = true;
-            
-            weapons.forEach(w => {
-                const status = document.getElementById(`${w}Status`).value;
-                if (status) hasAny = true;
-                else hasAll = false;
-            });
-            
-            if (hasAll) return 'complete';
-            if (hasAny) return 'partial';
-            return 'empty';
-        }
-
-        function checkSPGeneralComplete() {
-            const sps = ['nobunaga', 'hideyoshi', 'ieyasu'];
-            let hasAny = false;
-            
-            sps.forEach(sp => {
-                if (document.getElementById(`${sp}Owned`).checked ||
-                    document.getElementById(`${sp}Formed`).checked ||
-                    document.getElementById(`${sp}Footprint`).value ||
-                    document.getElementById(`${sp}Deputy`).value) {
-                    hasAny = true;
-                }
-            });
-            
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        function checkGeneralComplete() {
-            let hasAny = false;
-            const allGenerals = getAllGenerals();
-            for (let i = 0; i < allGenerals.length; i++) {
-                const el = document.getElementById(`general_${i}`);
-                const stateEl = document.getElementById(`generalState_${i}`);
-                if ((el && el.value) || (stateEl && parseInt(stateEl.value) > 0)) hasAny = true;
-            }
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        function checkAcademyComplete() {
-            const fields = ['gokudenSword', 'gokudenBody', 'gokudenTech', 'gokudenHeart1', 'gokudenHeart2'];
-            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
-            
-            let hasAny = false;
-            fields.forEach(f => {
-                if (document.getElementById(f).value) hasAny = true;
-            });
-            gokudenHeiho.forEach(h => {
-                if (document.getElementById(`gokuden${h}_equipped`)?.checked) hasAny = true;
-                if (document.getElementById(`gokuden${h}_owned`)?.checked) hasAny = true;
-            });
-            
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        function checkAsuraComplete() {
-            const checks = ['asura30_1', 'asura30_2', 'asura30_3',
-                           'asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5',
-                           'asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'];
-            
-            let hasAny = false;
-            checks.forEach(c => {
-                if (document.getElementById(c).checked) hasAny = true;
-            });
-            
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        function checkArmorComplete() {
-            const masks = ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'];
-            let hasAny = false;
-            
-            masks.forEach(m => {
-                if (document.getElementById(`mask_${m}_equipped`).checked ||
-                    document.getElementById(`mask_${m}_owned`).checked) {
-                    hasAny = true;
-                }
-            });
-            
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        function checkFlowerComplete() {
-            let hasAny = false;
-            flowerFormations.forEach(f => {
-                if (document.getElementById(`flower_${f.id}_equipped`).checked ||
-                    document.getElementById(`flower_${f.id}_owned`).checked) {
-                    hasAny = true;
-                }
-            });
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        function checkHorseComplete() {
-            const fields = ['horse_kago_gold', 'horse_kago_silver',
-                           'horse_kobu_gold', 'horse_kobu_silver',
-                           'horse_hangeki_gold', 'horse_hangeki_silver'];
-            let hasAny = false;
-            fields.forEach(f => {
-                if (document.getElementById(f).value) hasAny = true;
-            });
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        function checkTacticComplete() {
-            let hasAny = false;
-            tactics.forEach(t => {
-                if (document.getElementById(`tactic_${t.id}_equipped`).checked ||
-                    document.getElementById(`tactic_${t.id}_owned`).checked) {
-                    hasAny = true;
-                }
-            });
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        // Collect all form data
         function collectFormData() {
-            const data = {
-                timestamp: new Date().toISOString(),
-                basic: {
-                    userName: document.getElementById('userName').value,
-                    unitType: document.getElementById('unitType').value
-                },
-                weapons: {},
-                spGenerals: {},
-                generals: {},
-                academy: {},
-                asura: {},
-                armor: {},
-                flowers: {},
-                horse: {},
-                tactics: {}
-            };
+            const data = {};
+            
+            // Basic info
+            data.username = document.getElementById('username').value;
+            data.troopType = document.getElementById('troopType').value;
+            data.timestamp = new Date().toISOString();
 
             // Weapons
+            data.weapons = {};
             ['akoni', 'inseki', 'hanya'].forEach(w => {
                 data.weapons[w] = {
                     status: document.getElementById(`${w}Status`).value,
                     upgrade: document.getElementById(`${w}Upgrade`).value,
-                    mod: document.getElementById(`${w}Mod`).value
+                    reform: document.getElementById(`${w}Reform`).value
                 };
             });
 
             // SP Generals
+            data.spGenerals = {};
             ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
                 data.spGenerals[sp] = {
-                    owned: document.getElementById(`${sp}Owned`).checked,
                     formed: document.getElementById(`${sp}Formed`).checked,
+                    owned: document.getElementById(`${sp}Owned`).checked,
                     footprint: document.getElementById(`${sp}Footprint`).value,
                     deputy: document.getElementById(`${sp}Deputy`).value
                 };
@@ -2846,6 +2815,7 @@
 
             // Generals
             const allGenerals = getAllGenerals();
+            data.generals = {};
             for (let i = 0; i < allGenerals.length; i++) {
                 const levelEl = document.getElementById(`general_${i}`);
                 const stateEl = document.getElementById(`generalState_${i}`);
@@ -2853,8 +2823,8 @@
                     const state = stateEl ? parseInt(stateEl.value) : 0;
                     data.generals[allGenerals[i]] = {
                         level: levelEl.value,
-                        owned: state >= 1,  // state 1 or 2 means owned
-                        formed: state === 2  // state 2 means formed
+                        owned: state >= 1,
+                        formed: state === 2
                     };
                 }
             }
@@ -2881,9 +2851,25 @@
                 level30: document.getElementById('asura30Level').value,
                 level60: document.getElementById('asura60Level').value,
                 level90: document.getElementById('asura90Level').value,
-                skills30: ['asura30_1', 'asura30_2', 'asura30_3'].map(id => document.getElementById(id).checked),
-                skills60: ['asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5'].map(id => document.getElementById(id).checked),
-                skills90: ['asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'].map(id => document.getElementById(id).checked)
+                skills30: [
+                    document.getElementById('asura30_1').checked,
+                    document.getElementById('asura30_2').checked,
+                    document.getElementById('asura30_3').checked
+                ],
+                skills60: [
+                    document.getElementById('asura60_1').checked,
+                    document.getElementById('asura60_2').checked,
+                    document.getElementById('asura60_3').checked,
+                    document.getElementById('asura60_4').checked,
+                    document.getElementById('asura60_5').checked
+                ],
+                skills90: [
+                    document.getElementById('asura90_1').checked,
+                    document.getElementById('asura90_2').checked,
+                    document.getElementById('asura90_3').checked,
+                    document.getElementById('asura90_4').checked,
+                    document.getElementById('asura90_5').checked
+                ]
             };
 
             // Armor
@@ -2899,6 +2885,7 @@
             });
 
             // Flowers
+            data.flowers = {};
             flowerFormations.forEach(f => {
                 data.flowers[f.id] = {
                     equipped: document.getElementById(`flower_${f.id}_equipped`).checked,
@@ -2923,6 +2910,7 @@
             };
 
             // Tactics
+            data.tactics = {};
             tactics.forEach(t => {
                 data.tactics[t.id] = {
                     level: document.getElementById(`tactic_${t.id}_level`).value,
@@ -2935,11 +2923,42 @@
             return data;
         }
 
-        // Load data into form
+        // Submit data to Firebase
+        async function submitData() {
+            const data = collectFormData();
+            
+            if (!data.username) {
+                showToast('ユーザー名を入力してください', 'error');
+                return;
+            }
+
+            const success = await saveUserData(data.username, data);
+            
+            if (success) {
+                showToast(`${data.username}のデータを保存しました`, 'success');
+                refreshDataTable();
+            }
+        }
+
+        // Load saved data for current user
+        function loadSavedData() {
+            const username = document.getElementById('username').value;
+            if (!username) return;
+            
+            const data = cachedGameData[username];
+            if (data) {
+                loadDataToForm(data);
+            }
+        }
+
+
+        // Load data to form
         function loadDataToForm(data) {
-            // Basic
-            document.getElementById('userName').value = data.basic?.userName || '';
-            document.getElementById('unitType').value = data.basic?.unitType || '';
+            if (!data) return;
+
+            // Basic info
+            if (data.username) document.getElementById('username').value = data.username;
+            if (data.troopType) document.getElementById('troopType').value = data.troopType;
 
             // Weapons
             if (data.weapons) {
@@ -2947,7 +2966,7 @@
                     if (data.weapons[w]) {
                         document.getElementById(`${w}Status`).value = data.weapons[w].status || '';
                         document.getElementById(`${w}Upgrade`).value = data.weapons[w].upgrade || '';
-                        document.getElementById(`${w}Mod`).value = data.weapons[w].mod || '';
+                        document.getElementById(`${w}Reform`).value = data.weapons[w].reform || '';
                     }
                 });
             }
@@ -2956,8 +2975,8 @@
             if (data.spGenerals) {
                 ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
                     if (data.spGenerals[sp]) {
-                        document.getElementById(`${sp}Owned`).checked = data.spGenerals[sp].owned || false;
                         document.getElementById(`${sp}Formed`).checked = data.spGenerals[sp].formed || false;
+                        document.getElementById(`${sp}Owned`).checked = data.spGenerals[sp].owned || false;
                         document.getElementById(`${sp}Footprint`).value = data.spGenerals[sp].footprint || '';
                         document.getElementById(`${sp}Deputy`).value = data.spGenerals[sp].deputy || '';
                     }
@@ -2974,11 +2993,9 @@
                     const generalData = data.generals[allGenerals[i]];
                     
                     if (levelEl && generalData) {
-                        // Handle both old format (just level) and new format (object)
                         if (typeof generalData === 'object') {
                             levelEl.value = generalData.level || 10;
                             if (stateEl && itemEl) {
-                                // Determine state from owned/formed
                                 let state = 0;
                                 if (generalData.formed) {
                                     state = 2;
@@ -3010,7 +3027,6 @@
                 document.getElementById('gokudenHeart1').value = data.academy.heart1 || '';
                 document.getElementById('gokudenHeart2').value = data.academy.heart2 || '';
                 
-                // Handle new heiho format
                 if (data.academy.heiho) {
                     const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
                     gokudenHeiho.forEach(h => {
@@ -3020,17 +3036,6 @@
                             const ownedEl = document.getElementById(`gokuden${h}_owned`);
                             if (equippedEl) equippedEl.checked = hData.equipped || false;
                             if (ownedEl) ownedEl.checked = hData.owned || false;
-                        }
-                    });
-                } else {
-                    // Handle old format for backwards compatibility
-                    const oldMapping = { momiji: 'Momiji', banseki: 'Banseki', shishi: 'Shishi', tengu: 'Tengu' };
-                    Object.entries(oldMapping).forEach(([oldKey, newKey]) => {
-                        if (data.academy[oldKey]) {
-                            const equippedEl = document.getElementById(`gokuden${newKey}_equipped`);
-                            const ownedEl = document.getElementById(`gokuden${newKey}_owned`);
-                            if (equippedEl) equippedEl.checked = true;
-                            if (ownedEl) ownedEl.checked = true;
                         }
                     });
                 }
@@ -3105,141 +3110,253 @@
             }
 
             updateProgress();
+            updateSummary();
+            updateFormationCount();
         }
 
-        // Submit data
-        function submitData() {
-            const data = collectFormData();
+        // Clear form
+        function clearForm() {
+            document.getElementById('username').value = '';
+            document.getElementById('troopType').value = '';
             
-            if (!data.basic.userName) {
-                showToast('ユーザー名を入力してください', 'error');
+            // Clear all inputs
+            document.querySelectorAll('input[type="text"], input[type="number"]').forEach(el => {
+                if (el.id.includes('Level') || el.id.includes('level')) {
+                    el.value = el.defaultValue || 10;
+                } else if (el.id === 'armorTotalLevel') {
+                    el.value = 80;
+                } else {
+                    el.value = '';
+                }
+            });
+            
+            document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+                el.checked = false;
+            });
+            
+            document.querySelectorAll('select').forEach(el => {
+                el.selectedIndex = 0;
+            });
+            
+            // Reset general states
+            const allGenerals = getAllGenerals();
+            for (let i = 0; i < allGenerals.length; i++) {
+                const item = document.getElementById(`generalItem_${i}`);
+                const stateEl = document.getElementById(`generalState_${i}`);
+                if (item) {
+                    item.classList.remove('owned', 'formed');
+                    item.dataset.state = '0';
+                }
+                if (stateEl) stateEl.value = '0';
+            }
+            
+            updateProgress();
+            updateSummary();
+            updateFormationCount();
+        }
+
+
+        // ========== Admin Functions ==========
+
+        function toggleAdmin() {
+            const password = document.getElementById('adminPassword').value;
+            const content = document.getElementById('adminContent');
+            
+            if (password === ADMIN_PASSWORD) {
+                content.classList.toggle('show');
+                if (content.classList.contains('show')) {
+                    refreshDataTable();
+                    refreshUserCheckboxGrid();
+                }
+            } else {
+                showToast('パスワードが違います', 'error');
+            }
+        }
+
+        function refreshDataTable() {
+            const tbody = document.getElementById('userDataBody');
+            const allData = cachedGameData;
+            
+            if (!allData || Object.keys(allData).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">保存されたデータがありません</td></tr>';
                 return;
             }
 
-            // Save to localStorage
-            let allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-            allData[data.basic.userName] = data;
-            localStorage.setItem('gameData', JSON.stringify(allData));
-
-            showToast('データを保存しました', 'success');
-            refreshDataTable();
-        }
-
-        // Load saved data for current user
-        function loadSavedData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const userName = urlParams.get('user');
-            
-            if (userName) {
-                const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-                if (allData[userName]) {
-                    loadDataToForm(allData[userName]);
-                }
-            }
-        }
-
-        // Admin functions
-        function refreshDataTable() {
-            const tbody = document.getElementById('dataTableBody');
-            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-            
             tbody.innerHTML = Object.entries(allData).map(([name, data]) => {
-                const unitTypeMap = { horse: '馬', infantry: '歩', bow: '弓' };
-                const date = new Date(data.timestamp).toLocaleString('ja-JP');
-                const completeness = calculateCompleteness(data);
-                
+                const completion = calculateCompletion(data);
+                const date = data.timestamp ? new Date(data.timestamp).toLocaleString('ja-JP') : '-';
                 return `
                     <tr>
                         <td>${name}</td>
-                        <td>${unitTypeMap[data.basic?.unitType] || '-'}</td>
                         <td>${date}</td>
-                        <td>${completeness}%</td>
-                        <td class="actions">
-                            <button onclick="editUser('${name}')">編集</button>
-                            <button onclick="deleteUser('${name}')">削除</button>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${completion}%"></div>
+                            </div>
+                            <span style="font-size: 0.8rem;">${completion}%</span>
+                        </td>
+                        <td>
+                            <button class="action-btn" onclick="editUser('${name}')">編集</button>
+                            <button class="action-btn delete" onclick="confirmDeleteUser('${name}')">削除</button>
                         </td>
                     </tr>
                 `;
             }).join('');
         }
 
-        function calculateCompleteness(data) {
-            let score = 0;
-            let total = 10;
+        function calculateCompletion(data) {
+            let filled = 0;
+            let total = 0;
 
-            if (data.basic?.userName && data.basic?.unitType) score++;
-            if (Object.values(data.weapons || {}).some(w => w.status)) score++;
-            if (Object.values(data.spGenerals || {}).some(sp => sp.owned || sp.formed)) score++;
-            if (Object.values(data.generals || {}).some(g => g)) score++;
-            if (Object.values(data.academy || {}).some(a => a)) score++;
-            if (data.asura?.skills30?.some(s => s) || data.asura?.skills60?.some(s => s) || data.asura?.skills90?.some(s => s)) score++;
-            if (Object.values(data.armor?.masks || {}).some(m => m.equipped || m.owned)) score++;
-            if (Object.values(data.flowers || {}).some(f => f.equipped || f.owned)) score++;
-            if (Object.values(data.horse || {}).some(h => h.gold || h.silver)) score++;
-            if (Object.values(data.tactics || {}).some(t => t.equipped || t.owned)) score++;
+            // Basic fields
+            total += 2;
+            if (data.username) filled++;
+            if (data.troopType) filled++;
 
-            return Math.round((score / total) * 100);
+            // Weapons (3 items)
+            if (data.weapons) {
+                Object.values(data.weapons).forEach(w => {
+                    total += 3;
+                    if (w.status) filled++;
+                    if (w.upgrade) filled++;
+                    if (w.reform) filled++;
+                });
+            }
+
+            return Math.round((filled / Math.max(total, 1)) * 100);
         }
 
-        function editUser(name) {
-            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-            if (allData[name]) {
-                loadDataToForm(allData[name]);
+        function editUser(username) {
+            const data = cachedGameData[username];
+            if (data) {
+                clearForm();
+                loadDataToForm(data);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                showToast(`${name}のデータを読み込みました`, 'success');
+                showToast(`${username}のデータを読み込みました`, 'success');
             }
         }
 
-        function deleteUser(name) {
-            if (confirm(`${name}のデータを削除しますか？`)) {
-                const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-                delete allData[name];
-                localStorage.setItem('gameData', JSON.stringify(allData));
+        function confirmDeleteUser(username) {
+            if (confirm(`${username}のデータを削除しますか？`)) {
+                deleteUser(username);
+            }
+        }
+
+        async function deleteUser(username) {
+            const success = await deleteUserData(username);
+            if (success) {
+                showToast(`${username}のデータを削除しました`, 'success');
                 refreshDataTable();
-                showToast('データを削除しました', 'success');
+                refreshUserCheckboxGrid();
+            } else {
+                showToast('削除に失敗しました', 'error');
             }
         }
 
-        function exportAllData() {
-            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-            const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+        function exportData() {
+            const dataStr = JSON.stringify(cachedGameData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `game_data_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `game-data-backup-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('データをエクスポートしました', 'success');
         }
 
-        function importData(event) {
-            const file = event.target.files[0];
-            if (file) {
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = async (e) => {
                     try {
                         const data = JSON.parse(e.target.result);
-                        localStorage.setItem('gameData', JSON.stringify(data));
-                        refreshDataTable();
+                        // Save each user
+                        for (const [username, userData] of Object.entries(data)) {
+                            await saveUserData(username, userData);
+                        }
                         showToast('データをインポートしました', 'success');
-                    } catch (err) {
+                        refreshDataTable();
+                    } catch (error) {
                         showToast('ファイルの読み込みに失敗しました', 'error');
                     }
                 };
                 reader.readAsText(file);
-            }
+            };
+            input.click();
         }
 
-        function clearAllData() {
-            if (confirm('すべてのデータを削除しますか？この操作は取り消せません。')) {
-                localStorage.removeItem('gameData');
+        async function clearAllData() {
+            if (!confirm('全てのデータを削除しますか？この操作は取り消せません。')) return;
+            if (!confirm('本当に削除しますか？')) return;
+            
+            const { database, ref, remove } = window.firebaseDB;
+            try {
+                await remove(ref(database, 'gameData'));
+                cachedGameData = {};
+                showToast('全データを削除しました', 'success');
                 refreshDataTable();
-                showToast('すべてのデータを削除しました', 'success');
+                refreshUserCheckboxGrid();
+            } catch (error) {
+                showToast('削除に失敗しました', 'error');
             }
         }
 
-        // Add custom general
-        function addCustomGeneral() {
+        // Migrate data from localStorage to Firebase
+        async function migrateFromLocalStorage() {
+            const localData = localStorage.getItem('gameData');
+
+            if (!localData) {
+                showToast('LocalStorageにデータがありません', 'error');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(localData);
+                const userCount = Object.keys(data).length;
+
+                if (userCount === 0) {
+                    showToast('移行するデータがありません', 'error');
+                    return;
+                }
+
+                if (!confirm(`LocalStorageから${userCount}件のユーザーデータをFirebaseに移行しますか？`)) {
+                    return;
+                }
+
+                let successCount = 0;
+                for (const [username, userData] of Object.entries(data)) {
+                    // Ensure username is set in the data
+                    userData.username = username;
+                    const success = await saveUserData(username, userData);
+                    if (success) successCount++;
+                }
+
+                showToast(`${successCount}/${userCount}件のデータを移行しました`, 'success');
+                refreshDataTable();
+                refreshUserCheckboxGrid();
+
+                // Optionally clear localStorage after successful migration
+                if (successCount === userCount && confirm('移行完了。LocalStorageのデータを削除しますか？')) {
+                    localStorage.removeItem('gameData');
+                    showToast('LocalStorageのデータを削除しました', 'success');
+                }
+            } catch (error) {
+                console.error('Migration error:', error);
+                showToast('移行に失敗しました: ' + error.message, 'error');
+            }
+        }
+
+
+        // ========== Custom Generals Management ==========
+
+        async function addCustomGeneral() {
             const container = document.getElementById('customGenerals');
             const inputs = container.querySelectorAll('.custom-general-row');
             const lastRow = inputs[inputs.length - 1];
@@ -3260,30 +3377,29 @@
                 return;
             }
 
-            // Save to localStorage
-            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
-            customGenerals.push(generalName);
-            localStorage.setItem('customGenerals', JSON.stringify(customGenerals));
+            // Save to Firebase
+            const newList = [...cachedCustomGenerals, generalName];
+            const success = await saveCustomGenerals(newList);
+            
+            if (success) {
+                // Reinitialize the grid
+                initGeneralGrid();
+                
+                // Clear inputs
+                nameInput.value = '';
+                levelInput.value = '10';
 
-            // Reinitialize the grid to include new general
-            initGeneralGrid();
-
-            // Clear inputs
-            nameInput.value = '';
-            levelInput.value = '10';
-
-            updateCustomGeneralsDisplay();
-            showToast(`${generalName}を追加しました`, 'success');
-            updateProgress();
+                updateCustomGeneralsDisplay();
+                showToast(`${generalName}を追加しました`, 'success');
+                updateProgress();
+            }
         }
 
-        // Remove custom general (admin function)
-        function removeCustomGeneral(generalName) {
-            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
-            const index = customGenerals.indexOf(generalName);
-            if (index > -1) {
-                customGenerals.splice(index, 1);
-                localStorage.setItem('customGenerals', JSON.stringify(customGenerals));
+        async function removeCustomGeneral(generalName) {
+            const newList = cachedCustomGenerals.filter(g => g !== generalName);
+            const success = await saveCustomGenerals(newList);
+            
+            if (success) {
                 initGeneralGrid();
                 updateCustomGeneralsDisplay();
                 showToast(`${generalName}を削除しました`, 'success');
@@ -3291,117 +3407,180 @@
             }
         }
 
-        // Display custom generals list
         function updateCustomGeneralsDisplay() {
-            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
-            const listContainer = document.getElementById('customGeneralsList');
             const display = document.getElementById('customGeneralsDisplay');
+            const customGenerals = cachedCustomGenerals || [];
             
             if (customGenerals.length === 0) {
-                listContainer.style.display = 'none';
+                display.innerHTML = '<span style="color: var(--text-muted);">追加された武将はありません</span>';
                 return;
             }
 
-            listContainer.style.display = 'block';
-            display.innerHTML = customGenerals.map(name => `
-                <span style="background: var(--accent-gold-dim); color: var(--text-primary); padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
-                    ${name}
-                    <span onclick="removeCustomGeneral('${name}')" style="cursor: pointer; opacity: 0.7;">✕</span>
+            display.innerHTML = customGenerals.map(g => `
+                <span class="custom-general-tag">
+                    ${g}
+                    <button onclick="removeCustomGeneral('${g}')" title="削除">✕</button>
                 </span>
             `).join('');
         }
 
-        // Toast notification
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = `toast show ${type}`;
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+        // ========== Progress Update ==========
+
+        function updateProgress() {
+            updateSectionStatus('basicStatus', checkBasicComplete());
+            updateSectionStatus('weaponStatus', checkWeaponComplete());
+            updateSectionStatus('spGeneralStatus', checkSpGeneralComplete());
+            updateSectionStatus('generalStatus', checkGeneralComplete());
+            updateSectionStatus('academyStatus', checkAcademyComplete());
+            updateSectionStatus('asuraStatus', checkAsuraComplete());
+            updateSectionStatus('armorStatus', checkArmorComplete());
+            updateSectionStatus('flowerStatus', checkFlowerComplete());
+            updateSectionStatus('horseStatus', checkHorseComplete());
+            updateSectionStatus('tacticStatus', checkTacticComplete());
         }
 
-        // Comparison Functions
+        function updateSectionStatus(elementId, status) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            
+            el.className = 'status-badge ' + status;
+            switch(status) {
+                case 'complete': el.textContent = '完了'; break;
+                case 'partial': el.textContent = '入力中'; break;
+                default: el.textContent = '未入力';
+            }
+        }
+
+        function checkBasicComplete() {
+            const username = document.getElementById('username').value;
+            const troopType = document.getElementById('troopType').value;
+            if (username && troopType) return 'complete';
+            if (username || troopType) return 'partial';
+            return 'empty';
+        }
+
+        function checkWeaponComplete() {
+            let hasAny = false;
+            ['akoni', 'inseki', 'hanya'].forEach(w => {
+                if (document.getElementById(`${w}Status`).value) hasAny = true;
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkSpGeneralComplete() {
+            let hasAny = false;
+            ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
+                if (document.getElementById(`${sp}Formed`).checked) hasAny = true;
+                if (document.getElementById(`${sp}Owned`).checked) hasAny = true;
+                if (document.getElementById(`${sp}Footprint`).value) hasAny = true;
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkGeneralComplete() {
+            let hasAny = false;
+            const allGenerals = getAllGenerals();
+            for (let i = 0; i < allGenerals.length; i++) {
+                const el = document.getElementById(`general_${i}`);
+                const stateEl = document.getElementById(`generalState_${i}`);
+                if ((el && el.value) || (stateEl && parseInt(stateEl.value) > 0)) hasAny = true;
+            }
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkAcademyComplete() {
+            const fields = ['gokudenSword', 'gokudenBody', 'gokudenTech', 'gokudenHeart1', 'gokudenHeart2'];
+            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
+            
+            let hasAny = false;
+            fields.forEach(f => {
+                if (document.getElementById(f).value) hasAny = true;
+            });
+            gokudenHeiho.forEach(h => {
+                if (document.getElementById(`gokuden${h}_equipped`)?.checked) hasAny = true;
+                if (document.getElementById(`gokuden${h}_owned`)?.checked) hasAny = true;
+            });
+            
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkAsuraComplete() {
+            let hasAny = false;
+            ['asura30_1', 'asura30_2', 'asura30_3', 'asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5', 'asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'].forEach(id => {
+                if (document.getElementById(id)?.checked) hasAny = true;
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkArmorComplete() {
+            let hasAny = false;
+            ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'].forEach(m => {
+                if (document.getElementById(`mask_${m}_equipped`).checked) hasAny = true;
+                if (document.getElementById(`mask_${m}_owned`).checked) hasAny = true;
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkFlowerComplete() {
+            let hasAny = false;
+            flowerFormations.forEach(f => {
+                if (document.getElementById(`flower_${f.id}_equipped`).checked) hasAny = true;
+                if (document.getElementById(`flower_${f.id}_owned`).checked) hasAny = true;
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkHorseComplete() {
+            let hasAny = false;
+            ['kago', 'kobu', 'hangeki'].forEach(h => {
+                if (document.getElementById(`horse_${h}_gold`).value) hasAny = true;
+                if (document.getElementById(`horse_${h}_silver`).value) hasAny = true;
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+        function checkTacticComplete() {
+            let hasAny = false;
+            tactics.forEach(t => {
+                if (document.getElementById(`tactic_${t.id}_equipped`).checked) hasAny = true;
+                if (document.getElementById(`tactic_${t.id}_owned`).checked) hasAny = true;
+            });
+            return hasAny ? 'partial' : 'empty';
+        }
+
+
+        // ========== User Comparison ==========
+
         let selectedUsers = [];
-        const MAX_SELECTED_USERS = 10;
 
         function refreshUserCheckboxGrid() {
             const grid = document.getElementById('userCheckboxGrid');
-            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-            const users = Object.keys(allData);
-
-            if (users.length === 0) {
-                grid.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">保存済みユーザーがいません</p>';
+            const allData = cachedGameData;
+            
+            if (!allData || Object.keys(allData).length === 0) {
+                grid.innerHTML = '<span style="color: var(--text-muted);">保存されたユーザーがありません</span>';
                 return;
             }
 
-            grid.innerHTML = users.map(name => `
-                <div class="user-checkbox-item ${selectedUsers.includes(name) ? 'selected' : ''}" onclick="toggleUserSelection('${name}')">
-                    <input type="checkbox" ${selectedUsers.includes(name) ? 'checked' : ''} onchange="event.stopPropagation()">
-                    <label>${name}</label>
-                </div>
+            grid.innerHTML = Object.keys(allData).map(name => `
+                <label class="user-checkbox ${selectedUsers.includes(name) ? 'selected' : ''}">
+                    <input type="checkbox" ${selectedUsers.includes(name) ? 'checked' : ''} onchange="toggleUserSelection('${name}', this.checked)">
+                    ${name}
+                </label>
             `).join('');
-
-            updateSelectedUsersDisplay();
-            updateCompareButton();
         }
 
-        function toggleUserSelection(userName) {
-            const index = selectedUsers.indexOf(userName);
-            if (index > -1) {
-                selectedUsers.splice(index, 1);
-            } else {
-                if (selectedUsers.length >= MAX_SELECTED_USERS) {
-                    showToast(`最大${MAX_SELECTED_USERS}人まで選択できます`, 'error');
+        function toggleUserSelection(username, checked) {
+            if (checked && !selectedUsers.includes(username)) {
+                if (selectedUsers.length >= 10) {
+                    showToast('最大10人まで選択できます', 'error');
                     return;
                 }
-                selectedUsers.push(userName);
+                selectedUsers.push(username);
+            } else {
+                selectedUsers = selectedUsers.filter(u => u !== username);
             }
             refreshUserCheckboxGrid();
-        }
-
-        function removeUserSelection(userName) {
-            const index = selectedUsers.indexOf(userName);
-            if (index > -1) {
-                selectedUsers.splice(index, 1);
-            }
-            refreshUserCheckboxGrid();
-        }
-
-        function updateSelectedUsersDisplay() {
-            const display = document.getElementById('selectedUsersDisplay');
-            if (selectedUsers.length === 0) {
-                display.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">ユーザーを選択してください</span>';
-            } else {
-                display.innerHTML = selectedUsers.map(name => `
-                    <div class="selected-user-badge">
-                        ${name}
-                        <span class="remove" onclick="removeUserSelection('${name}')">✕</span>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function updateCompareButton() {
-            const btn = document.getElementById('compareBtn');
-            btn.disabled = selectedUsers.length < 2;
-            btn.textContent = selectedUsers.length < 2 
-                ? '2人以上選択してください' 
-                : `${selectedUsers.length}人で比較分析を実行`;
-        }
-
-        function toggleComparisonCategory(categoryId) {
-            const category = document.getElementById(categoryId);
-            const content = category.querySelector('.comparison-category-content');
-            const icon = category.querySelector('.toggle-icon');
-            
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                icon.style.transform = 'rotate(0deg)';
-            } else {
-                content.style.display = 'none';
-                icon.style.transform = 'rotate(-90deg)';
-            }
         }
 
         function runComparison() {
@@ -3410,14 +3589,10 @@
                 return;
             }
 
-            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-            const usersData = selectedUsers.map(name => ({ name, data: allData[name] }));
-
-            // Define all equippable items
+            const usersData = selectedUsers.map(name => ({ name, data: cachedGameData[name] }));
             const equippableItems = getEquippableItems();
 
-            // Analyze
-            const equipped = [];  // 編成/装備中の項目 (1件以上)
+            const equipped = [];
             const unused = [];
             const ownedNotEquipped = [];
 
@@ -3439,32 +3614,19 @@
                     }
                 });
 
-                // Check for equipped items (1+ users have item equipped)
                 if (equippedBy.length >= 1) {
-                    equipped.push({
-                        ...item,
-                        users: equippedBy
-                    });
+                    equipped.push({ ...item, users: equippedBy });
                 }
 
-                // Check for unused items (no one has it equipped)
                 if (equippedBy.length === 0) {
-                    unused.push({
-                        ...item,
-                        ownedBy: ownedBy
-                    });
+                    unused.push({ ...item, ownedBy: ownedBy });
                 }
 
-                // Check for owned but not equipped
                 if (ownedButNotEquippedUsers.length > 0) {
-                    ownedNotEquipped.push({
-                        ...item,
-                        users: ownedButNotEquippedUsers
-                    });
+                    ownedNotEquipped.push({ ...item, users: ownedButNotEquippedUsers });
                 }
             });
 
-            // Display results
             displayComparisonResults(equipped, unused, ownedNotEquipped);
         }
 
@@ -3482,53 +3644,35 @@
                 items.push({ id, name, type: 'SP武将', category: 'spgeneral' });
             });
 
-            // Regular Generals - with subcategory info
+            // Regular Generals
             let globalIndex = 0;
             generalCategories.forEach((cat, catIndex) => {
                 cat.generals.forEach((name, i) => {
                     items.push({ 
-                        id: `general_${globalIndex}`, 
-                        name, 
-                        type: '武将', 
-                        category: 'general', 
-                        index: globalIndex, 
-                        generalName: name,
-                        subcategory: cat.title,
-                        subcategoryIndex: catIndex
+                        id: `general_${globalIndex}`, name, type: '武将', category: 'general', 
+                        index: globalIndex, generalName: name, subcategory: cat.title, subcategoryIndex: catIndex
                     });
                     globalIndex++;
                 });
             });
-            // Add custom generals
-            const customGenerals = JSON.parse(localStorage.getItem('customGenerals') || '[]');
+            
+            const customGenerals = cachedCustomGenerals || [];
             customGenerals.forEach((name, i) => {
                 items.push({ 
-                    id: `general_${globalIndex}`, 
-                    name, 
-                    type: '武将', 
-                    category: 'general', 
-                    index: globalIndex, 
-                    generalName: name,
-                    subcategory: '追加武将',
-                    subcategoryIndex: generalCategories.length
+                    id: `general_${globalIndex}`, name, type: '武将', category: 'general', 
+                    index: globalIndex, generalName: name, subcategory: '追加武将', subcategoryIndex: generalCategories.length
                 });
                 globalIndex++;
             });
 
-            // Academy - Gokuden Heiho
+            // Academy
             const gokudenHeiho = [
-                { id: 'momiji', name: '紅葉' },
-                { id: 'banseki', name: '盤石' },
-                { id: 'shishi', name: '獅子の洞入り' },
-                { id: 'tengu', name: '天狗抄' },
-                { id: 'attack', name: '攻撃' },
-                { id: 'defense', name: '防御' },
-                { id: 'combo', name: '連撃' },
-                { id: 'resist', name: '抵抗' },
-                { id: 'shield', name: '楯突' },
-                { id: 'pierce', name: '貫通' },
-                { id: 'evade', name: '回避' },
-                { id: 'accuracy', name: '命中' },
+                { id: 'momiji', name: '紅葉' }, { id: 'banseki', name: '盤石' },
+                { id: 'shishi', name: '獅子の洞入り' }, { id: 'tengu', name: '天狗抄' },
+                { id: 'attack', name: '攻撃' }, { id: 'defense', name: '防御' },
+                { id: 'combo', name: '連撃' }, { id: 'resist', name: '抵抗' },
+                { id: 'shield', name: '楯突' }, { id: 'pierce', name: '貫通' },
+                { id: 'evade', name: '回避' }, { id: 'accuracy', name: '命中' },
                 { id: 'barrier', name: '障壁' }
             ];
             gokudenHeiho.forEach(h => {
@@ -3551,7 +3695,7 @@
                 items.push({ id: t.id, name: t.name, type: '戦法', category: 'tactic' });
             });
 
-            // Asura skills - with parent category info
+            // Asura skills
             const asura30 = ['厄憑', '金剛の鎧', '稲田巡礼'];
             const asura60 = ['移花接木', '攻守転換', '風助火勢', '俊敏狡猾', '守攻転換'];
             const asura90 = ['破心断骨', '適時出撃', '麒麟の清め', '隠刃', '血戮'];
@@ -3579,49 +3723,39 @@
                     equipped = weaponData?.status === 'equipped';
                     owned = weaponData?.status === 'owned' || weaponData?.status === 'equipped';
                     break;
-
                 case 'spgeneral':
                     const spData = data?.spGenerals?.[item.id];
-                    // 編成済 = equipped
                     equipped = spData?.formed || false;
                     owned = spData?.owned || false;
                     break;
-
                 case 'general':
                     const generalData = data?.generals?.[item.generalName];
                     if (generalData && typeof generalData === 'object') {
-                        // 編成 = equipped
                         equipped = generalData.formed || false;
                         owned = generalData.owned || false;
                     }
                     break;
-
                 case 'academy':
                     const heihoData = data?.academy?.heiho?.[item.id];
                     equipped = heihoData?.equipped || false;
                     owned = heihoData?.owned || false;
                     break;
-
                 case 'mask':
                     const maskData = data?.armor?.masks?.[item.id];
                     equipped = maskData?.equipped || false;
                     owned = maskData?.owned || false;
                     break;
-
                 case 'flower':
                     const flowerData = data?.flowers?.[item.id];
                     equipped = flowerData?.equipped || false;
                     owned = flowerData?.owned || false;
                     break;
-
                 case 'tactic':
                     const tacticData = data?.tactics?.[item.id];
                     equipped = tacticData?.equipped || false;
                     owned = tacticData?.owned || false;
                     break;
-
                 case 'asura':
-                    // Handle asura with subcategory
                     if (item.subcategory === 'asura30') {
                         equipped = data?.asura?.skills30?.[item.index] || false;
                     } else if (item.subcategory === 'asura60') {
@@ -3629,18 +3763,17 @@
                     } else if (item.subcategory === 'asura90') {
                         equipped = data?.asura?.skills90?.[item.index] || false;
                     }
-                    owned = equipped; // Asura skills: if equipped, considered owned
+                    owned = equipped;
                     break;
             }
-
             return { equipped, owned };
         }
+
 
         function displayComparisonResults(overlaps, unused, ownedNotEquipped) {
             const resultsDiv = document.getElementById('comparisonResults');
             resultsDiv.classList.add('show');
 
-            // Category type mapping for styling with sort order
             const categoryStyles = {
                 'weapon': { class: 'subcat-weapon', label: '① 兵器', icon: '⚔️', order: 1 },
                 'spgeneral': { class: 'subcat-spgeneral', label: '②-1 SP武将', icon: '👑', order: 2 },
@@ -3653,21 +3786,11 @@
                 'tactic': { class: 'subcat-tactic', label: '⑧ 戦法', icon: '📜', order: 9 }
             };
 
-            // Asura subcategory labels
-            const asuraSubcatLabels = {
-                'asura30': '阿修羅30',
-                'asura60': '阿修羅60',
-                'asura90': '阿修羅90'
-            };
-
-            // General subcategory labels (from generalCategories)
+            const asuraSubcatLabels = { 'asura30': '阿修羅30', 'asura60': '阿修羅60', 'asura90': '阿修羅90' };
             const generalSubcatLabels = {};
-            generalCategories.forEach((cat, i) => {
-                generalSubcatLabels[cat.title] = cat.title;
-            });
+            generalCategories.forEach(cat => { generalSubcatLabels[cat.title] = cat.title; });
             generalSubcatLabels['追加武将'] = '追加武将';
 
-            // Helper function to group items by category
             function groupByCategory(items) {
                 const groups = {};
                 items.forEach(item => {
@@ -3678,7 +3801,6 @@
                 return groups;
             }
 
-            // Helper function to group items by subcategory
             function groupBySubcategory(items) {
                 const groups = {};
                 items.forEach(item => {
@@ -3689,7 +3811,6 @@
                 return groups;
             }
 
-            // Sort categories by order
             function sortCategories(groups) {
                 return Object.entries(groups).sort((a, b) => {
                     const orderA = categoryStyles[a[0]]?.order || 99;
@@ -3698,163 +3819,70 @@
                 });
             }
 
-            // Render a single item
             function renderItem(item) {
                 if (item.category === 'horse') {
-                    return `
-                        <div class="comparison-item">
-                            <div>
-                                <span class="item-name">${item.name}</span>
-                                <span class="item-type">${item.type}</span>
-                            </div>
-                            <div class="users-list">
-                                ${item.details.map(d => `<span class="user-tag">${d.user}: 金${d.gold} 銀${d.silver}</span>`).join('')}
-                            </div>
-                        </div>
-                    `;
+                    return `<div class="comparison-item"><div><span class="item-name">${item.name}</span><span class="item-type">${item.type}</span></div><div class="users-list">${item.details.map(d => `<span class="user-tag">${d.user}: 金${d.gold} 銀${d.silver}</span>`).join('')}</div></div>`;
                 }
                 if (item.users) {
-                    return `
-                        <div class="comparison-item">
-                            <div>
-                                <span class="item-name">${item.name}</span>
-                                <span class="item-type">${item.type}</span>
-                            </div>
-                            <div class="users-list">
-                                ${item.users.map(u => `<span class="user-tag">${u}</span>`).join('')}
-                            </div>
-                        </div>
-                    `;
+                    return `<div class="comparison-item"><div><span class="item-name">${item.name}</span><span class="item-type">${item.type}</span></div><div class="users-list">${item.users.map(u => `<span class="user-tag">${u}</span>`).join('')}</div></div>`;
                 }
                 if (item.ownedBy !== undefined) {
-                    return `
-                        <div class="comparison-item">
-                            <div>
-                                <span class="item-name">${item.name}</span>
-                                <span class="item-type">${item.type}</span>
-                            </div>
-                            <div class="users-list">
-                                ${item.ownedBy.length > 0 
-                                    ? item.ownedBy.map(u => `<span class="user-tag">${u}(所持)</span>`).join('') 
-                                    : '<span style="color: var(--text-muted); font-size: 0.8rem;">誰も所持していません</span>'}
-                            </div>
-                        </div>
-                    `;
+                    return `<div class="comparison-item"><div><span class="item-name">${item.name}</span><span class="item-type">${item.type}</span></div><div class="users-list">${item.ownedBy.length > 0 ? item.ownedBy.map(u => `<span class="user-tag">${u}(所持)</span>`).join('') : '<span style="color: var(--text-muted); font-size: 0.8rem;">誰も所持していません</span>'}</div></div>`;
                 }
                 return '';
             }
 
-            // Render subcategories (3rd level)
-            function renderLevel3(items) {
-                return items.map(renderItem).join('');
-            }
+            function renderLevel3(items) { return items.map(renderItem).join(''); }
 
-            // Render level 2 (subcategories within a category)
             function renderLevel2(cat, items, style) {
                 const subcatGroups = groupBySubcategory(items);
-                
-                // For categories with subcategories (general, asura)
                 if (style.hasSubcategory && Object.keys(subcatGroups).length > 0) {
                     const subcatLabels = cat === 'general' ? generalSubcatLabels : asuraSubcatLabels;
-                    
-                    // Sort subcategories
                     let sortedSubcats;
                     if (cat === 'general') {
-                        // Sort by category index
                         sortedSubcats = Object.entries(subcatGroups).sort((a, b) => {
                             const indexA = items.find(i => i.subcategory === a[0])?.subcategoryIndex ?? 99;
                             const indexB = items.find(i => i.subcategory === b[0])?.subcategoryIndex ?? 99;
                             return indexA - indexB;
                         });
                     } else {
-                        // Sort asura by 30, 60, 90
                         const asuraOrder = { 'asura30': 1, 'asura60': 2, 'asura90': 3 };
-                        sortedSubcats = Object.entries(subcatGroups).sort((a, b) => {
-                            return (asuraOrder[a[0]] || 99) - (asuraOrder[b[0]] || 99);
-                        });
+                        sortedSubcats = Object.entries(subcatGroups).sort((a, b) => (asuraOrder[a[0]] || 99) - (asuraOrder[b[0]] || 99));
                     }
-
                     return sortedSubcats.map(([subcat, subItems]) => {
                         const subcatId = `subcat2_${cat}_${subcat}_${Math.random().toString(36).substr(2, 9)}`;
                         const label = subcatLabels[subcat] || subcat;
-                        
-                        return `
-                            <div class="comparison-level-2">
-                                <div class="comparison-subcategory-header" style="padding: 0.5rem 0.8rem; font-size: 0.85rem;" onclick="toggleSubcategory('${subcatId}')">
-                                    <span class="subcat-title">
-                                        <span>●</span>
-                                        ${label}
-                                        <span class="subcat-count">${subItems.length}件</span>
-                                    </span>
-                                    <span class="toggle-icon">▶</span>
-                                </div>
-                                <div class="comparison-subcategory-content comparison-level-3" id="${subcatId}">
-                                    ${renderLevel3(subItems)}
-                                </div>
-                            </div>
-                        `;
+                        return `<div class="comparison-level-2"><div class="comparison-subcategory-header" style="padding: 0.5rem 0.8rem; font-size: 0.85rem;" onclick="toggleSubcategory('${subcatId}')"><span class="subcat-title"><span>●</span>${label}<span class="subcat-count">${subItems.length}件</span></span><span class="toggle-icon">▶</span></div><div class="comparison-subcategory-content comparison-level-3" id="${subcatId}">${renderLevel3(subItems)}</div></div>`;
                     }).join('');
                 }
-                
-                // For categories without subcategories
                 return renderLevel3(items);
             }
 
-            // Helper function to render subcategories (top level)
             function renderSubcategories(groups) {
-                if (Object.keys(groups).length === 0) {
-                    return '<div class="no-issues"><div class="icon">✓</div>該当なし</div>';
-                }
-
+                if (Object.keys(groups).length === 0) return '<div class="no-issues"><div class="icon">✓</div>該当なし</div>';
                 const sortedGroups = sortCategories(groups);
-
                 return sortedGroups.map(([cat, items]) => {
                     const style = categoryStyles[cat] || { class: '', label: cat, icon: '📋', order: 99 };
                     const subcatId = `subcat_${cat}_${Math.random().toString(36).substr(2, 9)}`;
-                    
-                    return `
-                        <div class="comparison-subcategory">
-                            <div class="comparison-subcategory-header ${style.class}" onclick="toggleSubcategory('${subcatId}')">
-                                <span class="subcat-title">
-                                    <span>${style.icon}</span>
-                                    ${style.label}
-                                    <span class="subcat-count">${items.length}件</span>
-                                </span>
-                                <span class="toggle-icon">▶</span>
-                            </div>
-                            <div class="comparison-subcategory-content" id="${subcatId}">
-                                ${renderLevel2(cat, items, style)}
-                            </div>
-                        </div>
-                    `;
+                    return `<div class="comparison-subcategory"><div class="comparison-subcategory-header ${style.class}" onclick="toggleSubcategory('${subcatId}')"><span class="subcat-title"><span>${style.icon}</span>${style.label}<span class="subcat-count">${items.length}件</span></span><span class="toggle-icon">▶</span></div><div class="comparison-subcategory-content" id="${subcatId}">${renderLevel2(cat, items, style)}</div></div>`;
                 }).join('');
             }
 
-            // Add horse analysis to overlaps
-            const allData = JSON.parse(localStorage.getItem('gameData') || '{}');
-            const usersData = selectedUsers.map(name => ({ name, data: allData[name] }));
-            
-            // Calculate horse totals for each user
+            // Horse analysis
+            const usersData = selectedUsers.map(name => ({ name, data: cachedGameData[name] }));
             const horseAnalysis = analyzeHorseSkills(usersData);
-            
-            // Add horse overlap info
             if (horseAnalysis.overlaps.length > 0) {
-                horseAnalysis.overlaps.forEach(item => {
-                    overlaps.push(item);
-                });
+                horseAnalysis.overlaps.forEach(item => overlaps.push(item));
             }
 
-            // Overlaps (編成/装備中の項目)
             const overlapGroups = groupByCategory(overlaps);
             document.getElementById('overlapCount').textContent = `${overlaps.length}件`;
             document.getElementById('overlapContent').innerHTML = renderSubcategories(overlapGroups);
 
-            // Unused
             const unusedGroups = groupByCategory(unused);
             document.getElementById('unusedCount').textContent = `${unused.length}件`;
             document.getElementById('unusedContent').innerHTML = renderSubcategories(unusedGroups);
 
-            // Owned but not equipped
             const ownedNotEquippedGroups = groupByCategory(ownedNotEquipped);
             document.getElementById('inconsistentCount').textContent = `${ownedNotEquipped.length}件`;
             document.getElementById('inconsistentContent').innerHTML = renderSubcategories(ownedNotEquippedGroups);
@@ -3862,7 +3890,6 @@
             showToast('比較分析が完了しました', 'success');
         }
 
-        // Analyze horse skills
         function analyzeHorseSkills(usersData) {
             const overlaps = [];
             const horseTypes = [
@@ -3870,48 +3897,32 @@
                 { key: 'kobu', name: '駒・鼓舞', type: 'ダメージ増' },
                 { key: 'hangeki', name: '駒・反撃', type: 'ダメージ跳ね返し' }
             ];
-
             horseTypes.forEach(horseType => {
                 const usersWithSkill = [];
-                
                 usersData.forEach(({ name, data }) => {
                     const horseData = data?.horse?.[horseType.key];
                     const gold = parseInt(horseData?.gold) || 0;
                     const silver = parseInt(horseData?.silver) || 0;
-                    
                     if (gold > 0 || silver > 0) {
-                        usersWithSkill.push({
-                            user: name,
-                            gold: gold,
-                            silver: silver
-                        });
+                        usersWithSkill.push({ user: name, gold, silver });
                     }
                 });
-
-                // If multiple users have this skill, it's an overlap
                 if (usersWithSkill.length > 1) {
-                    // Calculate totals
                     const totalGold = usersWithSkill.reduce((sum, u) => sum + u.gold, 0);
                     const totalSilver = usersWithSkill.reduce((sum, u) => sum + u.silver, 0);
-                    
                     overlaps.push({
                         name: `${horseType.name}（金計${totalGold} / 銀計${totalSilver}）`,
-                        type: horseType.type,
-                        category: 'horse',
-                        details: usersWithSkill
+                        type: horseType.type, category: 'horse', details: usersWithSkill
                     });
                 }
             });
-
             return { overlaps };
         }
 
-        // Toggle subcategory
         function toggleSubcategory(subcatId) {
             const content = document.getElementById(subcatId);
             const header = content.previousElementSibling;
             const icon = header.querySelector('.toggle-icon');
-            
             if (content.classList.contains('show')) {
                 content.classList.remove('show');
                 icon.textContent = '▶';
@@ -3921,76 +3932,44 @@
             }
         }
 
-        // Update refreshDataTable to also refresh user checkbox grid
-        const originalRefreshDataTable = refreshDataTable;
-        refreshDataTable = function() {
-            originalRefreshDataTable();
-            refreshUserCheckboxGrid();
-        };
-
-        // ========== Floating Navigation ==========
-        function toggleFloatingMenu() {
-            const menu = document.getElementById('floatingMenu');
-            menu.classList.toggle('show');
+        function toggleComparisonCategory(categoryId) {
+            const content = document.querySelector(`#${categoryId} .comparison-category-content`);
+            const header = document.querySelector(`#${categoryId} .comparison-category-header`);
+            const icon = header.querySelector('.toggle-icon');
+            if (content.classList.contains('show')) {
+                content.classList.remove('show');
+                icon.textContent = '▶';
+            } else {
+                content.classList.add('show');
+                icon.textContent = '▼';
+            }
         }
 
-        function scrollToSection(sectionId) {
-            const section = document.getElementById(sectionId);
-            if (section) {
-                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                // Expand section if collapsed
-                if (section.classList.contains('collapsed')) {
-                    section.classList.remove('collapsed');
-                }
-            }
-            toggleFloatingMenu();
-        }
-
-        // Close floating menu when clicking outside
-        document.addEventListener('click', function(e) {
-            const nav = document.querySelector('.floating-nav');
-            if (nav && !nav.contains(e.target)) {
-                document.getElementById('floatingMenu').classList.remove('show');
-            }
-        });
 
         // ========== Bulk Select Functions ==========
+
         function bulkSelectWeapons(action) {
             const weapons = ['akoni', 'inseki', 'hanya'];
             weapons.forEach(w => {
                 const select = document.getElementById(`${w}Status`);
-                if (select) {
-                    select.value = action === 'owned' ? 'owned' : '';
-                }
+                if (select) select.value = action === 'owned' ? 'owned' : '';
             });
             updateProgress();
             updateSummary();
         }
 
         function bulkSelectGenerals(category, action) {
-            const categoryMap = {
-                'all': null,
-                'want': 0,
-                'gather': 1,
-                'alltype': 2,
-                'horse': 3,
-                'infantry': 4,
-                'bow': 5
-            };
-
+            const categoryMap = { 'all': null, 'want': 0, 'gather': 1, 'alltype': 2, 'horse': 3, 'infantry': 4, 'bow': 5 };
             const allGenerals = getAllGenerals();
             let startIndex = 0;
             
             if (category === 'all') {
-                // All generals
                 for (let i = 0; i < allGenerals.length; i++) {
                     setGeneralState(i, action === 'owned' ? 1 : 0);
                 }
             } else {
-                // Specific category
                 const catIndex = categoryMap[category];
                 if (catIndex !== undefined && catIndex < generalCategories.length) {
-                    // Calculate start index
                     for (let i = 0; i < catIndex; i++) {
                         startIndex += generalCategories[i].generals.length;
                     }
@@ -4008,17 +3987,12 @@
         function setGeneralState(index, state) {
             const item = document.getElementById(`generalItem_${index}`);
             const hiddenInput = document.getElementById(`generalState_${index}`);
-            
             if (item && hiddenInput) {
                 item.dataset.state = state;
                 hiddenInput.value = state;
-                
                 item.classList.remove('owned', 'formed');
-                if (state === 1) {
-                    item.classList.add('owned');
-                } else if (state === 2) {
-                    item.classList.add('formed');
-                }
+                if (state === 1) item.classList.add('owned');
+                else if (state === 2) item.classList.add('formed');
             }
         }
 
@@ -4026,9 +4000,7 @@
             const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
             gokudenHeiho.forEach(h => {
                 const owned = document.getElementById(`gokuden${h}_owned`);
-                if (owned) {
-                    owned.checked = action === 'owned';
-                }
+                if (owned) owned.checked = action === 'owned';
                 if (action === 'clear') {
                     const equipped = document.getElementById(`gokuden${h}_equipped`);
                     if (equipped) equipped.checked = false;
@@ -4042,9 +4014,7 @@
             const masks = ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'];
             masks.forEach(m => {
                 const owned = document.getElementById(`mask_${m}_owned`);
-                if (owned) {
-                    owned.checked = action === 'owned';
-                }
+                if (owned) owned.checked = action === 'owned';
                 if (action === 'clear') {
                     const equipped = document.getElementById(`mask_${m}_equipped`);
                     if (equipped) equipped.checked = false;
@@ -4057,9 +4027,7 @@
         function bulkSelectFlowers(action) {
             flowerFormations.forEach(f => {
                 const owned = document.getElementById(`flower_${f.id}_owned`);
-                if (owned) {
-                    owned.checked = action === 'owned';
-                }
+                if (owned) owned.checked = action === 'owned';
                 if (action === 'clear') {
                     const equipped = document.getElementById(`flower_${f.id}_equipped`);
                     if (equipped) equipped.checked = false;
@@ -4072,9 +4040,7 @@
         function bulkSelectTactics(action) {
             tactics.forEach(t => {
                 const owned = document.getElementById(`tactic_${t.id}_owned`);
-                if (owned) {
-                    owned.checked = action === 'owned';
-                }
+                if (owned) owned.checked = action === 'owned';
                 if (action === 'clear') {
                     const equipped = document.getElementById(`tactic_${t.id}_equipped`);
                     if (equipped) equipped.checked = false;
@@ -4084,26 +4050,48 @@
             updateSummary();
         }
 
+        // ========== Floating Navigation ==========
+
+        function toggleFloatingMenu() {
+            const menu = document.getElementById('floatingMenu');
+            menu.classList.toggle('show');
+        }
+
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (section.classList.contains('collapsed')) {
+                    section.classList.remove('collapsed');
+                }
+            }
+            toggleFloatingMenu();
+        }
+
+        document.addEventListener('click', function(e) {
+            const nav = document.querySelector('.floating-nav');
+            if (nav && !nav.contains(e.target)) {
+                document.getElementById('floatingMenu').classList.remove('show');
+            }
+        });
+
         // ========== Formation Count ==========
+
         function updateFormationCount() {
             let count = 0;
-            
-            // SP Generals
             ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
                 if (document.getElementById(`${sp}Formed`)?.checked) count++;
             });
-            
-            // Regular Generals
             const allGenerals = getAllGenerals();
             for (let i = 0; i < allGenerals.length; i++) {
                 const state = document.getElementById(`generalState_${i}`)?.value;
                 if (state === '2') count++;
             }
-            
             document.getElementById('totalFormationCount').innerHTML = `${count}<span>人</span>`;
         }
 
         // ========== Summary Update ==========
+
         function updateSummary() {
             // Weapon
             let weaponEquipped = 0, weaponTotal = 0;
@@ -4190,13 +4178,16 @@
             document.getElementById('summary_tactic_total').textContent = `${tacticTotal}/6`;
         }
 
-        // Update progress to also update summary and formation count
-        const originalUpdateProgress = updateProgress;
-        updateProgress = function() {
-            originalUpdateProgress();
-            updateSummary();
-            updateFormationCount();
-        };
+        // ========== Toast Notification ==========
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
     </script>
 </body>
 </html>
