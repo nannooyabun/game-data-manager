@@ -2415,9 +2415,9 @@
     </script>
 
     <script>
-        // Configuration
-        const MASTER_PASSWORD = 'master2024'; // 主管理者パスワード（パスワード変更用）
-        let ADMIN_PASSWORD = 'admin123'; // 管理者パスワード（Firebaseから読み込み可能）
+        // Configuration - Passwords loaded from Firebase
+        let MASTER_PASSWORD = null; // 主管理者パスワード（Firebaseから読み込み）
+        let ADMIN_PASSWORD = null;  // 管理者パスワード（Firebaseから読み込み）
 
         // Flower formations data
         const flowerFormations = [
@@ -2612,7 +2612,7 @@
             initTacticSection();
 
             // Load admin password from Firebase
-            await loadAdminPassword();
+            await loadPasswords();
 
             // Load custom generals first
             cachedCustomGenerals = await getCustomGenerals();
@@ -3193,6 +3193,11 @@
             const password = document.getElementById('adminPwd').value;
             const content = document.getElementById('adminContent');
 
+            if (!ADMIN_PASSWORD) {
+                showToast('管理者パスワードが未設定です。Firebaseコンソールで設定してください。', 'error');
+                return;
+            }
+
             if (password === ADMIN_PASSWORD) {
                 content.classList.add('show');
                 refreshDataTable();
@@ -3221,6 +3226,12 @@
             const masterPwd = document.getElementById('masterPwd').value;
             const newPwd = document.getElementById('newAdminPwd').value;
             const confirmPwd = document.getElementById('confirmAdminPwd').value;
+
+            // Check if master password is set
+            if (!MASTER_PASSWORD) {
+                showToast('主管理者パスワードが未設定です。Firebaseコンソールで設定してください。', 'error');
+                return;
+            }
 
             // Validate master password
             if (masterPwd !== MASTER_PASSWORD) {
@@ -3252,18 +3263,26 @@
             }
         }
 
-        // Load admin password from Firebase
-        async function loadAdminPassword() {
+        // Load passwords from Firebase
+        async function loadPasswords() {
             if (!window.firebaseReady) return;
 
             try {
                 const { database, ref, get } = window.firebaseDB;
-                const snapshot = await get(ref(database, 'settings/adminPassword'));
-                if (snapshot.exists()) {
-                    ADMIN_PASSWORD = snapshot.val();
+
+                // Load admin password
+                const adminSnapshot = await get(ref(database, 'settings/adminPassword'));
+                if (adminSnapshot.exists()) {
+                    ADMIN_PASSWORD = adminSnapshot.val();
+                }
+
+                // Load master password
+                const masterSnapshot = await get(ref(database, 'settings/masterPassword'));
+                if (masterSnapshot.exists()) {
+                    MASTER_PASSWORD = masterSnapshot.val();
                 }
             } catch (error) {
-                console.error('Failed to load admin password:', error);
+                console.error('Failed to load passwords:', error);
             }
         }
 
