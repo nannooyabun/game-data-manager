@@ -2253,9 +2253,24 @@
                 </h3>
                 <span class="toggle-icon" id="adminToggle">▼</span>
             </div>
-            <div class="admin-password" id="adminPassword">
+            <div class="admin-password" id="adminPassword" style="display: none;">
                 <input type="password" id="adminPwd" placeholder="パスワードを入力">
                 <button onclick="verifyPassword()">ログイン</button>
+                <button onclick="showPasswordChangeDialog()" style="margin-left: 10px; background: var(--accent-blue);">🔑 パスワード変更</button>
+            </div>
+
+            <!-- Password Change Dialog -->
+            <div id="passwordChangeDialog" style="display: none; padding: 1rem; background: var(--bg-input); border-radius: 8px; margin-top: 0.5rem;">
+                <h4 style="color: var(--accent-gold); margin-bottom: 1rem;">管理者パスワード変更</h4>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <input type="password" id="masterPwd" placeholder="主管理者パスワード" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                    <input type="password" id="newAdminPwd" placeholder="新しい管理者パスワード" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                    <input type="password" id="confirmAdminPwd" placeholder="新しいパスワード（確認）" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                        <button onclick="changeAdminPassword()" style="flex: 1; padding: 0.5rem; background: var(--accent-green); border: none; border-radius: 4px; color: white; cursor: pointer;">変更</button>
+                        <button onclick="hidePasswordChangeDialog()" style="flex: 1; padding: 0.5rem; background: var(--text-muted); border: none; border-radius: 4px; color: white; cursor: pointer;">キャンセル</button>
+                    </div>
+                </div>
             </div>
             <div class="admin-content" id="adminContent">
                 <div class="admin-actions">
@@ -2405,7 +2420,8 @@
 
     <script>
         // Configuration
-        const ADMIN_PASSWORD = 'admin123'; // パスワードを変更してください
+        const MASTER_PASSWORD = 'master2024'; // 主管理者パスワード（パスワード変更用）
+        let ADMIN_PASSWORD = 'admin123'; // 管理者パスワード（Firebaseから読み込み可能）
 
         // Flower formations data
         const flowerFormations = [
@@ -2598,12 +2614,15 @@
         async function initializeGameApp() {
             initFlowerGrid();
             initTacticSection();
-            
+
+            // Load admin password from Firebase
+            await loadAdminPassword();
+
             // Load custom generals first
             cachedCustomGenerals = await getCustomGenerals();
             initGeneralGrid();
             updateCustomGeneralsDisplay();
-            
+
             // Load game data
             cachedGameData = await getGameData();
             loadSavedData();
@@ -3158,18 +3177,97 @@
 
         // ========== Admin Functions ==========
 
+        // Toggle password input visibility
         function toggleAdmin() {
-            const password = document.getElementById('adminPassword').value;
+            const passwordSection = document.getElementById('adminPassword');
+            const toggle = document.getElementById('adminToggle');
+            const isHidden = passwordSection.style.display === 'none';
+
+            passwordSection.style.display = isHidden ? 'flex' : 'none';
+            toggle.textContent = isHidden ? '▲' : '▼';
+
+            // Hide password change dialog when closing
+            if (!isHidden) {
+                hidePasswordChangeDialog();
+            }
+        }
+
+        // Verify admin password and show content
+        function verifyPassword() {
+            const password = document.getElementById('adminPwd').value;
             const content = document.getElementById('adminContent');
-            
+
             if (password === ADMIN_PASSWORD) {
-                content.classList.toggle('show');
-                if (content.classList.contains('show')) {
-                    refreshDataTable();
-                    refreshUserCheckboxGrid();
-                }
+                content.classList.add('show');
+                refreshDataTable();
+                refreshUserCheckboxGrid();
+                showToast('ログインしました', 'success');
             } else {
                 showToast('パスワードが違います', 'error');
+            }
+        }
+
+        // Show password change dialog
+        function showPasswordChangeDialog() {
+            document.getElementById('passwordChangeDialog').style.display = 'block';
+        }
+
+        // Hide password change dialog
+        function hidePasswordChangeDialog() {
+            document.getElementById('passwordChangeDialog').style.display = 'none';
+            document.getElementById('masterPwd').value = '';
+            document.getElementById('newAdminPwd').value = '';
+            document.getElementById('confirmAdminPwd').value = '';
+        }
+
+        // Change admin password
+        async function changeAdminPassword() {
+            const masterPwd = document.getElementById('masterPwd').value;
+            const newPwd = document.getElementById('newAdminPwd').value;
+            const confirmPwd = document.getElementById('confirmAdminPwd').value;
+
+            // Validate master password
+            if (masterPwd !== MASTER_PASSWORD) {
+                showToast('主管理者パスワードが違います', 'error');
+                return;
+            }
+
+            // Validate new password
+            if (!newPwd || newPwd.length < 4) {
+                showToast('新しいパスワードは4文字以上で入力してください', 'error');
+                return;
+            }
+
+            if (newPwd !== confirmPwd) {
+                showToast('新しいパスワードが一致しません', 'error');
+                return;
+            }
+
+            // Save to Firebase
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, 'settings/adminPassword'), newPwd);
+                ADMIN_PASSWORD = newPwd;
+                hidePasswordChangeDialog();
+                showToast('パスワードを変更しました', 'success');
+            } catch (error) {
+                console.error('Password change error:', error);
+                showToast('パスワード変更に失敗しました', 'error');
+            }
+        }
+
+        // Load admin password from Firebase
+        async function loadAdminPassword() {
+            if (!window.firebaseReady) return;
+
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const snapshot = await get(ref(database, 'settings/adminPassword'));
+                if (snapshot.exists()) {
+                    ADMIN_PASSWORD = snapshot.val();
+                }
+            } catch (error) {
+                console.error('Failed to load admin password:', error);
             }
         }
 
