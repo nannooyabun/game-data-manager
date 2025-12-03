@@ -2274,10 +2274,6 @@
             </div>
             <div class="admin-content" id="adminContent">
                 <div class="admin-actions">
-                    <button class="admin-btn primary" onclick="exportAllData()">📤 全データエクスポート</button>
-                    <button class="admin-btn" onclick="document.getElementById('importFile').click()">📥 データインポート</button>
-                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-                    <button class="admin-btn" onclick="migrateFromLocalStorage()" style="background: var(--accent-blue);">🔄 LocalStorageから移行</button>
                     <button class="admin-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
                 </div>
 
@@ -3403,51 +3399,6 @@
                 refreshUserCheckboxGrid();
             } catch (error) {
                 showToast('削除に失敗しました', 'error');
-            }
-        }
-
-        // Migrate data from localStorage to Firebase
-        async function migrateFromLocalStorage() {
-            const localData = localStorage.getItem('gameData');
-
-            if (!localData) {
-                showToast('LocalStorageにデータがありません', 'error');
-                return;
-            }
-
-            try {
-                const data = JSON.parse(localData);
-                const userCount = Object.keys(data).length;
-
-                if (userCount === 0) {
-                    showToast('移行するデータがありません', 'error');
-                    return;
-                }
-
-                if (!confirm(`LocalStorageから${userCount}件のユーザーデータをFirebaseに移行しますか？`)) {
-                    return;
-                }
-
-                let successCount = 0;
-                for (const [username, userData] of Object.entries(data)) {
-                    // Ensure username is set in the data
-                    userData.username = username;
-                    const success = await saveUserData(username, userData);
-                    if (success) successCount++;
-                }
-
-                showToast(`${successCount}/${userCount}件のデータを移行しました`, 'success');
-                refreshDataTable();
-                refreshUserCheckboxGrid();
-
-                // Optionally clear localStorage after successful migration
-                if (successCount === userCount && confirm('移行完了。LocalStorageのデータを削除しますか？')) {
-                    localStorage.removeItem('gameData');
-                    showToast('LocalStorageのデータを削除しました', 'success');
-                }
-            } catch (error) {
-                console.error('Migration error:', error);
-                showToast('移行に失敗しました: ' + error.message, 'error');
             }
         }
 
