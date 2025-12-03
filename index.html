@@ -1458,11 +1458,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>ユーザー名 *</label>
-                        <input type="text" id="userName" placeholder="ユーザー名を入力" onchange="updateProgress()">
+                        <input type="text" id="username" placeholder="ユーザー名を入力" onchange="updateProgress()">
                     </div>
                     <div class="form-group">
                         <label>兵種 *</label>
-                        <select id="unitType" onchange="updateProgress()">
+                        <select id="troopType" onchange="updateProgress()">
                             <option value="">選択してください</option>
                             <option value="horse">馬</option>
                             <option value="infantry">歩</option>
@@ -1507,7 +1507,7 @@
                         </div>
                         <div class="form-group">
                             <label>改装レベル</label>
-                            <input type="number" id="akoniMod" min="0" placeholder="0" onchange="updateProgress()">
+                            <input type="number" id="akoniReform" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                     </div>
                 </div>
@@ -1529,7 +1529,7 @@
                         </div>
                         <div class="form-group">
                             <label>改装レベル</label>
-                            <input type="number" id="insekiMod" min="0" placeholder="0" onchange="updateProgress()">
+                            <input type="number" id="insekiReform" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                     </div>
                 </div>
@@ -1551,7 +1551,7 @@
                         </div>
                         <div class="form-group">
                             <label>改装レベル</label>
-                            <input type="number" id="hanyaMod" min="0" placeholder="0" onchange="updateProgress()">
+                            <input type="number" id="hanyaReform" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                     </div>
                 </div>
@@ -2246,7 +2246,7 @@
 
         <!-- Admin Section -->
         <div class="admin-section" id="adminSection">
-            <div class="admin-header" onclick="toggleAdminPassword()">
+            <div class="admin-header" onclick="toggleAdmin()">
                 <h3>
                     <span>🔐</span>
                     管理者エリア
