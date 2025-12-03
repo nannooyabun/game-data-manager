@@ -2135,7 +2135,7 @@
         <!-- Submit Section -->
         <div class="submit-section">
             <button class="submit-btn" onclick="submitData()">データを保存</button>
-            <button class="submit-btn" onclick="startNewEntry()" style="background: var(--accent-blue); margin-left: 1rem;">新規入力</button>
+            <button class="submit-btn" onclick="startNewEntry()" style="background: var(--accent-blue); margin-left: 1rem;">入力欄をクリア</button>
         </div>
 
         <!-- Summary Section -->
@@ -3010,7 +3010,7 @@
 
         // Start new entry - clear draft and reset form
         function startNewEntry() {
-            if (!confirm('現在の入力内容をクリアして新規入力を開始しますか？')) {
+            if (!confirm('現在の入力内容をクリアしますか？')) {
                 return;
             }
 
