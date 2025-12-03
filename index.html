@@ -2622,14 +2622,20 @@
             // Load game data
             cachedGameData = await getGameData();
             loadSavedData();
-            
+
+            // Check for unsaved draft and restore if user confirms
+            checkAndRestoreDraft();
+
             updateProgress();
             updateSummary();
             updateFormationCount();
-            
+
             // Setup real-time sync
             setupRealtimeListeners();
-            
+
+            // Setup auto-save for form inputs
+            setupAutoSave();
+
             showToast('データを同期しました', 'success');
         }
 
@@ -2941,18 +2947,95 @@
         // Submit data to Firebase
         async function submitData() {
             const data = collectFormData();
-            
+
             if (!data.username) {
                 showToast('ユーザー名を入力してください', 'error');
                 return;
             }
 
             const success = await saveUserData(data.username, data);
-            
+
             if (success) {
                 showToast(`${data.username}のデータを保存しました`, 'success');
+                clearLocalDraft(); // Clear auto-saved draft
                 refreshDataTable();
             }
+        }
+
+        // ========== Auto-save to LocalStorage ==========
+
+        const DRAFT_KEY = 'gameDataDraft';
+        let autoSaveTimer = null;
+
+        // Save current form to localStorage
+        function autoSaveToLocal() {
+            try {
+                const data = collectFormData();
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+            } catch (error) {
+                console.error('Auto-save failed:', error);
+            }
+        }
+
+        // Debounced auto-save (saves 2 seconds after last change)
+        function scheduleAutoSave() {
+            if (autoSaveTimer) {
+                clearTimeout(autoSaveTimer);
+            }
+            autoSaveTimer = setTimeout(() => {
+                autoSaveToLocal();
+            }, 2000);
+        }
+
+        // Load draft from localStorage
+        function loadLocalDraft() {
+            try {
+                const draft = localStorage.getItem(DRAFT_KEY);
+                if (draft) {
+                    const data = JSON.parse(draft);
+                    if (data && Object.keys(data).length > 0) {
+                        return data;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load draft:', error);
+            }
+            return null;
+        }
+
+        // Clear draft from localStorage
+        function clearLocalDraft() {
+            localStorage.removeItem(DRAFT_KEY);
+        }
+
+        // Check and restore draft on page load
+        function checkAndRestoreDraft() {
+            const draft = loadLocalDraft();
+            if (draft && draft.username) {
+                if (confirm(`前回の入力データ（${draft.username}）が見つかりました。復元しますか？`)) {
+                    loadDataToForm(draft);
+                    showToast('前回のデータを復元しました', 'success');
+                } else {
+                    clearLocalDraft();
+                }
+            }
+        }
+
+        // Setup auto-save listeners
+        function setupAutoSave() {
+            // Listen for all input changes in the form
+            document.addEventListener('change', (e) => {
+                if (e.target.matches('input, select, textarea')) {
+                    scheduleAutoSave();
+                }
+            });
+
+            // Also listen for text input
+            document.addEventListener('input', (e) => {
+                if (e.target.matches('input[type="text"], input[type="number"], textarea')) {
+                    scheduleAutoSave();
+                }
+            });
         }
 
         // Load saved data for current user
