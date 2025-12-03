@@ -3678,7 +3678,25 @@
             } else {
                 selectedUsers = selectedUsers.filter(u => u !== username);
             }
+            updateCompareButton();
             refreshUserCheckboxGrid();
+        }
+
+        function updateCompareButton() {
+            const btn = document.getElementById('compareBtn');
+            const display = document.getElementById('selectedUsersDisplay');
+
+            if (selectedUsers.length >= 2) {
+                btn.disabled = false;
+                btn.textContent = `比較分析を実行 (${selectedUsers.length}人選択中)`;
+            } else {
+                btn.disabled = true;
+                btn.textContent = '比較分析を実行 (2人以上選択してください)';
+            }
+
+            display.innerHTML = selectedUsers.length > 0
+                ? `<span style="color: var(--accent-gold);">選択中: ${selectedUsers.join(', ')}</span>`
+                : '';
         }
 
         function runComparison() {
