@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武将データ一覧 - チーム編成ビュー</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-input: #22222f;
+            --border-color: #2a2a3a;
+            --border-accent: #4a3a2a;
+            --text-primary: #e8e4dc;
+            --text-secondary: #9a9490;
+            --text-muted: #6a6560;
+            --accent-gold: #c9a227;
+            --accent-gold-dim: #8a7020;
+            --accent-red: #b83c3c;
+            --accent-green: #3cb878;
+            --accent-blue: #3c8cb8;
+            --status-complete: #2a6a4a;
+            --status-partial: #6a5a2a;
+            --status-empty: #4a2a2a;
+            --shadow-glow: 0 0 30px rgba(201, 162, 39, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1510 0%, #0a0a0f 100%);
+            border-bottom: 2px solid var(--accent-gold-dim);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            letter-spacing: 0.1em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-actions a,
+        .header-actions select {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .header-actions a:hover,
+        .header-actions select:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        /* Status area */
+        .status-area {
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .status-area .status-label {
+            color: var(--accent-gold);
+            font-weight: 500;
+        }
+
+        /* Temporary data preview */
+        .data-preview {
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .data-preview h2 {
+            color: var(--accent-gold);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .data-preview pre {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow: auto;
+            max-height: 400px;
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>武将データ一覧 - チーム編成ビュー</h1>
+        <div class="header-actions">
+            <select id="teamFilter">
+                <option value="__all__">全ユーザー</option>
+            </select>
+            <a href="index.html">← 入力画面へ戻る</a>
+        </div>
+    </div>
+
+    <div class="status-area">
+        <span class="status-label">状態:</span>
+        <span id="statusText">Firebase接続中...</span>
+    </div>
+
+    <div id="mainContent">
+        <div class="loading">データを読み込んでいます...</div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getDatabase, ref, get, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDu9WB_iA_2i5qL4uir8g__LmfAFTeuOYI",
+            authDomain: "game-data-manager-6f18b.firebaseapp.com",
+            databaseURL: "https://game-data-manager-6f18b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "game-data-manager-6f18b",
+            storageBucket: "game-data-manager-6f18b.firebasestorage.app",
+            messagingSenderId: "528465841462",
+            appId: "1:528465841462:web:3262de1288dfb1326b3797"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        window.firebaseDB = { database, ref, get, onValue };
+        window.firebaseReady = true;
+        document.dispatchEvent(new Event('firebaseReady'));
+    </script>
+
+    <script>
+        // Shared data definitions (keep in sync with index.html)
+        const flowerFormations = [
+            { id: 'higanbana', name: '彼岸花' }, { id: 'sekichiku', name: '石竹' },
+            { id: 'kikyo', name: '桔梗' }, { id: 'shobu', name: '菖蒲' },
+            { id: 'nozen', name: '凌霄' }, { id: 'oniyuri', name: '鬼百合' },
+            { id: 'matsuyoi', name: '待宵' }, { id: 'koho', name: '香蒲' },
+            { id: 'tsubaki', name: '椿' }, { id: 'hakubai', name: '白梅' },
+            { id: 'bara', name: '薔薇' }, { id: 'hagi', name: '萩' },
+            { id: 'suzuran', name: '鈴蘭' }, { id: 'sekko', name: '雪光' },
+            { id: 'yugao', name: '夕顔' }, { id: 'asagao', name: '朝顔' },
+            { id: 'maizuru', name: '舞鶴' }, { id: 'nemu', name: '合歓' },
+            { id: 'ryuga', name: '龍牙' }, { id: 'tensei', name: '天星' },
+            { id: 'rindo', name: '竜胆' }, { id: 'tona', name: '十菜' },
+            { id: 'akashi', name: '明石' }, { id: 'toyo', name: '桃夭' },
+            { id: 'mandara', name: '曼荼羅' }, { id: 'udonge', name: '優曇華' },
+            { id: 'yaezakura', name: '八重桜' }, { id: 'suisen', name: '水仙' },
+            { id: 'kocho', name: '胡蝶' }, { id: 'kaigyo', name: '海業' },
+            { id: 'shakuyaku', name: '芍薬' }, { id: 'washio', name: '鷲尾' }
+        ];
+
+        const tactics = [
+            { id: 'tsurinobuse', name: '釣り野伏' },
+            { id: 'kagemusha', name: '影武者' },
+            { id: 'kibateppo', name: '騎馬鉄砲' },
+            { id: 'kitsutsuki', name: '啄木鳥' },
+            { id: 'kurumagai', name: '車懸り' },
+            { id: 'sandanuchi', name: '三段打ち' }
+        ];
+
+        const generalCategories = [
+            { title: 'この辺は一人は欲しい武将', generals: ['鈴木重秀', '寿桂尼', 'おつやの方', '鍋島直茂', '加藤清正', '吉川広家', '加藤嘉明', '足利義昭', '真柄直隆', '加藤段蔵', '山内一豊'] },
+            { title: '集結で使う武将', generals: ['北条早雲', '織田信長', '本多忠勝', '北条氏康', '山本勘助', '毛利元就', '島津家久', '堀秀政', '真田幸村', '黒田官兵衛', '徳川家康', '村井貞勝', '上泉信綱', '真田幸隆', '柳生宗厳', '太田道灌'] },
+            { title: '全兵種対応武将', generals: ['井伊直虎', '櫛橋光', '直江兼続', '豊臣秀吉', '尼子経久', '立花宗茂', '緋村剣心', '神谷薫', '宇喜多直家', '井伊直政', '森長可', '果心居士', '藤堂高虎', '秋山信友', '榊原康政', '三浦按針', '上杉景勝'] },
+            { title: '馬用', generals: ['武田信玄', '伊達政宗', '北条氏綱', '山中鹿之介', '甲斐姫', '山県昌景', '義姫', '高坂昌信', '真田信之', '綾御前', '柿崎景家', '佐々成政'] },
+            { title: '歩用', generals: ['宮本武蔵', 'リヴァイ', '淀', '小早川', '細川忠興', '武田信繁', '三好長慶', '千代', '北条綱成', 'ねね', '高橋紹運', '愛姫', '福島正則', '伊達成実'] },
+            { title: '弓用', generals: ['斎藤利三', '赤井直正', '出雲阿国', '伊達植宗', '春日局', '織田信忠', '島津歳久', '天草四郎'] }
+        ];
+
+        // Global state
+        let gameData = {};
+        let teams = {};
+        let customGenerals = [];
+
+        function setStatus(text) {
+            document.getElementById('statusText').textContent = text;
+        }
+
+        async function loadAllData() {
+            if (!window.firebaseReady) {
+                setStatus('Firebase未接続');
+                return;
+            }
+            const { database, ref, get } = window.firebaseDB;
+            try {
+                setStatus('データ取得中...');
+                const [gameSnap, teamSnap, genSnap] = await Promise.all([
+                    get(ref(database, 'gameData')),
+                    get(ref(database, 'teams')),
+                    get(ref(database, 'customGenerals'))
+                ]);
+                gameData = gameSnap.exists() ? gameSnap.val() : {};
+                teams = teamSnap.exists() ? teamSnap.val() : {};
+                customGenerals = genSnap.exists() ? genSnap.val() : [];
+
+                const userCount = Object.keys(gameData).length;
+                const teamCount = Object.keys(teams).length;
+                setStatus(`読み込み完了: ユーザー ${userCount}人 / チーム ${teamCount}件 / カスタム武将 ${customGenerals.length}件`);
+
+                populateTeamFilter();
+                renderPreview();
+            } catch (err) {
+                console.error('Load error:', err);
+                setStatus('読み込みエラー: ' + err.message);
+            }
+        }
+
+        function subscribeRealtime() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+            onValue(ref(database, 'gameData'), (snap) => {
+                gameData = snap.exists() ? snap.val() : {};
+                renderPreview();
+            });
+            onValue(ref(database, 'teams'), (snap) => {
+                teams = snap.exists() ? snap.val() : {};
+                populateTeamFilter();
+                renderPreview();
+            });
+            onValue(ref(database, 'customGenerals'), (snap) => {
+                customGenerals = snap.exists() ? snap.val() : [];
+                renderPreview();
+            });
+        }
+
+        function populateTeamFilter() {
+            const sel = document.getElementById('teamFilter');
+            const current = sel.value || '__all__';
+            sel.innerHTML = '<option value="__all__">全ユーザー</option>';
+            Object.values(teams).forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `${t.name} (${(t.members || []).length}人)`;
+                sel.appendChild(opt);
+            });
+            sel.value = current;
+        }
+
+        function getVisibleUsernames() {
+            const filter = document.getElementById('teamFilter').value;
+            const allUsers = Object.keys(gameData);
+            if (filter === '__all__') return allUsers.sort();
+            const team = teams[filter];
+            if (!team) return [];
+            return (team.members || []).filter(u => gameData[u]).sort();
+        }
+
+        function renderPreview() {
+            const main = document.getElementById('mainContent');
+            const usernames = getVisibleUsernames();
+            if (usernames.length === 0) {
+                main.innerHTML = '<div class="loading">表示対象のユーザーがいません</div>';
+                return;
+            }
+            const allGenerals = [
+                ...generalCategories.flatMap(c => c.generals),
+                ...customGenerals
+            ];
+            const summary = usernames.map(u => {
+                const d = gameData[u] || {};
+                return {
+                    username: u,
+                    troopType: d.troopType || '-',
+                    updated: d.timestamp ? new Date(d.timestamp).toLocaleString('ja-JP') : '-'
+                };
+            });
+            main.innerHTML = `
+                <div class="data-preview">
+                    <h2>Phase 1: データ取得確認</h2>
+                    <p style="margin-bottom: 0.5rem;">対象ユーザー: ${usernames.length}人 / 武将マスタ: ${allGenerals.length}件 (基本${allGenerals.length - customGenerals.length} + カスタム${customGenerals.length})</p>
+                    <pre>${JSON.stringify(summary, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        // Init
+        document.addEventListener('firebaseReady', async () => {
+            await loadAllData();
+            subscribeRealtime();
+        });
+
+        document.getElementById('teamFilter').addEventListener('change', renderPreview);
+
+        // Fallback if firebaseReady already fired
+        if (window.firebaseReady) {
+            loadAllData().then(subscribeRealtime);
+        }
+    </script>
+</body>
+</html>
