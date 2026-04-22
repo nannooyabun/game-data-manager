@@ -98,35 +98,133 @@
             font-weight: 500;
         }
 
-        /* Temporary data preview */
-        .data-preview {
-            padding: 2rem;
-            color: var(--text-secondary);
-        }
-
-        .data-preview h2 {
-            color: var(--accent-gold);
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-        }
-
-        .data-preview pre {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem;
-            overflow: auto;
-            max-height: 400px;
-            font-size: 0.75rem;
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
         .loading {
             text-align: center;
             padding: 3rem;
             color: var(--text-secondary);
+        }
+
+        /* Table wrapper: horizontal scroll */
+        .table-wrapper {
+            overflow: auto;
+            max-height: calc(100vh - 180px);
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Main view table */
+        .view-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .view-table th,
+        .view-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.6rem;
+            text-align: center;
+            background: var(--bg-card);
+        }
+
+        /* Header rows */
+        .view-table thead th {
+            position: sticky;
+            background: var(--bg-secondary);
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .view-table thead tr:nth-child(1) th {
+            top: 0;
+            z-index: 3;
+        }
+
+        .view-table thead tr:nth-child(2) th {
+            top: 36px;
+            z-index: 3;
+        }
+
+        /* Category row cells */
+        .cat-header {
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        /* Category color classes */
+        .cat-weapon  { background: #3a2a20 !important; color: #e8a878; }
+        .cat-sp      { background: #3a2a3a !important; color: #d8a8d8; }
+        .cat-general { background: #2a3a3a !important; color: #88c8c8; }
+        .cat-academy { background: #3a3a20 !important; color: #d8d878; }
+        .cat-asura   { background: #3a2020 !important; color: #e89090; }
+        .cat-armor   { background: #2a2a3a !important; color: #9090e8; }
+        .cat-flower  { background: #2a3a2a !important; color: #90d890; }
+        .cat-horse   { background: #3a3520 !important; color: #d8c078; }
+        .cat-tactic  { background: #20303a !important; color: #78c0e0; }
+
+        /* Sticky left columns */
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: var(--bg-secondary);
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .sticky-col-2 {
+            left: 140px;
+            z-index: 2;
+        }
+
+        /* Top-left corner cells (both sticky) */
+        .view-table thead tr th.sticky-col {
+            z-index: 4;
+            background: var(--bg-secondary);
+        }
+
+        /* Body rows */
+        .view-table tbody tr:hover td {
+            background: #20202d;
+        }
+
+        .view-table tbody tr:hover td.sticky-col {
+            background: #25253a;
+        }
+
+        /* Cell state symbols */
+        .cell-equipped {
+            color: var(--accent-green);
+            font-weight: 700;
+        }
+        .cell-owned {
+            color: var(--accent-gold);
+        }
+        .cell-none {
+            color: var(--text-muted);
+        }
+
+        /* First user column width */
+        .col-username { min-width: 140px; }
+        .col-troop { min-width: 80px; }
+
+        /* Legend */
+        .legend {
+            padding: 0.5rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .legend .cell-equipped,
+        .legend .cell-owned,
+        .legend .cell-none {
+            margin-right: 0.3rem;
         }
     </style>
 </head>
@@ -144,6 +242,12 @@
     <div class="status-area">
         <span class="status-label">状態:</span>
         <span id="statusText">Firebase接続中...</span>
+    </div>
+
+    <div class="legend">
+        <span><span class="cell-equipped">✅</span>装備/編成中</span>
+        <span><span class="cell-owned">⚠️</span>所持のみ</span>
+        <span><span class="cell-none">−</span>未所持</span>
     </div>
 
     <div id="mainContent">
@@ -290,33 +394,104 @@
             return (team.members || []).filter(u => gameData[u]).sort();
         }
 
-        function renderPreview() {
+        // Category definitions for table columns
+        // Each category: { key, title, colorClass, items: [{ id, name }], getCellState(userData, itemId) }
+        const weaponItems = [
+            { id: 'akoni', name: '赤鬼' },
+            { id: 'inseki', name: '隕石' },
+            { id: 'hanya', name: '般若' }
+        ];
+
+        const tableCategories = [
+            {
+                key: 'weapon',
+                title: '① 兵器',
+                colorClass: 'cat-weapon',
+                items: weaponItems,
+                getCellState: (user, itemId) => {
+                    const w = user.weapons && user.weapons[itemId];
+                    if (!w) return 'none';
+                    if (w.status === 'equipped') return 'equipped';
+                    if (w.status === 'owned') return 'owned';
+                    return 'none';
+                }
+            }
+        ];
+
+        function stateSymbol(state) {
+            if (state === 'equipped') return '<span class="cell-equipped">✅</span>';
+            if (state === 'owned') return '<span class="cell-owned">⚠️</span>';
+            return '<span class="cell-none">−</span>';
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function renderTable() {
             const main = document.getElementById('mainContent');
             const usernames = getVisibleUsernames();
             if (usernames.length === 0) {
                 main.innerHTML = '<div class="loading">表示対象のユーザーがいません</div>';
                 return;
             }
-            const allGenerals = [
-                ...generalCategories.flatMap(c => c.generals),
-                ...customGenerals
-            ];
-            const summary = usernames.map(u => {
-                const d = gameData[u] || {};
-                return {
-                    username: u,
-                    troopType: d.troopType || '-',
-                    updated: d.timestamp ? new Date(d.timestamp).toLocaleString('ja-JP') : '-'
-                };
-            });
+
+            // Build category header row
+            const catRowCells = tableCategories.map(cat =>
+                `<th class="cat-header ${cat.colorClass}" colspan="${cat.items.length}">${escapeHtml(cat.title)}</th>`
+            ).join('');
+
+            // Build item header row
+            const itemRowCells = tableCategories.flatMap(cat =>
+                cat.items.map(item =>
+                    `<th class="${cat.colorClass}">${escapeHtml(item.name)}</th>`
+                )
+            ).join('');
+
+            // Build body rows
+            const bodyRows = usernames.map(username => {
+                const user = gameData[username] || {};
+                const troop = user.troopType || '-';
+                const dataCells = tableCategories.flatMap(cat =>
+                    cat.items.map(item => {
+                        const state = cat.getCellState(user, item.id);
+                        return `<td>${stateSymbol(state)}</td>`;
+                    })
+                ).join('');
+                return `
+                    <tr>
+                        <td class="sticky-col col-username">${escapeHtml(username)}</td>
+                        <td class="sticky-col sticky-col-2 col-troop">${escapeHtml(troop)}</td>
+                        ${dataCells}
+                    </tr>
+                `;
+            }).join('');
+
             main.innerHTML = `
-                <div class="data-preview">
-                    <h2>Phase 1: データ取得確認</h2>
-                    <p style="margin-bottom: 0.5rem;">対象ユーザー: ${usernames.length}人 / 武将マスタ: ${allGenerals.length}件 (基本${allGenerals.length - customGenerals.length} + カスタム${customGenerals.length})</p>
-                    <pre>${JSON.stringify(summary, null, 2)}</pre>
+                <div class="table-wrapper">
+                    <table class="view-table">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col col-username" rowspan="2">ユーザー</th>
+                                <th class="sticky-col sticky-col-2 col-troop" rowspan="2">兵種</th>
+                                ${catRowCells}
+                            </tr>
+                            <tr>
+                                ${itemRowCells}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${bodyRows}
+                        </tbody>
+                    </table>
                 </div>
             `;
         }
+
+        // Alias for compatibility with existing subscribers
+        const renderPreview = renderTable;
 
         // Init
         document.addEventListener('firebaseReady', async () => {
