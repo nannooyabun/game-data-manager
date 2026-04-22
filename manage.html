@@ -543,6 +543,148 @@
             opacity: 0.7;
         }
 
+        /* Custom items by category */
+        .custom-item-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .custom-item-form .form-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .custom-item-form select {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        .custom-item-form input {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        .custom-item-form button {
+            padding: 0.6rem 1.2rem;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .new-category-row {
+            display: none;
+        }
+
+        .new-category-row.show {
+            display: flex;
+        }
+
+        .category-group {
+            margin-bottom: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .category-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .category-group-header:hover {
+            background: var(--border-color);
+        }
+
+        .category-group-title {
+            font-weight: 500;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-group-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: var(--bg-primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .category-group-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .category-group-actions button {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem;
+        }
+
+        .category-group-actions button:hover {
+            opacity: 0.7;
+        }
+
+        .category-group-content {
+            padding: 0.8rem 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .category-item-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .category-item-tag button {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 0.9rem;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .category-item-tag button:hover {
+            opacity: 0.7;
+        }
+
         /* Data management */
         .data-management-row {
             display: flex;
@@ -690,6 +832,30 @@
                 </div>
             </div>
 
+            <!-- Custom Items by Category Section -->
+            <div class="section-card" id="customItemSection">
+                <h3>📦 カスタムアイテム管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    任意のカテゴリにアイテムを追加できます。既存カテゴリを選択するか、新しいカテゴリを作成してください。
+                </p>
+                <div class="custom-item-form">
+                    <div class="form-row">
+                        <select id="itemCategorySelect" onchange="onCategorySelectChange()">
+                            <option value="">-- カテゴリを選択 --</option>
+                            <option value="__new__">+ 新規カテゴリを作成</option>
+                        </select>
+                        <input type="text" id="newItemName" placeholder="アイテム名を入力" maxlength="30">
+                        <button onclick="addCustomItem()">追加</button>
+                    </div>
+                    <div class="form-row new-category-row" id="newCategoryRow">
+                        <input type="text" id="newCategoryName" placeholder="新規カテゴリ名を入力" maxlength="20" style="flex: 1;">
+                    </div>
+                </div>
+                <div id="customItemsList">
+                    <span style="color: var(--text-muted);">読み込み中...</span>
+                </div>
+            </div>
+
             <!-- Data Export/Import Section -->
             <div class="section-card">
                 <h3>💾 データエクスポート/インポート</h3>
@@ -736,6 +902,7 @@
         let gameData = {};
         let teams = {};
         let customGenerals = [];
+        let customItems = {};
 
         // Toast notification
         function showToast(message, type = 'success') {
@@ -781,6 +948,8 @@
                 refreshDataTable();
                 renderTeamList();
                 renderCustomGenerals();
+                renderCustomItems();
+                updateCategorySelect();
                 showToast('ログインしました', 'success');
             } else {
                 showToast('パスワードが違います', 'error');
@@ -879,6 +1048,14 @@
                 customGenerals = snap.exists() ? snap.val() : [];
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderCustomGenerals();
+                }
+            });
+
+            onValue(ref(database, 'customItems'), (snap) => {
+                customItems = snap.exists() ? snap.val() : {};
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    renderCustomItems();
+                    updateCategorySelect();
                 }
             });
         }
@@ -1244,6 +1421,169 @@
             }
         }
 
+        // ========== Custom Items by Category ==========
+
+        function onCategorySelectChange() {
+            const select = document.getElementById('itemCategorySelect');
+            const newCategoryRow = document.getElementById('newCategoryRow');
+
+            if (select.value === '__new__') {
+                newCategoryRow.classList.add('show');
+                document.getElementById('newCategoryName').focus();
+            } else {
+                newCategoryRow.classList.remove('show');
+            }
+        }
+
+        function updateCategorySelect() {
+            const select = document.getElementById('itemCategorySelect');
+            const currentValue = select.value;
+
+            const categories = Object.keys(customItems).sort();
+
+            select.innerHTML = `
+                <option value="">-- カテゴリを選択 --</option>
+                <option value="__new__">+ 新規カテゴリを作成</option>
+                ${categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('')}
+            `;
+
+            if (currentValue && categories.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        function renderCustomItems() {
+            const container = document.getElementById('customItemsList');
+
+            const categories = Object.keys(customItems);
+            if (categories.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-muted);">カスタムアイテムはありません</span>';
+                return;
+            }
+
+            container.innerHTML = categories.sort().map(category => {
+                const items = customItems[category] || [];
+                return `
+                    <div class="category-group">
+                        <div class="category-group-header" onclick="toggleCategoryGroup(this)">
+                            <span class="category-group-title">
+                                📁 ${escapeHtml(category)}
+                                <span class="category-group-count">${items.length}件</span>
+                            </span>
+                            <span class="category-group-actions">
+                                <button onclick="event.stopPropagation(); deleteCategory('${escapeHtml(category)}')" title="カテゴリを削除">🗑️ 削除</button>
+                            </span>
+                        </div>
+                        <div class="category-group-content">
+                            ${items.length === 0
+                                ? '<span style="color: var(--text-muted); font-size: 0.85rem;">アイテムがありません</span>'
+                                : items.map(item => `
+                                    <span class="category-item-tag">
+                                        ${escapeHtml(item)}
+                                        <button onclick="removeCustomItem('${escapeHtml(category)}', '${escapeHtml(item)}')" title="削除">✕</button>
+                                    </span>
+                                `).join('')
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleCategoryGroup(header) {
+            const content = header.nextElementSibling;
+            content.style.display = content.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        async function addCustomItem() {
+            const select = document.getElementById('itemCategorySelect');
+            const itemNameInput = document.getElementById('newItemName');
+            const newCategoryInput = document.getElementById('newCategoryName');
+
+            let categoryName = select.value;
+            const itemName = itemNameInput.value.trim();
+
+            if (categoryName === '__new__') {
+                categoryName = newCategoryInput.value.trim();
+                if (!categoryName) {
+                    showToast('カテゴリ名を入力してください', 'error');
+                    return;
+                }
+            }
+
+            if (!categoryName) {
+                showToast('カテゴリを選択してください', 'error');
+                return;
+            }
+
+            if (!itemName) {
+                showToast('アイテム名を入力してください', 'error');
+                return;
+            }
+
+            const currentItems = customItems[categoryName] || [];
+            if (currentItems.includes(itemName)) {
+                showToast('このアイテムは既に登録されています', 'error');
+                return;
+            }
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const newItems = [...currentItems, itemName];
+                await set(ref(database, `customItems/${categoryName}`), newItems);
+
+                itemNameInput.value = '';
+                if (select.value === '__new__') {
+                    newCategoryInput.value = '';
+                    document.getElementById('newCategoryRow').classList.remove('show');
+                    select.value = categoryName;
+                }
+
+                showToast(`${categoryName}に${itemName}を追加しました`, 'success');
+            } catch (error) {
+                console.error('Add item error:', error);
+                showToast('追加に失敗しました', 'error');
+            }
+        }
+
+        async function removeCustomItem(category, item) {
+            if (!confirm(`${item}を削除しますか？`)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const newItems = (customItems[category] || []).filter(i => i !== item);
+
+                if (newItems.length === 0) {
+                    await set(ref(database, `customItems/${category}`), null);
+                } else {
+                    await set(ref(database, `customItems/${category}`), newItems);
+                }
+
+                showToast(`${item}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Remove item error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        async function deleteCategory(category) {
+            const items = customItems[category] || [];
+            const msg = items.length > 0
+                ? `${category}（${items.length}件のアイテムを含む）を削除しますか？`
+                : `${category}を削除しますか？`;
+
+            if (!confirm(msg)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `customItems/${category}`), null);
+                showToast(`${category}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete category error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
         // ========== Data Export/Import ==========
 
         // Export all data to JSON
@@ -1252,6 +1592,7 @@
                 gameData: gameData,
                 teams: teams,
                 customGenerals: customGenerals,
+                customItems: customItems,
                 exportedAt: new Date().toISOString()
             };
 
@@ -1297,6 +1638,11 @@
                         // Import customGenerals
                         if (data.customGenerals) {
                             await set(ref(database, 'customGenerals'), data.customGenerals);
+                        }
+
+                        // Import customItems
+                        if (data.customItems) {
+                            await set(ref(database, 'customItems'), data.customItems);
                         }
 
                         showToast('データをインポートしました', 'success');
