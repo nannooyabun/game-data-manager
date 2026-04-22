@@ -229,6 +229,68 @@
             border-left: 3px solid var(--accent-gold-dim) !important;
         }
 
+        /* Category collapse toggle */
+        .cat-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .cat-header:hover {
+            filter: brightness(1.2);
+        }
+        .cat-toggle {
+            margin-left: 0.3rem;
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+        .collapsed-col {
+            display: none !important;
+        }
+        .cat-collapsed-placeholder {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            padding: 0.5rem 0.3rem !important;
+            font-size: 0.75rem;
+            min-width: 30px;
+            max-width: 30px;
+            cursor: pointer;
+        }
+        .cat-collapsed-placeholder:hover {
+            filter: brightness(1.2);
+        }
+
+        /* Scroll position indicator */
+        .scroll-indicator {
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            background: var(--bg-primary);
+            border-bottom: 2px solid var(--accent-gold-dim);
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            color: var(--accent-gold);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .scroll-indicator-item {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .scroll-indicator-item:hover {
+            opacity: 0.8;
+        }
+        .scroll-indicator-item.active {
+            opacity: 1;
+            font-weight: 600;
+        }
+
         /* Legend */
         .legend {
             padding: 0.5rem 2rem;
@@ -339,6 +401,25 @@
         let gameData = {};
         let teams = {};
         let customGenerals = [];
+        let collapsedCategories = new Set();
+
+        // Toggle category collapse
+        function toggleCategory(catKey) {
+            if (collapsedCategories.has(catKey)) {
+                collapsedCategories.delete(catKey);
+            } else {
+                collapsedCategories.add(catKey);
+            }
+            renderTable();
+        }
+
+        // Scroll to category
+        function scrollToCategory(catKey) {
+            const th = document.querySelector(`[data-cat-key="${catKey}"]`);
+            if (th) {
+                th.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+            }
+        }
 
         function setStatus(text) {
             document.getElementById('statusText').textContent = text;
@@ -623,31 +704,49 @@
             // Get all categories including dynamic generals
             const allCats = getAllCategories();
 
-            // Build category header row (with border on first cell of each category except first)
-            const catRowCells = allCats.map((cat, catIdx) => {
-                const borderClass = catIdx > 0 ? ' cat-border-left' : '';
-                return `<th class="cat-header ${cat.colorClass}${borderClass}" colspan="${cat.items.length}">${escapeHtml(cat.title)}</th>`;
+            // Build scroll indicator
+            const scrollIndicator = allCats.map(cat => {
+                const shortTitle = cat.title.replace(/^②-2\s*/, '').substring(0, 8);
+                return `<span class="scroll-indicator-item ${cat.colorClass}" onclick="scrollToCategory('${cat.key}')" data-cat-indicator="${cat.key}">${escapeHtml(shortTitle)}</span>`;
             }).join('');
 
-            // Build item header row (with border on first item of each category except first)
-            const itemRowCells = allCats.flatMap((cat, catIdx) =>
-                cat.items.map((item, itemIdx) => {
+            // Build category header row
+            const catRowCells = allCats.map((cat, catIdx) => {
+                const borderClass = catIdx > 0 ? ' cat-border-left' : '';
+                const isCollapsed = collapsedCategories.has(cat.key);
+                const toggleIcon = isCollapsed ? '▶' : '▼';
+
+                if (isCollapsed) {
+                    return `<th class="cat-header cat-collapsed-placeholder ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" rowspan="2">${escapeHtml(cat.title.substring(0, 6))}…</th>`;
+                }
+                return `<th class="cat-header ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" colspan="${cat.items.length}">${escapeHtml(cat.title)}<span class="cat-toggle">${toggleIcon}</span></th>`;
+            }).join('');
+
+            // Build item header row (skip collapsed categories)
+            const itemRowCells = allCats.flatMap((cat, catIdx) => {
+                if (collapsedCategories.has(cat.key)) return [];
+                return cat.items.map((item, itemIdx) => {
                     const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
                     return `<th class="${cat.colorClass}${borderClass}">${escapeHtml(item.name)}</th>`;
-                })
-            ).join('');
+                });
+            }).join('');
 
-            // Build body rows (with border on first cell of each category except first)
+            // Build body rows
             const bodyRows = usernames.map(username => {
                 const user = gameData[username] || {};
                 const troop = user.troopType || '-';
-                const dataCells = allCats.flatMap((cat, catIdx) =>
-                    cat.items.map((item, itemIdx) => {
+                const dataCells = allCats.flatMap((cat, catIdx) => {
+                    const isCollapsed = collapsedCategories.has(cat.key);
+                    if (isCollapsed) {
+                        const borderClass = catIdx > 0 ? ' cat-border-left' : '';
+                        return [`<td class="cat-collapsed-placeholder ${cat.colorClass}${borderClass}"></td>`];
+                    }
+                    return cat.items.map((item, itemIdx) => {
                         const state = cat.getCellState(user, item);
                         const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
                         return `<td class="${cat.colorClass}${borderClass}">${stateSymbol(state)}</td>`;
-                    })
-                ).join('');
+                    });
+                }).join('');
                 return `
                     <tr>
                         <td class="sticky-col col-username">${escapeHtml(username)}</td>
@@ -658,7 +757,11 @@
             }).join('');
 
             main.innerHTML = `
-                <div class="table-wrapper">
+                <div class="scroll-indicator">
+                    <span style="color: var(--text-secondary); font-size: 0.7rem;">カテゴリ:</span>
+                    ${scrollIndicator}
+                </div>
+                <div class="table-wrapper" id="tableWrapper">
                     <table class="view-table">
                         <thead>
                             <tr>
@@ -676,6 +779,32 @@
                     </table>
                 </div>
             `;
+
+            // Setup scroll observer for indicator highlighting
+            setupScrollObserver();
+        }
+
+        function setupScrollObserver() {
+            const wrapper = document.getElementById('tableWrapper');
+            if (!wrapper) return;
+
+            wrapper.addEventListener('scroll', () => {
+                const headers = wrapper.querySelectorAll('[data-cat-key]');
+                const wrapperRect = wrapper.getBoundingClientRect();
+                let activeKey = null;
+
+                headers.forEach(th => {
+                    const rect = th.getBoundingClientRect();
+                    if (rect.left <= wrapperRect.left + 250 && rect.right > wrapperRect.left + 220) {
+                        activeKey = th.dataset.catKey;
+                    }
+                });
+
+                document.querySelectorAll('.scroll-indicator-item').forEach(el => {
+                    el.classList.toggle('active', el.dataset.catIndicator === activeKey);
+                });
+            });
+        }
         }
 
         // Alias for compatibility with existing subscribers
