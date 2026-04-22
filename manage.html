@@ -589,12 +589,48 @@
             white-space: nowrap;
         }
 
-        .new-category-row {
+        .new-category-row, .new-subcategory-row {
             display: none;
         }
 
-        .new-category-row.show {
+        .new-category-row.show, .new-subcategory-row.show {
             display: flex;
+        }
+
+        .subcategory-group {
+            margin-left: 1rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .subcategory-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .subcategory-group-header:hover {
+            color: var(--accent-gold);
+        }
+
+        .subcategory-group-title {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .subcategory-group-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            padding: 0.4rem 0;
         }
 
         .category-group {
@@ -836,19 +872,27 @@
             <div class="section-card" id="customItemSection">
                 <h3>📦 カスタムアイテム管理</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                    任意のカテゴリにアイテムを追加できます。既存カテゴリを選択するか、新しいカテゴリを作成してください。
+                    既存カテゴリにアイテムを追加、または新しいカテゴリ・小カテゴリを作成できます。
                 </p>
                 <div class="custom-item-form">
                     <div class="form-row">
                         <select id="itemCategorySelect" onchange="onCategorySelectChange()">
                             <option value="">-- カテゴリを選択 --</option>
-                            <option value="__new__">+ 新規カテゴリを作成</option>
                         </select>
-                        <input type="text" id="newItemName" placeholder="アイテム名を入力" maxlength="30">
-                        <button onclick="addCustomItem()">追加</button>
+                        <select id="itemSubcategorySelect" onchange="onSubcategorySelectChange()" style="display: none;">
+                            <option value="">-- 小カテゴリを選択 --</option>
+                        </select>
                     </div>
                     <div class="form-row new-category-row" id="newCategoryRow">
-                        <input type="text" id="newCategoryName" placeholder="新規カテゴリ名を入力" maxlength="20" style="flex: 1;">
+                        <input type="text" id="newCategoryName" placeholder="新規カテゴリ名を入力" maxlength="20">
+                        <input type="text" id="newSubcategoryName" placeholder="小カテゴリ名（省略可）" maxlength="20">
+                    </div>
+                    <div class="form-row new-subcategory-row" id="newSubcategoryRow">
+                        <input type="text" id="newSubcategoryNameOnly" placeholder="新規小カテゴリ名を入力" maxlength="20" style="flex: 1;">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="newItemName" placeholder="アイテム名を入力" maxlength="30" style="flex: 1;">
+                        <button onclick="addCustomItem()">追加</button>
                     </div>
                 </div>
                 <div id="customItemsList">
@@ -903,6 +947,18 @@
         let teams = {};
         let customGenerals = [];
         let customItems = {};
+
+        // Predefined categories with subcategories
+        const PREDEFINED_CATEGORIES = {
+            '兵器': { icon: '⚔️', subcategories: [] },
+            'SP武将': { icon: '👑', subcategories: [] },
+            '極伝兵法': { icon: '📚', subcategories: [] },
+            '阿修羅': { icon: '👹', subcategories: ['30レベル', '60レベル', '90レベル'] },
+            '核心具足': { icon: '🎭', subcategories: [] },
+            '花陣': { icon: '🌸', subcategories: [] },
+            '戦法': { icon: '📜', subcategories: [] },
+            '軍馬': { icon: '🐴', subcategories: [] }
+        };
 
         // Toast notification
         function showToast(message, type = 'success') {
@@ -1423,15 +1479,49 @@
 
         // ========== Custom Items by Category ==========
 
-        function onCategorySelectChange() {
-            const select = document.getElementById('itemCategorySelect');
-            const newCategoryRow = document.getElementById('newCategoryRow');
+        function getAllCategories() {
+            const predefined = Object.keys(PREDEFINED_CATEGORIES);
+            const custom = Object.keys(customItems).filter(c => !predefined.includes(c));
+            return [...predefined, ...custom.sort()];
+        }
 
-            if (select.value === '__new__') {
+        function getSubcategoriesForCategory(category) {
+            const predefined = PREDEFINED_CATEGORIES[category]?.subcategories || [];
+            const customSubcats = customItems[category] ? Object.keys(customItems[category]).filter(s => s !== '_default') : [];
+            const allSubcats = [...new Set([...predefined, ...customSubcats])];
+            return allSubcats.sort();
+        }
+
+        function onCategorySelectChange() {
+            const categorySelect = document.getElementById('itemCategorySelect');
+            const subcategorySelect = document.getElementById('itemSubcategorySelect');
+            const newCategoryRow = document.getElementById('newCategoryRow');
+            const newSubcategoryRow = document.getElementById('newSubcategoryRow');
+
+            const category = categorySelect.value;
+
+            newCategoryRow.classList.remove('show');
+            newSubcategoryRow.classList.remove('show');
+            subcategorySelect.style.display = 'none';
+
+            if (category === '__new__') {
                 newCategoryRow.classList.add('show');
                 document.getElementById('newCategoryName').focus();
+            } else if (category) {
+                updateSubcategorySelect(category);
+                subcategorySelect.style.display = 'block';
+            }
+        }
+
+        function onSubcategorySelectChange() {
+            const subcategorySelect = document.getElementById('itemSubcategorySelect');
+            const newSubcategoryRow = document.getElementById('newSubcategoryRow');
+
+            if (subcategorySelect.value === '__new__') {
+                newSubcategoryRow.classList.add('show');
+                document.getElementById('newSubcategoryNameOnly').focus();
             } else {
-                newCategoryRow.classList.remove('show');
+                newSubcategoryRow.classList.remove('show');
             }
         }
 
@@ -1439,51 +1529,113 @@
             const select = document.getElementById('itemCategorySelect');
             const currentValue = select.value;
 
-            const categories = Object.keys(customItems).sort();
+            const categories = getAllCategories();
 
             select.innerHTML = `
                 <option value="">-- カテゴリを選択 --</option>
+                ${categories.map(cat => {
+                    const icon = PREDEFINED_CATEGORIES[cat]?.icon || '📁';
+                    return `<option value="${escapeHtml(cat)}">${icon} ${escapeHtml(cat)}</option>`;
+                }).join('')}
                 <option value="__new__">+ 新規カテゴリを作成</option>
-                ${categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('')}
             `;
 
-            if (currentValue && categories.includes(currentValue)) {
+            if (currentValue && (categories.includes(currentValue) || currentValue === '__new__')) {
                 select.value = currentValue;
+                if (currentValue !== '__new__' && currentValue) {
+                    updateSubcategorySelect(currentValue);
+                }
             }
+        }
+
+        function updateSubcategorySelect(category) {
+            const select = document.getElementById('itemSubcategorySelect');
+            const subcategories = getSubcategoriesForCategory(category);
+
+            if (subcategories.length === 0) {
+                select.innerHTML = `
+                    <option value="_default">（小カテゴリなし）</option>
+                    <option value="__new__">+ 新規小カテゴリを作成</option>
+                `;
+            } else {
+                select.innerHTML = `
+                    <option value="">-- 小カテゴリを選択 --</option>
+                    ${subcategories.map(sub => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join('')}
+                    <option value="_default">（小カテゴリなし）</option>
+                    <option value="__new__">+ 新規小カテゴリを作成</option>
+                `;
+            }
+            select.style.display = 'block';
         }
 
         function renderCustomItems() {
             const container = document.getElementById('customItemsList');
+            const allCategories = getAllCategories();
 
-            const categories = Object.keys(customItems);
-            if (categories.length === 0) {
+            const categoriesWithItems = allCategories.filter(cat => {
+                const catData = customItems[cat];
+                if (!catData) return false;
+                return Object.values(catData).some(items => Array.isArray(items) && items.length > 0);
+            });
+
+            if (categoriesWithItems.length === 0) {
                 container.innerHTML = '<span style="color: var(--text-muted);">カスタムアイテムはありません</span>';
                 return;
             }
 
-            container.innerHTML = categories.sort().map(category => {
-                const items = customItems[category] || [];
+            container.innerHTML = categoriesWithItems.map(category => {
+                const catData = customItems[category] || {};
+                const icon = PREDEFINED_CATEGORIES[category]?.icon || '📁';
+                const isPredefined = !!PREDEFINED_CATEGORIES[category];
+
+                const subcategories = Object.keys(catData).filter(s => s !== '_default' && Array.isArray(catData[s]) && catData[s].length > 0);
+                const defaultItems = catData._default || [];
+
+                const totalItems = Object.values(catData).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0);
+
                 return `
                     <div class="category-group">
                         <div class="category-group-header" onclick="toggleCategoryGroup(this)">
                             <span class="category-group-title">
-                                📁 ${escapeHtml(category)}
-                                <span class="category-group-count">${items.length}件</span>
+                                ${icon} ${escapeHtml(category)}
+                                <span class="category-group-count">${totalItems}件</span>
                             </span>
-                            <span class="category-group-actions">
-                                <button onclick="event.stopPropagation(); deleteCategory('${escapeHtml(category)}')" title="カテゴリを削除">🗑️ 削除</button>
-                            </span>
+                            ${!isPredefined ? `
+                                <span class="category-group-actions">
+                                    <button onclick="event.stopPropagation(); deleteCategory('${escapeHtml(category)}')" title="カテゴリを削除">🗑️ 削除</button>
+                                </span>
+                            ` : ''}
                         </div>
-                        <div class="category-group-content">
-                            ${items.length === 0
-                                ? '<span style="color: var(--text-muted); font-size: 0.85rem;">アイテムがありません</span>'
-                                : items.map(item => `
-                                    <span class="category-item-tag">
-                                        ${escapeHtml(item)}
-                                        <button onclick="removeCustomItem('${escapeHtml(category)}', '${escapeHtml(item)}')" title="削除">✕</button>
-                                    </span>
-                                `).join('')
-                            }
+                        <div class="category-group-content" style="flex-direction: column; align-items: stretch;">
+                            ${defaultItems.length > 0 ? `
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem;">
+                                    ${defaultItems.map(item => `
+                                        <span class="category-item-tag">
+                                            ${escapeHtml(item)}
+                                            <button onclick="removeCustomItem('${escapeHtml(category)}', '_default', '${escapeHtml(item)}')" title="削除">✕</button>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            ${subcategories.map(subcat => `
+                                <div class="subcategory-group">
+                                    <div class="subcategory-group-header" onclick="toggleSubcategoryGroup(this)">
+                                        <span class="subcategory-group-title">
+                                            ▸ ${escapeHtml(subcat)}
+                                            <span class="category-group-count">${catData[subcat].length}件</span>
+                                        </span>
+                                        <button onclick="event.stopPropagation(); deleteSubcategory('${escapeHtml(category)}', '${escapeHtml(subcat)}')" style="background: none; border: none; color: var(--accent-red); cursor: pointer; font-size: 0.8rem;">削除</button>
+                                    </div>
+                                    <div class="subcategory-group-content">
+                                        ${catData[subcat].map(item => `
+                                            <span class="category-item-tag">
+                                                ${escapeHtml(item)}
+                                                <button onclick="removeCustomItem('${escapeHtml(category)}', '${escapeHtml(subcat)}', '${escapeHtml(item)}')" title="削除">✕</button>
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 `;
@@ -1495,18 +1647,34 @@
             content.style.display = content.style.display === 'none' ? 'flex' : 'none';
         }
 
+        function toggleSubcategoryGroup(header) {
+            const content = header.nextElementSibling;
+            content.style.display = content.style.display === 'none' ? 'flex' : 'none';
+        }
+
         async function addCustomItem() {
-            const select = document.getElementById('itemCategorySelect');
+            const categorySelect = document.getElementById('itemCategorySelect');
+            const subcategorySelect = document.getElementById('itemSubcategorySelect');
             const itemNameInput = document.getElementById('newItemName');
             const newCategoryInput = document.getElementById('newCategoryName');
+            const newSubcategoryInput = document.getElementById('newSubcategoryName');
+            const newSubcategoryOnlyInput = document.getElementById('newSubcategoryNameOnly');
 
-            let categoryName = select.value;
+            let categoryName = categorySelect.value;
+            let subcategoryName = subcategorySelect.value;
             const itemName = itemNameInput.value.trim();
 
             if (categoryName === '__new__') {
                 categoryName = newCategoryInput.value.trim();
+                subcategoryName = newSubcategoryInput.value.trim() || '_default';
                 if (!categoryName) {
                     showToast('カテゴリ名を入力してください', 'error');
+                    return;
+                }
+            } else if (subcategoryName === '__new__') {
+                subcategoryName = newSubcategoryOnlyInput.value.trim();
+                if (!subcategoryName) {
+                    showToast('小カテゴリ名を入力してください', 'error');
                     return;
                 }
             }
@@ -1516,12 +1684,18 @@
                 return;
             }
 
+            if (!subcategoryName) {
+                showToast('小カテゴリを選択してください', 'error');
+                return;
+            }
+
             if (!itemName) {
                 showToast('アイテム名を入力してください', 'error');
                 return;
             }
 
-            const currentItems = customItems[categoryName] || [];
+            const catData = customItems[categoryName] || {};
+            const currentItems = catData[subcategoryName] || [];
             if (currentItems.includes(itemName)) {
                 showToast('このアイテムは既に登録されています', 'error');
                 return;
@@ -1530,33 +1704,40 @@
             try {
                 const { database, ref, set } = window.firebaseDB;
                 const newItems = [...currentItems, itemName];
-                await set(ref(database, `customItems/${categoryName}`), newItems);
+                await set(ref(database, `customItems/${categoryName}/${subcategoryName}`), newItems);
 
                 itemNameInput.value = '';
-                if (select.value === '__new__') {
+
+                if (categorySelect.value === '__new__') {
                     newCategoryInput.value = '';
+                    newSubcategoryInput.value = '';
                     document.getElementById('newCategoryRow').classList.remove('show');
-                    select.value = categoryName;
+                }
+                if (subcategorySelect.value === '__new__') {
+                    newSubcategoryOnlyInput.value = '';
+                    document.getElementById('newSubcategoryRow').classList.remove('show');
                 }
 
-                showToast(`${categoryName}に${itemName}を追加しました`, 'success');
+                const displayName = subcategoryName === '_default' ? categoryName : `${categoryName} > ${subcategoryName}`;
+                showToast(`${displayName}に${itemName}を追加しました`, 'success');
             } catch (error) {
                 console.error('Add item error:', error);
                 showToast('追加に失敗しました', 'error');
             }
         }
 
-        async function removeCustomItem(category, item) {
+        async function removeCustomItem(category, subcategory, item) {
             if (!confirm(`${item}を削除しますか？`)) return;
 
             try {
                 const { database, ref, set } = window.firebaseDB;
-                const newItems = (customItems[category] || []).filter(i => i !== item);
+                const catData = customItems[category] || {};
+                const newItems = (catData[subcategory] || []).filter(i => i !== item);
 
                 if (newItems.length === 0) {
-                    await set(ref(database, `customItems/${category}`), null);
+                    await set(ref(database, `customItems/${category}/${subcategory}`), null);
                 } else {
-                    await set(ref(database, `customItems/${category}`), newItems);
+                    await set(ref(database, `customItems/${category}/${subcategory}`), newItems);
                 }
 
                 showToast(`${item}を削除しました`, 'success');
@@ -1566,10 +1747,29 @@
             }
         }
 
-        async function deleteCategory(category) {
-            const items = customItems[category] || [];
+        async function deleteSubcategory(category, subcategory) {
+            const items = customItems[category]?.[subcategory] || [];
             const msg = items.length > 0
-                ? `${category}（${items.length}件のアイテムを含む）を削除しますか？`
+                ? `${subcategory}（${items.length}件のアイテムを含む）を削除しますか？`
+                : `${subcategory}を削除しますか？`;
+
+            if (!confirm(msg)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `customItems/${category}/${subcategory}`), null);
+                showToast(`${subcategory}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete subcategory error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        async function deleteCategory(category) {
+            const catData = customItems[category] || {};
+            const totalItems = Object.values(catData).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0);
+            const msg = totalItems > 0
+                ? `${category}（${totalItems}件のアイテムを含む）を削除しますか？`
                 : `${category}を削除しますか？`;
 
             if (!confirm(msg)) return;
