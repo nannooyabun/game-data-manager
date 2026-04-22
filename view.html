@@ -307,6 +307,49 @@
         .legend .cell-none {
             margin-right: 0.3rem;
         }
+
+        /* Clickable cells for status toggle */
+        .cell-clickable {
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .cell-clickable:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 8px rgba(201, 162, 39, 0.4);
+            z-index: 1;
+            position: relative;
+        }
+        .cell-clickable:active {
+            transform: scale(0.95);
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            border: 1px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 0.8rem 1.5rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .toast.success {
+            border-color: var(--accent-green);
+        }
+        .toast.error {
+            border-color: var(--accent-red);
+        }
     </style>
 </head>
 <body>
@@ -329,6 +372,7 @@
         <span><span class="cell-equipped">●</span> 装備/編成中</span>
         <span><span class="cell-owned">○</span> 所持のみ</span>
         <span>（空欄）未所持</span>
+        <span style="margin-left: 1rem; color: var(--text-muted);">※ ●/○ をクリックで切り替え可能</span>
     </div>
 
     <div id="mainContent">
@@ -338,7 +382,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-        import { getDatabase, ref, get, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+        import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDu9WB_iA_2i5qL4uir8g__LmfAFTeuOYI",
@@ -353,7 +397,7 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        window.firebaseDB = { database, ref, get, onValue };
+        window.firebaseDB = { database, ref, get, set, onValue };
         window.firebaseReady = true;
         document.dispatchEvent(new Event('firebaseReady'));
     </script>
@@ -693,6 +737,97 @@
             }[c]));
         }
 
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => { toast.className = 'toast'; }, 2500);
+        }
+
+        // Toggle cell state between equipped ⇄ owned
+        async function toggleCellState(username, catKey, itemId, itemData) {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+
+            const user = gameData[username];
+            if (!user) return;
+
+            const { database, ref, set } = window.firebaseDB;
+
+            try {
+                let newState, path, updateData;
+
+                // Handle different category types
+                if (catKey === 'weapon') {
+                    const current = user.weapons?.[itemId]?.status;
+                    if (!current || current === '') return; // Not owned
+                    newState = current === 'equipped' ? 'owned' : 'equipped';
+                    path = `gameData/${username}/weapons/${itemId}/status`;
+                    updateData = newState;
+                }
+                else if (catKey === 'spGeneral') {
+                    const sp = user.spGenerals?.[itemId];
+                    if (!sp?.owned && !sp?.formed) return; // Not owned
+                    newState = sp.formed ? false : true;
+                    path = `gameData/${username}/spGenerals/${itemId}/formed`;
+                    updateData = newState;
+                }
+                else if (catKey.startsWith('general_')) {
+                    const g = user.generals?.[itemId];
+                    if (!g?.owned && !g?.formed) return; // Not owned
+                    newState = g.formed ? false : true;
+                    path = `gameData/${username}/generals/${itemId}/formed`;
+                    updateData = newState;
+                }
+                else if (catKey === 'academy') {
+                    const h = user.academy?.heiho?.[itemId];
+                    if (!h?.owned && !h?.equipped) return;
+                    newState = h.equipped ? false : true;
+                    path = `gameData/${username}/academy/heiho/${itemId}/equipped`;
+                    updateData = newState;
+                }
+                else if (catKey === 'asura') {
+                    // Asura skills are just unlocked or not, no toggle needed
+                    return;
+                }
+                else if (catKey === 'armor') {
+                    const m = user.armor?.masks?.[itemId];
+                    if (!m?.owned && !m?.equipped) return;
+                    newState = m.equipped ? false : true;
+                    path = `gameData/${username}/armor/masks/${itemId}/equipped`;
+                    updateData = newState;
+                }
+                else if (catKey === 'flower') {
+                    const f = user.flowers?.[itemId];
+                    if (!f?.owned && !f?.equipped) return;
+                    newState = f.equipped ? false : true;
+                    path = `gameData/${username}/flowers/${itemId}/equipped`;
+                    updateData = newState;
+                }
+                else if (catKey === 'tactic') {
+                    const t = user.tactics?.[itemId];
+                    if (!t?.owned && !t?.equipped) return;
+                    newState = t.equipped ? false : true;
+                    path = `gameData/${username}/tactics/${itemId}/equipped`;
+                    updateData = newState;
+                }
+                else {
+                    return;
+                }
+
+                await set(ref(database, path), updateData);
+                const stateText = (updateData === true || updateData === 'equipped') ? '装備中' : '所持のみ';
+                showToast(`${username}: ${itemId} → ${stateText}`, 'success');
+
+            } catch (err) {
+                console.error('Toggle error:', err);
+                showToast('更新エラー: ' + err.message, 'error');
+            }
+        }
+
         function renderTable() {
             const main = document.getElementById('mainContent');
             const usernames = getVisibleUsernames();
@@ -744,7 +879,13 @@
                     return cat.items.map((item, itemIdx) => {
                         const state = cat.getCellState(user, item);
                         const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
-                        return `<td class="${cat.colorClass}${borderClass}">${stateSymbol(state)}</td>`;
+                        const isClickable = (state === 'equipped' || state === 'owned') && cat.key !== 'asura';
+                        const clickClass = isClickable ? ' cell-clickable' : '';
+                        const itemIdStr = item.id || item.name || '';
+                        const clickHandler = isClickable
+                            ? ` onclick="toggleCellState('${escapeHtml(username)}', '${cat.key}', '${escapeHtml(itemIdStr)}', null)"`
+                            : '';
+                        return `<td class="${cat.colorClass}${borderClass}${clickClass}"${clickHandler}>${stateSymbol(state)}</td>`;
                     });
                 }).join('');
                 return `
@@ -822,5 +963,7 @@
             loadAllData().then(subscribeRealtime);
         }
     </script>
+
+    <div class="toast" id="toast"></div>
 </body>
 </html>
