@@ -229,6 +229,11 @@
             border-left: 3px solid var(--accent-gold-dim) !important;
         }
 
+        /* Asura level separator - dotted line between 30/60/90 groups */
+        .asura-level-border {
+            border-left: 2px dashed var(--text-muted) !important;
+        }
+
         /* Category collapse toggle */
         .cat-header {
             cursor: pointer;
@@ -917,7 +922,11 @@
             const itemRowCells = allCats.flatMap((cat, catIdx) => {
                 if (collapsedCategories.has(cat.key)) return [];
                 return cat.items.map((item, itemIdx) => {
-                    const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
+                    let borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
+                    // Add dotted border between asura level groups
+                    if (item.id === 'asura60_0' || item.id === 'asura90_0') {
+                        borderClass += ' asura-level-border';
+                    }
                     return `<th class="${cat.colorClass}${borderClass}">${escapeHtml(item.name)}</th>`;
                 });
             }).join('');
@@ -934,7 +943,11 @@
                     }
                     return cat.items.map((item, itemIdx) => {
                         const state = cat.getCellState(user, item);
-                        const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
+                        let borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
+                        // Add dotted border between asura level groups
+                        if (item.id === 'asura60_0' || item.id === 'asura90_0') {
+                            borderClass += ' asura-level-border';
+                        }
                         // Asura: all cells clickable (radio-like selection within level)
                         // Others: only equipped/owned cells clickable
                         const isClickable = cat.key === 'asura' || (state === 'equipped' || state === 'owned');

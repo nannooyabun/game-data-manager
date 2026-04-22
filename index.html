@@ -975,6 +975,68 @@
             cursor: pointer;
         }
 
+        /* Team member selection tools */
+        .team-member-tools {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-member-search {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .team-member-search::placeholder {
+            color: var(--text-muted);
+        }
+
+        .team-copy-select {
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .team-bulk-btn {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            background: var(--accent-blue);
+            color: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .team-bulk-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .team-member-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+
+        .team-members-grid.filtered .team-member-checkbox {
+            display: none;
+        }
+
+        .team-members-grid.filtered .team-member-checkbox.visible {
+            display: flex;
+        }
+
         /* Comparison Section */
         .comparison-section {
             margin-top: 2rem;
@@ -2868,40 +2930,115 @@
 
             const allUsers = Object.keys(cachedGameData || {}).sort();
 
+            // Build team copy options (for each team, list other teams to copy from)
+            const teamCopyOptions = teams.map(t =>
+                `<option value="${t.id}">${t.name} (${(t.members || []).length}人)</option>`
+            ).join('');
+
             container.innerHTML = teams.map(team => {
                 const members = team.members || [];
                 const membersHtml = allUsers.length === 0
                     ? '<div style="color: var(--text-muted); font-size: 0.85rem;">登録ユーザーがいません</div>'
                     : allUsers.map(username => {
                         const isChecked = members.includes(username);
+                        const escapedUsername = username.replace(/'/g, "\\'");
                         return `
-                            <label class="team-member-checkbox ${isChecked ? 'selected' : ''}">
+                            <label class="team-member-checkbox ${isChecked ? 'selected' : ''}" data-username="${username.toLowerCase()}">
                                 <input type="checkbox" ${isChecked ? 'checked' : ''}
-                                    onchange="toggleTeamMember('${team.id}', '${username.replace(/'/g, "\\'")}', this.checked)">
+                                    onchange="toggleTeamMember('${team.id}', '${escapedUsername}', this.checked)">
                                 ${username}
                             </label>
                         `;
                     }).join('');
 
                 return `
-                    <div class="team-card">
+                    <div class="team-card" data-team-id="${team.id}">
                         <div class="team-card-header">
                             <h5>
                                 <span>👥</span>
                                 ${team.name}
-                                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: normal;">(${members.length}人)</span>
+                                <span class="team-member-count-display" id="memberCount_${team.id}">(${members.length}人 / ${allUsers.length}人)</span>
                             </h5>
                             <div class="team-card-actions">
                                 <button class="team-action-btn delete" onclick="deleteTeam('${team.id}')">削除</button>
                             </div>
                         </div>
                         <div class="team-members-section">
-                            <div class="team-members-label">メンバー選択:</div>
-                            <div class="team-members-grid">${membersHtml}</div>
+                            <div class="team-member-tools">
+                                <input type="text" class="team-member-search" placeholder="🔍 ユーザー名で検索..."
+                                    oninput="filterTeamMembers('${team.id}', this.value)">
+                                <select class="team-copy-select" onchange="copyFromTeam('${team.id}', this.value); this.value='';">
+                                    <option value="">チームからコピー...</option>
+                                    ${teamCopyOptions.replace(`value="${team.id}"`, `value="${team.id}" disabled`)}
+                                </select>
+                                <button class="team-bulk-btn" onclick="clearTeamMembers('${team.id}')">全解除</button>
+                            </div>
+                            <div class="team-members-grid" id="memberGrid_${team.id}">${membersHtml}</div>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // Filter team members by search query
+        function filterTeamMembers(teamId, query) {
+            const grid = document.getElementById(`memberGrid_${teamId}`);
+            if (!grid) return;
+
+            const q = query.toLowerCase().trim();
+            const checkboxes = grid.querySelectorAll('.team-member-checkbox');
+
+            if (q === '') {
+                grid.classList.remove('filtered');
+                checkboxes.forEach(cb => cb.classList.remove('visible'));
+            } else {
+                grid.classList.add('filtered');
+                checkboxes.forEach(cb => {
+                    const username = cb.dataset.username || '';
+                    if (username.includes(q)) {
+                        cb.classList.add('visible');
+                    } else {
+                        cb.classList.remove('visible');
+                    }
+                });
+            }
+        }
+
+        // Copy members from another team
+        async function copyFromTeam(targetTeamId, sourceTeamId) {
+            if (!sourceTeamId) return;
+
+            const sourceTeam = cachedTeams[sourceTeamId];
+            const targetTeam = cachedTeams[targetTeamId];
+            if (!sourceTeam || !targetTeam) return;
+
+            const sourceMembers = sourceTeam.members || [];
+            const targetMembers = new Set(targetTeam.members || []);
+
+            // Add source members to target (merge)
+            sourceMembers.forEach(m => targetMembers.add(m));
+
+            const updatedTeam = { ...targetTeam, members: Array.from(targetMembers) };
+            const success = await saveTeam(targetTeamId, updatedTeam);
+
+            if (success) {
+                showToast(`${sourceTeam.name} のメンバーをコピーしました`, 'success');
+            }
+        }
+
+        // Clear all members from a team
+        async function clearTeamMembers(teamId) {
+            const team = cachedTeams[teamId];
+            if (!team) return;
+
+            if (!confirm(`${team.name} のメンバーを全て解除しますか？`)) return;
+
+            const updatedTeam = { ...team, members: [] };
+            const success = await saveTeam(teamId, updatedTeam);
+
+            if (success) {
+                showToast('メンバーを全て解除しました', 'success');
+            }
         }
 
 
