@@ -1876,6 +1876,7 @@
         // Cache for data
         let cachedGameData = {};
         let cachedCustomGenerals = [];
+        let cachedCustomGeneralsRaw = {};  // Keep raw object structure { subcategory: [names] }
         let cachedCustomItems = {};
 
         // ========== Firebase Database Functions ==========
@@ -1944,6 +1945,7 @@
                 const { database, ref, get } = window.firebaseDB;
                 const snapshot = await get(ref(database, 'customGenerals'));
                 const data = snapshot.exists() ? snapshot.val() : [];
+                cachedCustomGeneralsRaw = (data && typeof data === 'object' && !Array.isArray(data)) ? data : { _default: Array.isArray(data) ? data : [] };
                 cachedCustomGenerals = flattenCustomGenerals(data);
                 return cachedCustomGenerals;
             } catch (error) {
@@ -1997,8 +1999,10 @@
             onValue(ref(database, 'customGenerals'), (snapshot) => {
                 const data = snapshot.exists() ? snapshot.val() : [];
                 const newGenerals = flattenCustomGenerals(data);
-                if (JSON.stringify(newGenerals) !== JSON.stringify(cachedCustomGenerals)) {
+                const newRaw = (data && typeof data === 'object' && !Array.isArray(data)) ? data : { _default: Array.isArray(data) ? data : [] };
+                if (JSON.stringify(newGenerals) !== JSON.stringify(cachedCustomGenerals) || JSON.stringify(newRaw) !== JSON.stringify(cachedCustomGeneralsRaw)) {
                     cachedCustomGenerals = newGenerals;
+                    cachedCustomGeneralsRaw = newRaw;
                     initGeneralGrid();
                 }
             });
@@ -2309,61 +2313,89 @@
         // Initialize general grid with categories
         function initGeneralGrid() {
             const grid = document.getElementById('generalGrid');
-            const customGenerals = cachedCustomGenerals || [];
-            
+            const customRaw = cachedCustomGeneralsRaw || {};
+
             let globalIndex = 0;
             let html = '';
-            
-            // Add predefined categories
+
+            const generalItemHtml = (g) => {
+                const index = globalIndex++;
+                return `
+                    <div class="general-item" id="generalItem_${index}" data-general="${g}" data-state="0">
+                        <span class="general-name" onclick="toggleGeneralState(${index})">${g}</span>
+                        <span class="status-badge"></span>
+                        <input type="number" id="general_${index}" min="0" max="12" value="10" onchange="updateProgress()">
+                        <input type="hidden" id="generalState_${index}" value="0">
+                    </div>
+                `;
+            };
+
+            // Add predefined categories (merge matching custom generals)
             generalCategories.forEach(cat => {
+                const matchingCustom = customRaw[cat.title] || [];
+                const combinedGenerals = [...cat.generals, ...matchingCustom];
                 html += `
                     <div class="general-category">
                         <div class="general-category-title">●${cat.title}</div>
                         <div class="general-grid">
-                            ${cat.generals.map(g => {
-                                const index = globalIndex++;
-                                return `
-                                    <div class="general-item" id="generalItem_${index}" data-general="${g}" data-state="0">
-                                        <span class="general-name" onclick="toggleGeneralState(${index})">${g}</span>
-                                        <span class="status-badge"></span>
-                                        <input type="number" id="general_${index}" min="0" max="12" value="10" onchange="updateProgress()">
-                                        <input type="hidden" id="generalState_${index}" value="0">
-                                    </div>
-                                `;
-                            }).join('')}
+                            ${combinedGenerals.map(generalItemHtml).join('')}
                         </div>
                     </div>
                 `;
             });
-            
-            // Add custom generals category if any exist
-            if (customGenerals.length > 0) {
+
+            // Collect unmatched custom subcategories (i.e. new custom categories or _default)
+            const existingTitles = new Set(generalCategories.map(c => c.title));
+            const customSubcats = Object.keys(customRaw).filter(k => !existingTitles.has(k) && Array.isArray(customRaw[k]) && customRaw[k].length > 0);
+
+            // Sort so _default comes last
+            customSubcats.sort((a, b) => {
+                if (a === '_default') return 1;
+                if (b === '_default') return -1;
+                return a.localeCompare(b);
+            });
+
+            customSubcats.forEach(subcat => {
+                const names = customRaw[subcat] || [];
+                const displayTitle = subcat === '_default' ? '追加武将' : subcat;
                 html += `
-                    <div class="general-category" id="customGeneralCategory">
-                        <div class="general-category-title">●追加武将</div>
-                        <div class="general-grid" id="customGeneralGrid">
-                            ${customGenerals.map(g => {
-                                const index = globalIndex++;
-                                return `
-                                    <div class="general-item" id="generalItem_${index}" data-general="${g}" data-state="0">
-                                        <span class="general-name" onclick="toggleGeneralState(${index})">${g}</span>
-                                        <span class="status-badge"></span>
-                                        <input type="number" id="general_${index}" min="0" max="12" value="10" onchange="updateProgress()">
-                                        <input type="hidden" id="generalState_${index}" value="0">
-                                    </div>
-                                `;
-                            }).join('')}
+                    <div class="general-category">
+                        <div class="general-category-title">●${displayTitle}</div>
+                        <div class="general-grid">
+                            ${names.map(generalItemHtml).join('')}
                         </div>
                     </div>
                 `;
-            }
-            
+            });
+
             grid.innerHTML = html;
         }
 
-        // Get all generals including custom ones
+        // Get all generals including custom ones (matches display order in initGeneralGrid)
         function getAllGenerals() {
-            return [...generals, ...(cachedCustomGenerals || [])];
+            const customRaw = cachedCustomGeneralsRaw || {};
+            const result = [];
+
+            // Predefined categories with matching custom generals merged in
+            generalCategories.forEach(cat => {
+                result.push(...cat.generals);
+                const matchingCustom = customRaw[cat.title] || [];
+                result.push(...matchingCustom);
+            });
+
+            // Unmatched custom subcategories (in display order)
+            const existingTitles = new Set(generalCategories.map(c => c.title));
+            const customSubcats = Object.keys(customRaw).filter(k => !existingTitles.has(k) && Array.isArray(customRaw[k]) && customRaw[k].length > 0);
+            customSubcats.sort((a, b) => {
+                if (a === '_default') return 1;
+                if (b === '_default') return -1;
+                return a.localeCompare(b);
+            });
+            customSubcats.forEach(subcat => {
+                result.push(...(customRaw[subcat] || []));
+            });
+
+            return result;
         }
 
         // Get total general count for indexing
