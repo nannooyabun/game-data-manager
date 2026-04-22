@@ -851,8 +851,21 @@
         // Global state
         let gameData = {};
         let teams = {};
-        let customGenerals = [];
+        let customGenerals = {};
+        let customItems = {};
         let collapsedCategories = new Set();
+
+        // Flatten custom generals object to array
+        function flattenCustomGenerals(data) {
+            if (Array.isArray(data)) return data;
+            if (!data || typeof data !== 'object') return [];
+            return Object.values(data).flat();
+        }
+
+        // Get flattened custom generals array
+        function getCustomGeneralsList() {
+            return flattenCustomGenerals(customGenerals);
+        }
 
         // Toggle category collapse
         function toggleCategory(catKey) {
@@ -885,18 +898,22 @@
             const { database, ref, get } = window.firebaseDB;
             try {
                 setStatus('データ取得中...');
-                const [gameSnap, teamSnap, genSnap] = await Promise.all([
+                const [gameSnap, teamSnap, genSnap, itemSnap] = await Promise.all([
                     get(ref(database, 'gameData')),
                     get(ref(database, 'teams')),
-                    get(ref(database, 'customGenerals'))
+                    get(ref(database, 'customGenerals')),
+                    get(ref(database, 'customItems'))
                 ]);
                 gameData = gameSnap.exists() ? gameSnap.val() : {};
                 teams = teamSnap.exists() ? teamSnap.val() : {};
-                customGenerals = genSnap.exists() ? genSnap.val() : [];
+                const genData = genSnap.exists() ? genSnap.val() : {};
+                customGenerals = Array.isArray(genData) ? { '_default': genData } : genData;
+                customItems = itemSnap.exists() ? itemSnap.val() : {};
 
                 const userCount = Object.keys(gameData).length;
                 const teamCount = Object.keys(teams).length;
-                setStatus(`読み込み完了: ユーザー ${userCount}人 / チーム ${teamCount}件 / カスタム武将 ${customGenerals.length}件`);
+                const customGenCount = getCustomGeneralsList().length;
+                setStatus(`読み込み完了: ユーザー ${userCount}人 / チーム ${teamCount}件 / カスタム武将 ${customGenCount}件`);
 
                 populateTeamFilter();
                 populateComparisonTeamSelect();
@@ -923,7 +940,12 @@
                 renderPreview();
             });
             onValue(ref(database, 'customGenerals'), (snap) => {
-                customGenerals = snap.exists() ? snap.val() : [];
+                const data = snap.exists() ? snap.val() : {};
+                customGenerals = Array.isArray(data) ? { '_default': data } : data;
+                renderPreview();
+            });
+            onValue(ref(database, 'customItems'), (snap) => {
+                customItems = snap.exists() ? snap.val() : {};
                 renderPreview();
             });
         }
@@ -1021,12 +1043,13 @@
                 getCellState: (user, item) => getGeneralCellState(user, item.id)
             }));
             // Add custom generals if any
-            if (customGenerals.length > 0) {
+            const customGenList = getCustomGeneralsList();
+            if (customGenList.length > 0) {
                 cats.push({
                     key: 'general_custom',
                     title: '②-2 カスタム',
                     colorClass: 'cat-general',
-                    items: customGenerals.map(name => ({ id: name, name })),
+                    items: customGenList.map(name => ({ id: name, name })),
                     getCellState: (user, item) => getGeneralCellState(user, item.id)
                 });
             }
@@ -1549,8 +1572,9 @@
             });
 
             // Custom generals
-            if (customGenerals && customGenerals.length > 0) {
-                customGenerals.forEach((name, i) => {
+            const customGenList = getCustomGeneralsList();
+            if (customGenList.length > 0) {
+                customGenList.forEach((name, i) => {
                     items.push({
                         id: `general_${globalIndex}`, name, type: '武将', category: 'general',
                         index: globalIndex, generalName: name, subcategory: '追加武将', subcategoryIndex: generalCategories.length
