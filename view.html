@@ -153,16 +153,27 @@
             letter-spacing: 0.05em;
         }
 
-        /* Category color classes */
-        .cat-weapon  { background: #3a2a20 !important; color: #e8a878; }
-        .cat-sp      { background: #3a2a3a !important; color: #d8a8d8; }
-        .cat-general { background: #2a3a3a !important; color: #88c8c8; }
-        .cat-academy { background: #3a3a20 !important; color: #d8d878; }
-        .cat-asura   { background: #3a2020 !important; color: #e89090; }
-        .cat-armor   { background: #2a2a3a !important; color: #9090e8; }
-        .cat-flower  { background: #2a3a2a !important; color: #90d890; }
-        .cat-horse   { background: #3a3520 !important; color: #d8c078; }
-        .cat-tactic  { background: #20303a !important; color: #78c0e0; }
+        /* Category color classes (applied to both header and body cells) */
+        .view-table thead .cat-weapon  { background: #3a2a20 !important; color: #e8a878; }
+        .view-table thead .cat-sp      { background: #3a2a3a !important; color: #d8a8d8; }
+        .view-table thead .cat-general { background: #2a3a3a !important; color: #88c8c8; }
+        .view-table thead .cat-academy { background: #3a3a20 !important; color: #d8d878; }
+        .view-table thead .cat-asura   { background: #3a2020 !important; color: #e89090; }
+        .view-table thead .cat-armor   { background: #2a2a3a !important; color: #9090e8; }
+        .view-table thead .cat-flower  { background: #2a3a2a !important; color: #90d890; }
+        .view-table thead .cat-horse   { background: #3a3520 !important; color: #d8c078; }
+        .view-table thead .cat-tactic  { background: #20303a !important; color: #78c0e0; }
+
+        /* Body cells use a slightly dimmer tint of the same category color */
+        .view-table tbody td.cat-weapon  { background: #2a1f18; }
+        .view-table tbody td.cat-sp      { background: #2a1f2a; }
+        .view-table tbody td.cat-general { background: #1f2a2a; }
+        .view-table tbody td.cat-academy { background: #2a2a18; }
+        .view-table tbody td.cat-asura   { background: #2a1818; }
+        .view-table tbody td.cat-armor   { background: #1f1f2a; }
+        .view-table tbody td.cat-flower  { background: #1f2a1f; }
+        .view-table tbody td.cat-horse   { background: #2a2618; }
+        .view-table tbody td.cat-tactic  { background: #18242a; }
 
         /* Sticky left columns */
         .sticky-col {
@@ -194,16 +205,19 @@
             background: #25253a;
         }
 
-        /* Cell state symbols */
+        /* Cell state symbols: ● equipped, ○ owned, blank none */
         .cell-equipped {
             color: var(--accent-green);
-            font-weight: 700;
+            font-size: 1.1rem;
+            line-height: 1;
         }
         .cell-owned {
             color: var(--accent-gold);
+            font-size: 1.1rem;
+            line-height: 1;
         }
         .cell-none {
-            color: var(--text-muted);
+            color: transparent;
         }
 
         /* First user column width */
@@ -245,9 +259,9 @@
     </div>
 
     <div class="legend">
-        <span><span class="cell-equipped">✅</span>装備/編成中</span>
-        <span><span class="cell-owned">⚠️</span>所持のみ</span>
-        <span><span class="cell-none">−</span>未所持</span>
+        <span><span class="cell-equipped">●</span> 装備/編成中</span>
+        <span><span class="cell-owned">○</span> 所持のみ</span>
+        <span>（空欄）未所持</span>
     </div>
 
     <div id="mainContent">
@@ -489,9 +503,9 @@
         ];
 
         function stateSymbol(state) {
-            if (state === 'equipped') return '<span class="cell-equipped">✅</span>';
-            if (state === 'owned') return '<span class="cell-owned">⚠️</span>';
-            return '<span class="cell-none">−</span>';
+            if (state === 'equipped') return '<span class="cell-equipped">●</span>';
+            if (state === 'owned') return '<span class="cell-owned">○</span>';
+            return '';
         }
 
         function escapeHtml(str) {
@@ -527,7 +541,7 @@
                 const dataCells = tableCategories.flatMap(cat =>
                     cat.items.map(item => {
                         const state = cat.getCellState(user, item.id);
-                        return `<td>${stateSymbol(state)}</td>`;
+                        return `<td class="${cat.colorClass}">${stateSymbol(state)}</td>`;
                     })
                 ).join('');
                 return `
