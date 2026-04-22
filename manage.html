@@ -863,6 +863,14 @@
                     <div class="form-row">
                         <select id="generalSubcategorySelect" onchange="onGeneralSubcategorySelectChange()">
                             <option value="_default">（カテゴリなし）</option>
+                            <optgroup label="既存カテゴリ">
+                                <option value="この辺は一人は欲しい武将">この辺は一人は欲しい武将</option>
+                                <option value="集結で使う武将">集結で使う武将</option>
+                                <option value="全兵種対応武将">全兵種対応武将</option>
+                                <option value="馬用">馬用</option>
+                                <option value="歩用">歩用</option>
+                                <option value="弓用">弓用</option>
+                            </optgroup>
                             <option value="__new__">+ 新規カテゴリを作成</option>
                         </select>
                     </div>
@@ -959,6 +967,16 @@
         let teams = {};
         let customGenerals = {};  // { "カテゴリ": ["武将1"], "_default": ["武将2"] }
         let customItems = {};
+
+        // Existing general categories (from index.html)
+        const EXISTING_GENERAL_CATEGORIES = [
+            'この辺は一人は欲しい武将',
+            '集結で使う武将',
+            '全兵種対応武将',
+            '馬用',
+            '歩用',
+            '弓用'
+        ];
 
         // Predefined categories with subcategories
         const PREDEFINED_CATEGORIES = {
@@ -1462,15 +1480,30 @@
         function updateGeneralSubcategorySelect() {
             const select = document.getElementById('generalSubcategorySelect');
             const currentValue = select.value;
-            const subcategories = getGeneralSubcategories();
+            const customSubcategories = getGeneralSubcategories();
+
+            // Combine existing categories and custom subcategories
+            const allCategories = [...EXISTING_GENERAL_CATEGORIES];
+            customSubcategories.forEach(sub => {
+                if (!allCategories.includes(sub)) {
+                    allCategories.push(sub);
+                }
+            });
 
             select.innerHTML = `
                 <option value="_default">（カテゴリなし）</option>
-                ${subcategories.map(sub => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join('')}
+                <optgroup label="既存カテゴリ">
+                    ${EXISTING_GENERAL_CATEGORIES.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('')}
+                </optgroup>
+                ${customSubcategories.length > 0 ? `
+                <optgroup label="カスタムカテゴリ">
+                    ${customSubcategories.filter(sub => !EXISTING_GENERAL_CATEGORIES.includes(sub)).map(sub => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join('')}
+                </optgroup>
+                ` : ''}
                 <option value="__new__">+ 新規カテゴリを作成</option>
             `;
 
-            if (currentValue && (subcategories.includes(currentValue) || currentValue === '_default' || currentValue === '__new__')) {
+            if (currentValue && (allCategories.includes(currentValue) || currentValue === '_default' || currentValue === '__new__')) {
                 select.value = currentValue;
             }
         }
