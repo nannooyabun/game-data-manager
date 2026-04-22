@@ -1239,7 +1239,7 @@
                         <button class="bulk-btn" onclick="bulkSelectAcademy('owned')">全て所持ON</button>
                         <button class="bulk-btn" onclick="bulkSelectAcademy('clear')">クリア</button>
                     </div>
-                    <div class="flower-grid">
+                    <div class="flower-grid" id="academyGrid">
                         <div class="flower-item">
                             <div class="name">紅葉</div>
                             <div class="checkboxes">
@@ -1355,7 +1355,7 @@
                             <input type="number" id="asura30Level" min="1" value="10" onchange="updateProgress()">
                         </div>
                     </div>
-                    <div class="skill-grid" style="margin-top: 0.8rem;">
+                    <div class="skill-grid" id="asuraSkillGrid_30レベル" style="margin-top: 0.8rem;">
                         <div class="skill-item">
                             <input type="checkbox" id="asura30_1" onchange="onAsuraSkillChange(30, 1)">
                             <label for="asura30_1">厄憑</label>
@@ -1379,7 +1379,7 @@
                             <input type="number" id="asura60Level" min="1" value="10" onchange="updateProgress()">
                         </div>
                     </div>
-                    <div class="skill-grid" style="margin-top: 0.8rem;">
+                    <div class="skill-grid" id="asuraSkillGrid_60レベル" style="margin-top: 0.8rem;">
                         <div class="skill-item">
                             <input type="checkbox" id="asura60_1" onchange="onAsuraSkillChange(60, 1)">
                             <label for="asura60_1">移花接木</label>
@@ -1411,7 +1411,7 @@
                             <input type="number" id="asura90Level" min="1" value="10" onchange="updateProgress()">
                         </div>
                     </div>
-                    <div class="skill-grid" style="margin-top: 0.8rem;">
+                    <div class="skill-grid" id="asuraSkillGrid_90レベル" style="margin-top: 0.8rem;">
                         <div class="skill-item">
                             <input type="checkbox" id="asura90_1" onchange="onAsuraSkillChange(90, 1)">
                             <label for="asura90_1">破心断骨</label>
@@ -1465,7 +1465,7 @@
                         <button class="bulk-btn" onclick="bulkSelectMasks('owned')">全て所持ON</button>
                         <button class="bulk-btn" onclick="bulkSelectMasks('clear')">クリア</button>
                     </div>
-                    <div class="flower-grid">
+                    <div class="flower-grid" id="masksGrid">
                         <div class="flower-item">
                             <div>
                                 <div class="name">玄狐神使</div>
@@ -2044,10 +2044,33 @@
         // Render custom items for all categories
         function renderAllCustomItems() {
             renderCustomWeapons();
+            renderCustomAcademy();
             renderCustomMasks();
             renderCustomFlowers();
             renderCustomTactics();
             renderCustomAsura();
+        }
+
+        // Render custom academy items (極伝兵法) - append into existing academyGrid
+        function renderCustomAcademy() {
+            const grid = document.getElementById('academyGrid');
+            if (!grid) return;
+
+            grid.querySelectorAll('.flower-item[data-custom="1"]').forEach(el => el.remove());
+
+            const items = getCustomItemsForCategory('極伝兵法');
+            if (items.length === 0) return;
+
+            const html = items.map(item => `
+                <div class="flower-item" data-custom="1">
+                    <div class="name">${item.name}${item.subcategory ? ` <small style="color: var(--text-muted); font-size: 0.7rem;">(${item.subcategory})</small>` : ''}</div>
+                    <div class="checkboxes">
+                        <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                        <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
+                    </div>
+                </div>
+            `).join('');
+            grid.insertAdjacentHTML('beforeend', html);
         }
 
         // Render custom weapons
@@ -2085,66 +2108,60 @@
             `).join('');
         }
 
-        // Render custom masks (核心具足)
+        // Render custom masks (核心具足) - append into existing masksGrid
         function renderCustomMasks() {
+            const grid = document.getElementById('masksGrid');
             const container = document.getElementById('customMasksContainer');
+            if (container) container.innerHTML = '';
+            if (!grid) return;
+
+            // Remove previously-rendered custom items
+            grid.querySelectorAll('.flower-item[data-custom="1"]').forEach(el => el.remove());
+
             const items = getCustomItemsForCategory('核心具足');
+            if (items.length === 0) return;
 
-            if (items.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-
-            container.innerHTML = `
-                <div class="equipment-card" style="margin-top: 1rem;">
-                    <h4>カスタム核心具足</h4>
-                    <div class="flower-grid">
-                        ${items.map(item => `
-                            <div class="flower-item">
-                                <div>
-                                    <div class="name">${item.name}</div>
-                                    ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
-                                </div>
-                                <div class="checkboxes">
-                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
-                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
-                                </div>
-                            </div>
-                        `).join('')}
+            const html = items.map(item => `
+                <div class="flower-item" data-custom="1">
+                    <div>
+                        <div class="name">${item.name}</div>
+                        ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
+                    </div>
+                    <div class="checkboxes">
+                        <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                        <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
                     </div>
                 </div>
-            `;
+            `).join('');
+            grid.insertAdjacentHTML('beforeend', html);
         }
 
-        // Render custom flowers (花陣)
+        // Render custom flowers (花陣) - append into existing flowerGrid
         function renderCustomFlowers() {
+            const grid = document.getElementById('flowerGrid');
             const container = document.getElementById('customFlowersContainer');
+            if (container) container.innerHTML = '';
+            if (!grid) return;
+
+            // Remove previously-rendered custom items
+            grid.querySelectorAll('.flower-item[data-custom="1"]').forEach(el => el.remove());
+
             const items = getCustomItemsForCategory('花陣');
+            if (items.length === 0) return;
 
-            if (items.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-
-            container.innerHTML = `
-                <div class="equipment-card" style="margin-top: 1rem;">
-                    <h4>カスタム花陣</h4>
-                    <div class="flower-grid">
-                        ${items.map(item => `
-                            <div class="flower-item">
-                                <div>
-                                    <div class="name">${item.name}</div>
-                                    ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
-                                </div>
-                                <div class="checkboxes">
-                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
-                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
-                                </div>
-                            </div>
-                        `).join('')}
+            const html = items.map(item => `
+                <div class="flower-item" data-custom="1">
+                    <div>
+                        <div class="name">${item.name}</div>
+                        ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
+                    </div>
+                    <div class="checkboxes">
+                        <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                        <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
                     </div>
                 </div>
-            `;
+            `).join('');
+            grid.insertAdjacentHTML('beforeend', html);
         }
 
         // Render custom tactics (戦法)
@@ -2178,17 +2195,24 @@
             `;
         }
 
-        // Render custom asura skills (阿修羅)
+        // Render custom asura skills (阿修羅) - inject into matching level skill grid
         function renderCustomAsura() {
             const container = document.getElementById('customAsuraContainer');
+            if (container) container.innerHTML = '';
+
+            // Clear previously-rendered custom items from all asura grids
+            ['30レベル', '60レベル', '90レベル', 'その他'].forEach(sub => {
+                const grid = document.getElementById(`asuraSkillGrid_${sub}`);
+                if (grid) grid.querySelectorAll('.skill-item[data-custom="1"]').forEach(el => el.remove());
+            });
+            // Remove any previously-created "その他" card
+            const misc = document.getElementById('customAsuraMiscCard');
+            if (misc) misc.remove();
+
             const items = getCustomItemsForCategory('阿修羅');
+            if (items.length === 0) return;
 
-            if (items.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-
-            // Group by subcategory
+            // Group items by subcategory
             const grouped = {};
             items.forEach(item => {
                 const key = item.subcategory || 'その他';
@@ -2196,21 +2220,47 @@
                 grouped[key].push(item);
             });
 
-            container.innerHTML = Object.entries(grouped).map(([subcat, items]) => `
-                <div class="skill-group" style="margin-top: 1rem;">
-                    <div class="skill-header">
-                        <span>カスタム: ${subcat}</span>
-                    </div>
-                    <div class="skill-items">
-                        ${items.map(item => `
-                            <div class="skill-item">
-                                <input type="checkbox" id="${safeId(item.name)}" onchange="updateProgress()">
-                                <label for="${safeId(item.name)}">${item.name}</label>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
+            Object.entries(grouped).forEach(([subcat, subItems]) => {
+                const gridId = `asuraSkillGrid_${subcat}`;
+                let grid = document.getElementById(gridId);
+
+                // If subcategory doesn't match an existing grid, create a new card for it
+                if (!grid) {
+                    const asuraSection = document.getElementById('asuraSection');
+                    if (!asuraSection) return;
+                    const sectionContent = asuraSection.querySelector('.section-content');
+                    if (!sectionContent) return;
+                    const card = document.createElement('div');
+                    card.className = 'equipment-card';
+                    card.id = 'customAsuraMiscCard';
+                    card.innerHTML = `
+                        <h4>${escapeHtmlIndex(subcat)}スキル（カスタム）</h4>
+                        <div class="skill-grid" id="${gridId}" style="margin-top: 0.8rem;"></div>
+                    `;
+                    // Insert before customAsuraContainer if present, else append
+                    if (container && container.parentNode === sectionContent) {
+                        sectionContent.insertBefore(card, container);
+                    } else {
+                        sectionContent.appendChild(card);
+                    }
+                    grid = document.getElementById(gridId);
+                }
+
+                const html = subItems.map(item => {
+                    const id = safeId(item.name);
+                    return `
+                        <div class="skill-item" data-custom="1">
+                            <input type="checkbox" id="${id}" onchange="onCustomAsuraChange('${gridId}', '${id}')">
+                            <label for="${id}">${item.name}</label>
+                        </div>
+                    `;
+                }).join('');
+                grid.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function escapeHtmlIndex(str) {
+            return String(str).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
         }
 
         // ========== Initialization ==========
@@ -2599,6 +2649,23 @@
                 });
             }
 
+            // Custom academy (極伝兵法)
+            const customAcademy = getCustomItemsForCategory('極伝兵法');
+            if (customAcademy.length > 0) {
+                data.customItems.academy = {};
+                customAcademy.forEach(item => {
+                    const id = safeId(item.name);
+                    const equippedEl = document.getElementById(`${id}_equipped`);
+                    const ownedEl = document.getElementById(`${id}_owned`);
+                    if (equippedEl) {
+                        data.customItems.academy[item.name] = {
+                            equipped: equippedEl.checked,
+                            owned: ownedEl?.checked || false
+                        };
+                    }
+                });
+            }
+
             // Custom masks
             const customMasks = getCustomItemsForCategory('核心具足');
             if (customMasks.length > 0) {
@@ -2659,7 +2726,7 @@
                     const el = document.getElementById(id);
                     if (el) {
                         data.customItems.asura[item.name] = {
-                            selected: el.checked,
+                            checked: el.checked,
                             subcategory: item.subcategory
                         };
                     }
@@ -3053,6 +3120,17 @@
                     });
                 }
 
+                // Custom academy
+                if (data.customItems.academy) {
+                    Object.entries(data.customItems.academy).forEach(([name, academyData]) => {
+                        const id = safeId(name);
+                        const equippedEl = document.getElementById(`${id}_equipped`);
+                        const ownedEl = document.getElementById(`${id}_owned`);
+                        if (equippedEl) equippedEl.checked = academyData.equipped || false;
+                        if (ownedEl) ownedEl.checked = academyData.owned || false;
+                    });
+                }
+
                 // Custom masks
                 if (data.customItems.masks) {
                     Object.entries(data.customItems.masks).forEach(([name, maskData]) => {
@@ -3146,17 +3224,26 @@
         // ========== Asura Skill Selection (radio-like within level) ==========
 
         function onAsuraSkillChange(level, selectedIndex) {
-            const count = level === 30 ? 3 : 5;
             const checkbox = document.getElementById(`asura${level}_${selectedIndex}`);
-
             if (checkbox && checkbox.checked) {
-                // Uncheck other checkboxes in the same level
-                for (let i = 1; i <= count; i++) {
-                    if (i !== selectedIndex) {
-                        const other = document.getElementById(`asura${level}_${i}`);
-                        if (other) other.checked = false;
-                    }
-                }
+                asuraRadioUncheckOthers(`asuraSkillGrid_${level}レベル`, checkbox.id);
+            }
+            updateProgress();
+        }
+
+        // Radio-like behavior: uncheck all checkboxes in the given grid except selfId
+        function asuraRadioUncheckOthers(gridId, selfId) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            grid.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                if (cb.id !== selfId) cb.checked = false;
+            });
+        }
+
+        function onCustomAsuraChange(gridId, selfId) {
+            const cb = document.getElementById(selfId);
+            if (cb && cb.checked) {
+                asuraRadioUncheckOthers(gridId, selfId);
             }
             updateProgress();
         }

@@ -1110,12 +1110,30 @@
                 });
             }
 
-            // Custom masks (仮面)
-            const customMasksList = getCustomItemsList('仮面');
+            // Custom academy (極伝兵法)
+            const customAcademyList = getCustomItemsList('極伝兵法');
+            if (customAcademyList.length > 0) {
+                cats.push({
+                    key: 'custom_academy',
+                    title: '③ 極伝兵法(カスタム)',
+                    colorClass: 'cat-academy',
+                    items: customAcademyList.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => {
+                        const a = user.customItems?.academy?.[item.id];
+                        if (!a) return 'none';
+                        if (a.equipped) return 'equipped';
+                        if (a.owned) return 'owned';
+                        return 'none';
+                    }
+                });
+            }
+
+            // Custom masks (核心具足)
+            const customMasksList = getCustomItemsList('核心具足');
             if (customMasksList.length > 0) {
                 cats.push({
                     key: 'custom_mask',
-                    title: '⑤ 仮面(カスタム)',
+                    title: '⑤ 核心具足(カスタム)',
                     colorClass: 'cat-armor',
                     items: customMasksList.map(name => ({ id: name, name })),
                     getCellState: (user, item) => {
@@ -1286,6 +1304,7 @@
             // Mapping: custom category key -> base category key it should follow
             const customFollowsMap = {
                 'custom_weapon': 'weapon',
+                'custom_academy': 'academy',
                 'custom_asura': 'asura',
                 'custom_mask': 'armor',
                 'custom_flower': 'flower',
@@ -1459,6 +1478,14 @@
                     stateText = newEquipped ? '装備中' : '所持のみ';
                 }
                 // Custom items
+                else if (catKey === 'custom_academy') {
+                    const a = user.customItems?.academy?.[itemId];
+                    if (!a?.owned && !a?.equipped) return;
+                    const newEquipped = !a.equipped;
+                    path = `gameData/${username}/customItems/academy/${itemId}`;
+                    await update(ref(database, path), { equipped: newEquipped, owned: true });
+                    stateText = newEquipped ? '装備中' : '所持のみ';
+                }
                 else if (catKey === 'custom_weapon') {
                     const w = user.customItems?.weapons?.[itemId];
                     if (!w?.status || w.status === '') return;
@@ -1837,9 +1864,14 @@
                 items.push({ id: name, name, type: '兵器(カスタム)', category: 'custom_weapon' });
             });
 
-            const customMasksList = getCustomItemsList('仮面');
+            const customAcademyList = getCustomItemsList('極伝兵法');
+            customAcademyList.forEach(name => {
+                items.push({ id: name, name, type: '極伝兵法(カスタム)', category: 'custom_academy' });
+            });
+
+            const customMasksList = getCustomItemsList('核心具足');
             customMasksList.forEach(name => {
-                items.push({ id: name, name, type: '仮面(カスタム)', category: 'custom_mask' });
+                items.push({ id: name, name, type: '核心具足(カスタム)', category: 'custom_mask' });
             });
 
             const customFlowersList = getCustomItemsList('花陣');
@@ -1916,6 +1948,11 @@
                     const customWeaponData = data?.customItems?.weapons?.[item.id];
                     equipped = customWeaponData?.status === 'equipped';
                     owned = customWeaponData?.status === 'owned' || customWeaponData?.status === 'equipped';
+                    break;
+                case 'custom_academy':
+                    const customAcademyData = data?.customItems?.academy?.[item.id];
+                    equipped = customAcademyData?.equipped || false;
+                    owned = customAcademyData?.owned || false;
                     break;
                 case 'custom_mask':
                     const customMaskData = data?.customItems?.masks?.[item.id];
@@ -2034,7 +2071,8 @@
             'horse': { class: 'subcat-horse', label: '⑦ 軍馬', icon: '🐴', order: 8 },
             'tactic': { class: 'subcat-tactic', label: '⑧ 戦法', icon: '📜', order: 9 },
             'custom_weapon': { class: 'subcat-weapon', label: '① 兵器(カスタム)', icon: '⚔️', order: 10 },
-            'custom_mask': { class: 'subcat-mask', label: '⑤ 仮面(カスタム)', icon: '🎭', order: 11 },
+            'custom_academy': { class: 'subcat-academy', label: '③ 極伝兵法(カスタム)', icon: '📚', order: 10.5 },
+            'custom_mask': { class: 'subcat-mask', label: '⑤ 核心具足(カスタム)', icon: '🎭', order: 11 },
             'custom_flower': { class: 'subcat-flower', label: '⑥ 花陣(カスタム)', icon: '🌸', order: 12 },
             'custom_asura': { class: 'subcat-asura', label: '④ 阿修羅(カスタム)', icon: '👹', order: 13 },
             'custom_tactic': { class: 'subcat-tactic', label: '⑧ 戦法(カスタム)', icon: '📜', order: 14 }
