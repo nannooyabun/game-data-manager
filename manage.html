@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理画面 - 武将データ管理</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-input: #22222f;
+            --border-color: #2a2a3a;
+            --border-accent: #4a3a2a;
+            --text-primary: #e8e4dc;
+            --text-secondary: #9a9490;
+            --text-muted: #6a6560;
+            --accent-gold: #c9a227;
+            --accent-gold-dim: #8a7020;
+            --accent-red: #b83c3c;
+            --accent-green: #3cb878;
+            --accent-blue: #3c8cb8;
+            --status-complete: #2a6a4a;
+            --status-partial: #6a5a2a;
+            --status-empty: #4a2a2a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1510 0%, #0a0a0f 100%);
+            border-bottom: 2px solid var(--accent-gold-dim);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-actions a {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .header-actions a:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        /* Main container */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Login section */
+        .login-section {
+            max-width: 400px;
+            margin: 4rem auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .login-section h2 {
+            color: var(--accent-gold);
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .login-form input {
+            padding: 0.8rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: var(--accent-gold-dim);
+        }
+
+        .login-form button {
+            padding: 0.8rem 1rem;
+            background: var(--accent-gold);
+            border: none;
+            border-radius: 6px;
+            color: var(--bg-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .login-form button:hover {
+            filter: brightness(1.1);
+        }
+
+        .password-change-link {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .password-change-link a {
+            color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        .password-change-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Password change dialog */
+        .password-dialog {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-input);
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .password-dialog.show {
+            display: block;
+        }
+
+        .password-dialog h4 {
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .password-dialog input {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .password-dialog-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .password-dialog-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .password-dialog-actions .btn-confirm {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .password-dialog-actions .btn-cancel {
+            background: var(--text-muted);
+            color: white;
+        }
+
+        /* Admin content (hidden until login) */
+        .admin-content {
+            display: none;
+        }
+
+        .admin-content.show {
+            display: block;
+        }
+
+        /* Section card */
+        .section-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-card h3 {
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Action buttons row */
+        .action-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .action-btn.primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .action-btn.success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .action-btn.danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .action-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Data table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: var(--bg-secondary);
+            color: var(--accent-gold);
+            font-weight: 500;
+        }
+
+        .data-table tr:hover td {
+            background: var(--bg-input);
+        }
+
+        .data-table .actions {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .data-table .btn-edit {
+            padding: 0.3rem 0.6rem;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .data-table .btn-delete {
+            padding: 0.3rem 0.6rem;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 80px;
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-green);
+            transition: width 0.3s;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            border: 1px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 0.8rem 1.5rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--accent-green);
+        }
+
+        .toast.error {
+            border-color: var(--accent-red);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+
+            .data-table {
+                font-size: 0.8rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 管理画面</h1>
+        <div class="header-actions">
+            <a href="index.html">← 入力画面</a>
+            <a href="view.html">📊 一覧表示</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Login Section -->
+        <div class="login-section" id="loginSection">
+            <h2>管理者ログイン</h2>
+            <div class="login-form">
+                <input type="password" id="adminPwd" placeholder="パスワードを入力">
+                <button onclick="verifyPassword()">ログイン</button>
+            </div>
+            <div class="password-change-link">
+                <a onclick="togglePasswordDialog()">パスワードを変更する</a>
+            </div>
+            <div class="password-dialog" id="passwordDialog">
+                <h4>管理者パスワード変更</h4>
+                <input type="password" id="masterPwd" placeholder="主管理者パスワード">
+                <input type="password" id="newAdminPwd" placeholder="新しい管理者パスワード">
+                <input type="password" id="confirmAdminPwd" placeholder="新しいパスワード（確認）">
+                <div class="password-dialog-actions">
+                    <button class="btn-confirm" onclick="changeAdminPassword()">変更</button>
+                    <button class="btn-cancel" onclick="togglePasswordDialog()">キャンセル</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Content (hidden until login) -->
+        <div class="admin-content" id="adminContent">
+            <!-- User Data Section -->
+            <div class="section-card">
+                <h3>👥 ユーザーデータ管理</h3>
+                <div class="action-row">
+                    <button class="action-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>ユーザー名</th>
+                                <th>兵種</th>
+                                <th>更新日時</th>
+                                <th>完成度</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr><td colspan="5" class="empty-state">データを読み込んでいます...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Team Management Section (Phase B placeholder) -->
+            <div class="section-card" id="teamSection" style="display: none;">
+                <h3>🎯 チーム管理</h3>
+                <p style="color: var(--text-muted);">Phase B で実装予定</p>
+            </div>
+
+            <!-- Custom Generals Section (Phase C placeholder) -->
+            <div class="section-card" id="customGeneralSection" style="display: none;">
+                <h3>⚔️ カスタム武将管理</h3>
+                <p style="color: var(--text-muted);">Phase C で実装予定</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getDatabase, ref, get, set, remove, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDu9WB_iA_2i5qL4uir8g__LmfAFTeuOYI",
+            authDomain: "game-data-manager-6f18b.firebaseapp.com",
+            databaseURL: "https://game-data-manager-6f18b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "game-data-manager-6f18b",
+            storageBucket: "game-data-manager-6f18b.firebasestorage.app",
+            messagingSenderId: "528465841462",
+            appId: "1:528465841462:web:3262de1288dfb1326b3797"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        window.firebaseDB = { database, ref, get, set, remove, onValue };
+        window.firebaseReady = true;
+        document.dispatchEvent(new Event('firebaseReady'));
+    </script>
+
+    <script>
+        // Global state
+        let MASTER_PASSWORD = null;
+        let ADMIN_PASSWORD = null;
+        let gameData = {};
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => { toast.className = 'toast'; }, 2500);
+        }
+
+        // Load passwords from Firebase
+        async function loadPasswords() {
+            if (!window.firebaseReady) return;
+
+            try {
+                const { database, ref, get } = window.firebaseDB;
+
+                const adminSnapshot = await get(ref(database, 'settings/adminPassword'));
+                if (adminSnapshot.exists()) {
+                    ADMIN_PASSWORD = adminSnapshot.val();
+                }
+
+                const masterSnapshot = await get(ref(database, 'settings/masterPassword'));
+                if (masterSnapshot.exists()) {
+                    MASTER_PASSWORD = masterSnapshot.val();
+                }
+            } catch (error) {
+                console.error('Failed to load passwords:', error);
+            }
+        }
+
+        // Verify admin password
+        function verifyPassword() {
+            const password = document.getElementById('adminPwd').value;
+
+            if (!ADMIN_PASSWORD) {
+                showToast('管理者パスワードが未設定です。Firebaseコンソールで設定してください。', 'error');
+                return;
+            }
+
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminContent').classList.add('show');
+                refreshDataTable();
+                showToast('ログインしました', 'success');
+            } else {
+                showToast('パスワードが違います', 'error');
+            }
+        }
+
+        // Toggle password change dialog
+        function togglePasswordDialog() {
+            const dialog = document.getElementById('passwordDialog');
+            dialog.classList.toggle('show');
+            if (!dialog.classList.contains('show')) {
+                document.getElementById('masterPwd').value = '';
+                document.getElementById('newAdminPwd').value = '';
+                document.getElementById('confirmAdminPwd').value = '';
+            }
+        }
+
+        // Change admin password
+        async function changeAdminPassword() {
+            const masterPwd = document.getElementById('masterPwd').value;
+            const newPwd = document.getElementById('newAdminPwd').value;
+            const confirmPwd = document.getElementById('confirmAdminPwd').value;
+
+            if (!MASTER_PASSWORD) {
+                showToast('主管理者パスワードが未設定です。', 'error');
+                return;
+            }
+
+            if (masterPwd !== MASTER_PASSWORD) {
+                showToast('主管理者パスワードが違います', 'error');
+                return;
+            }
+
+            if (!newPwd || newPwd.length < 4) {
+                showToast('新しいパスワードは4文字以上で入力してください', 'error');
+                return;
+            }
+
+            if (newPwd !== confirmPwd) {
+                showToast('新しいパスワードが一致しません', 'error');
+                return;
+            }
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, 'settings/adminPassword'), newPwd);
+                ADMIN_PASSWORD = newPwd;
+                togglePasswordDialog();
+                showToast('パスワードを変更しました', 'success');
+            } catch (error) {
+                console.error('Password change error:', error);
+                showToast('パスワード変更に失敗しました', 'error');
+            }
+        }
+
+        // Load game data
+        async function loadGameData() {
+            if (!window.firebaseReady) return;
+
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const snapshot = await get(ref(database, 'gameData'));
+                gameData = snapshot.exists() ? snapshot.val() : {};
+            } catch (error) {
+                console.error('Failed to load game data:', error);
+            }
+        }
+
+        // Subscribe to realtime updates
+        function subscribeRealtime() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+
+            onValue(ref(database, 'gameData'), (snap) => {
+                gameData = snap.exists() ? snap.val() : {};
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    refreshDataTable();
+                }
+            });
+        }
+
+        // Refresh data table
+        function refreshDataTable() {
+            const tbody = document.getElementById('dataTableBody');
+
+            if (!gameData || Object.keys(gameData).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">保存されたデータがありません</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = Object.entries(gameData).map(([name, data]) => {
+                const completion = calculateCompletion(data);
+                const date = data.timestamp ? new Date(data.timestamp).toLocaleString('ja-JP') : '-';
+                const troop = data.troopType || '-';
+                return `
+                    <tr>
+                        <td>${escapeHtml(name)}</td>
+                        <td>${escapeHtml(troop)}</td>
+                        <td>${date}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${completion}%"></div>
+                            </div>
+                            <span>${completion}%</span>
+                        </td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="editUser('${escapeHtml(name)}')">編集</button>
+                            <button class="btn-delete" onclick="confirmDeleteUser('${escapeHtml(name)}')">削除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Calculate completion percentage
+        function calculateCompletion(data) {
+            let filled = 0;
+            let total = 0;
+
+            total += 2;
+            if (data.username) filled++;
+            if (data.troopType) filled++;
+
+            if (data.weapons) {
+                Object.values(data.weapons).forEach(w => {
+                    total += 1;
+                    if (w.status) filled++;
+                });
+            }
+
+            if (data.spGenerals) {
+                Object.values(data.spGenerals).forEach(sp => {
+                    total += 1;
+                    if (sp.owned || sp.formed) filled++;
+                });
+            }
+
+            if (data.generals) {
+                Object.values(data.generals).forEach(g => {
+                    total += 1;
+                    if (g.owned || g.formed) filled++;
+                });
+            }
+
+            return Math.round((filled / Math.max(total, 1)) * 100);
+        }
+
+        // Edit user - redirect to index.html with username
+        function editUser(username) {
+            window.location.href = `index.html?edit=${encodeURIComponent(username)}`;
+        }
+
+        // Confirm delete user
+        function confirmDeleteUser(username) {
+            if (confirm(`${username}のデータを削除しますか？`)) {
+                deleteUser(username);
+            }
+        }
+
+        // Delete user
+        async function deleteUser(username) {
+            try {
+                const { database, ref, remove } = window.firebaseDB;
+                await remove(ref(database, `gameData/${username}`));
+                showToast(`${username}のデータを削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // Clear all data
+        async function clearAllData() {
+            if (!confirm('全てのデータを削除しますか？この操作は取り消せません。')) return;
+            if (!confirm('本当に削除しますか？')) return;
+
+            try {
+                const { database, ref, remove } = window.firebaseDB;
+                await remove(ref(database, 'gameData'));
+                gameData = {};
+                refreshDataTable();
+                showToast('全データを削除しました', 'success');
+            } catch (error) {
+                console.error('Clear all error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // Handle Enter key on password input
+        document.getElementById('adminPwd').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyPassword();
+        });
+
+        // Init
+        document.addEventListener('firebaseReady', async () => {
+            await loadPasswords();
+            await loadGameData();
+            subscribeRealtime();
+        });
+
+        if (window.firebaseReady) {
+            loadPasswords().then(() => {
+                loadGameData().then(subscribeRealtime);
+            });
+        }
+    </script>
+</body>
+</html>
