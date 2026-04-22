@@ -859,9 +859,19 @@
                 <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
                     デフォルトの武将リストに含まれない武将を追加できます。追加した武将は全ユーザーの入力フォームに表示されます。
                 </p>
-                <div class="custom-general-form">
-                    <input type="text" id="newGeneralName" placeholder="武将名を入力" maxlength="20">
-                    <button onclick="addCustomGeneral()">追加</button>
+                <div class="custom-item-form">
+                    <div class="form-row">
+                        <select id="generalSubcategorySelect" onchange="onGeneralSubcategorySelectChange()">
+                            <option value="_default">（カテゴリなし）</option>
+                        </select>
+                    </div>
+                    <div class="form-row new-subcategory-row" id="newGeneralSubcategoryRow">
+                        <input type="text" id="newGeneralSubcategoryName" placeholder="新規カテゴリ名を入力" maxlength="20" style="flex: 1;">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="newGeneralName" placeholder="武将名を入力" maxlength="20" style="flex: 1;">
+                        <button onclick="addCustomGeneral()">追加</button>
+                    </div>
                 </div>
                 <div class="custom-general-list" id="customGeneralList">
                     <span style="color: var(--text-muted);">読み込み中...</span>
@@ -945,7 +955,7 @@
         let ADMIN_PASSWORD = null;
         let gameData = {};
         let teams = {};
-        let customGenerals = [];
+        let customGenerals = {};  // { "カテゴリ": ["武将1"], "_default": ["武将2"] }
         let customItems = {};
 
         // Predefined categories with subcategories
@@ -1004,6 +1014,7 @@
                 refreshDataTable();
                 renderTeamList();
                 renderCustomGenerals();
+                updateGeneralSubcategorySelect();
                 renderCustomItems();
                 updateCategorySelect();
                 showToast('ログインしました', 'success');
@@ -1101,9 +1112,16 @@
             });
 
             onValue(ref(database, 'customGenerals'), (snap) => {
-                customGenerals = snap.exists() ? snap.val() : [];
+                const data = snap.exists() ? snap.val() : {};
+                // Backward compatibility: convert array to object format
+                if (Array.isArray(data)) {
+                    customGenerals = { '_default': data };
+                } else {
+                    customGenerals = data;
+                }
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderCustomGenerals();
+                    updateGeneralSubcategorySelect();
                 }
             });
 
@@ -1417,62 +1435,190 @@
 
         // ========== Custom Generals Management ==========
 
-        // Render custom generals list
+        function getGeneralSubcategories() {
+            if (!customGenerals || typeof customGenerals !== 'object') return [];
+            return Object.keys(customGenerals).filter(k => k !== '_default').sort();
+        }
+
+        function getAllGeneralsList() {
+            if (!customGenerals || typeof customGenerals !== 'object') return [];
+            return Object.values(customGenerals).flat();
+        }
+
+        function onGeneralSubcategorySelectChange() {
+            const select = document.getElementById('generalSubcategorySelect');
+            const newRow = document.getElementById('newGeneralSubcategoryRow');
+
+            if (select.value === '__new__') {
+                newRow.classList.add('show');
+                document.getElementById('newGeneralSubcategoryName').focus();
+            } else {
+                newRow.classList.remove('show');
+            }
+        }
+
+        function updateGeneralSubcategorySelect() {
+            const select = document.getElementById('generalSubcategorySelect');
+            const currentValue = select.value;
+            const subcategories = getGeneralSubcategories();
+
+            select.innerHTML = `
+                <option value="_default">（カテゴリなし）</option>
+                ${subcategories.map(sub => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join('')}
+                <option value="__new__">+ 新規カテゴリを作成</option>
+            `;
+
+            if (currentValue && (subcategories.includes(currentValue) || currentValue === '_default' || currentValue === '__new__')) {
+                select.value = currentValue;
+            }
+        }
+
         function renderCustomGenerals() {
             const container = document.getElementById('customGeneralList');
 
-            if (!customGenerals || customGenerals.length === 0) {
+            if (!customGenerals || typeof customGenerals !== 'object') {
                 container.innerHTML = '<span style="color: var(--text-muted);">追加された武将はありません</span>';
                 return;
             }
 
-            container.innerHTML = customGenerals.map(name => `
-                <span class="custom-general-tag">
-                    ${escapeHtml(name)}
-                    <button onclick="removeCustomGeneral('${escapeHtml(name)}')" title="削除">✕</button>
-                </span>
-            `).join('');
+            const categories = Object.keys(customGenerals);
+            const hasAnyGenerals = categories.some(cat => customGenerals[cat] && customGenerals[cat].length > 0);
+
+            if (!hasAnyGenerals) {
+                container.innerHTML = '<span style="color: var(--text-muted);">追加された武将はありません</span>';
+                return;
+            }
+
+            // Render default (uncategorized) generals first
+            const defaultGenerals = customGenerals._default || [];
+            const subcategories = categories.filter(k => k !== '_default' && customGenerals[k]?.length > 0);
+
+            let html = '';
+
+            if (defaultGenerals.length > 0) {
+                html += `
+                    <div style="margin-bottom: 0.8rem;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            ${defaultGenerals.map(name => `
+                                <span class="custom-general-tag">
+                                    ${escapeHtml(name)}
+                                    <button onclick="removeCustomGeneral('_default', '${escapeHtml(name)}')" title="削除">✕</button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            subcategories.forEach(cat => {
+                const generals = customGenerals[cat] || [];
+                html += `
+                    <div class="subcategory-group" style="margin-left: 0;">
+                        <div class="subcategory-group-header">
+                            <span class="subcategory-group-title">
+                                📂 ${escapeHtml(cat)}
+                                <span class="category-group-count">${generals.length}人</span>
+                            </span>
+                            <button onclick="deleteGeneralSubcategory('${escapeHtml(cat)}')" style="background: none; border: none; color: var(--accent-red); cursor: pointer; font-size: 0.8rem;">削除</button>
+                        </div>
+                        <div class="subcategory-group-content">
+                            ${generals.map(name => `
+                                <span class="custom-general-tag">
+                                    ${escapeHtml(name)}
+                                    <button onclick="removeCustomGeneral('${escapeHtml(cat)}', '${escapeHtml(name)}')" title="削除">✕</button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
         }
 
-        // Add custom general
         async function addCustomGeneral() {
-            const input = document.getElementById('newGeneralName');
-            const name = input.value.trim();
+            const subcatSelect = document.getElementById('generalSubcategorySelect');
+            const nameInput = document.getElementById('newGeneralName');
+            const newSubcatInput = document.getElementById('newGeneralSubcategoryName');
+
+            let subcategory = subcatSelect.value;
+            const name = nameInput.value.trim();
+
+            if (subcategory === '__new__') {
+                subcategory = newSubcatInput.value.trim();
+                if (!subcategory) {
+                    showToast('カテゴリ名を入力してください', 'error');
+                    return;
+                }
+            }
 
             if (!name) {
                 showToast('武将名を入力してください', 'error');
                 return;
             }
 
-            // Check if already exists
-            if (customGenerals.includes(name)) {
+            // Check if already exists in any category
+            const allGenerals = getAllGeneralsList();
+            if (allGenerals.includes(name)) {
                 showToast('この武将は既に登録されています', 'error');
                 return;
             }
 
             try {
                 const { database, ref, set } = window.firebaseDB;
-                const newList = [...customGenerals, name];
-                await set(ref(database, 'customGenerals'), newList);
-                input.value = '';
-                showToast(`${name}を追加しました`, 'success');
+                const currentList = customGenerals[subcategory] || [];
+                const newList = [...currentList, name];
+                await set(ref(database, `customGenerals/${subcategory}`), newList);
+
+                nameInput.value = '';
+                if (subcatSelect.value === '__new__') {
+                    newSubcatInput.value = '';
+                    document.getElementById('newGeneralSubcategoryRow').classList.remove('show');
+                }
+
+                const displayName = subcategory === '_default' ? name : `${subcategory} > ${name}`;
+                showToast(`${displayName}を追加しました`, 'success');
             } catch (error) {
                 console.error('Add general error:', error);
                 showToast('追加に失敗しました', 'error');
             }
         }
 
-        // Remove custom general
-        async function removeCustomGeneral(name) {
+        async function removeCustomGeneral(subcategory, name) {
             if (!confirm(`${name}を削除しますか？`)) return;
 
             try {
                 const { database, ref, set } = window.firebaseDB;
-                const newList = customGenerals.filter(g => g !== name);
-                await set(ref(database, 'customGenerals'), newList);
+                const currentList = customGenerals[subcategory] || [];
+                const newList = currentList.filter(g => g !== name);
+
+                if (newList.length === 0) {
+                    await set(ref(database, `customGenerals/${subcategory}`), null);
+                } else {
+                    await set(ref(database, `customGenerals/${subcategory}`), newList);
+                }
+
                 showToast(`${name}を削除しました`, 'success');
             } catch (error) {
                 console.error('Remove general error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        async function deleteGeneralSubcategory(subcategory) {
+            const generals = customGenerals[subcategory] || [];
+            const msg = generals.length > 0
+                ? `${subcategory}（${generals.length}人の武将を含む）を削除しますか？`
+                : `${subcategory}を削除しますか？`;
+
+            if (!confirm(msg)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `customGenerals/${subcategory}`), null);
+                showToast(`${subcategory}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete subcategory error:', error);
                 showToast('削除に失敗しました', 'error');
             }
         }

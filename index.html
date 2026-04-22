@@ -1913,6 +1913,13 @@
             }
         }
 
+        // Flatten custom generals object to array
+        function flattenCustomGenerals(data) {
+            if (Array.isArray(data)) return data;
+            if (!data || typeof data !== 'object') return [];
+            return Object.values(data).flat();
+        }
+
         // Get custom generals
         async function getCustomGenerals() {
             if (!window.firebaseReady) {
@@ -1921,7 +1928,8 @@
             try {
                 const { database, ref, get } = window.firebaseDB;
                 const snapshot = await get(ref(database, 'customGenerals'));
-                cachedCustomGenerals = snapshot.exists() ? snapshot.val() : [];
+                const data = snapshot.exists() ? snapshot.val() : [];
+                cachedCustomGenerals = flattenCustomGenerals(data);
                 return cachedCustomGenerals;
             } catch (error) {
                 console.error('Error getting custom generals:', error);
@@ -1929,12 +1937,12 @@
             }
         }
 
-        // Save custom generals
+        // Save custom generals (deprecated - use manage.html)
         async function saveCustomGenerals(generalsList) {
             if (!window.firebaseReady) return false;
             try {
                 const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, 'customGenerals'), generalsList);
+                await set(ref(database, 'customGenerals/_default'), generalsList);
                 cachedCustomGenerals = generalsList;
                 return true;
             } catch (error) {
@@ -1956,7 +1964,8 @@
 
             // Listen for custom generals changes
             onValue(ref(database, 'customGenerals'), (snapshot) => {
-                const newGenerals = snapshot.exists() ? snapshot.val() : [];
+                const data = snapshot.exists() ? snapshot.val() : [];
+                const newGenerals = flattenCustomGenerals(data);
                 if (JSON.stringify(newGenerals) !== JSON.stringify(cachedCustomGenerals)) {
                     cachedCustomGenerals = newGenerals;
                     initGeneralGrid();
