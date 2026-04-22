@@ -402,6 +402,24 @@
             { id: 'hanya', name: '般若' }
         ];
 
+        const spGeneralItems = [
+            { id: 'nobunaga', name: '信長' },
+            { id: 'hideyoshi', name: '秀吉' },
+            { id: 'ieyasu', name: '家康' }
+        ];
+
+        const armorMaskItems = [
+            { id: 'genko', name: '玄狐神使' },
+            { id: 'kirin', name: '金麒麟' },
+            { id: 'reikyo', name: '霊棘' },
+            { id: 'kinen', name: '金猿' },
+            { id: 'hanya', name: '般若' },
+            { id: 'kiou', name: '鬼王' }
+        ];
+
+        const tacticItems = tactics.map(t => ({ id: t.id, name: t.name }));
+        const flowerItems = flowerFormations.map(f => ({ id: f.id, name: f.name }));
+
         const tableCategories = [
             {
                 key: 'weapon',
@@ -413,6 +431,58 @@
                     if (!w) return 'none';
                     if (w.status === 'equipped') return 'equipped';
                     if (w.status === 'owned') return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'spGeneral',
+                title: '②-1 SP武将',
+                colorClass: 'cat-sp',
+                items: spGeneralItems,
+                getCellState: (user, itemId) => {
+                    const sp = user.spGenerals && user.spGenerals[itemId];
+                    if (!sp) return 'none';
+                    if (sp.formed) return 'equipped';
+                    if (sp.owned) return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'armor',
+                title: '⑤ 核心具足',
+                colorClass: 'cat-armor',
+                items: armorMaskItems,
+                getCellState: (user, itemId) => {
+                    const m = user.armor && user.armor.masks && user.armor.masks[itemId];
+                    if (!m) return 'none';
+                    if (m.equipped) return 'equipped';
+                    if (m.owned) return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'flower',
+                title: '⑥ 花陣',
+                colorClass: 'cat-flower',
+                items: flowerItems,
+                getCellState: (user, itemId) => {
+                    const f = user.flowers && user.flowers[itemId];
+                    if (!f) return 'none';
+                    if (f.equipped) return 'equipped';
+                    if (f.owned) return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'tactic',
+                title: '⑧ 戦法',
+                colorClass: 'cat-tactic',
+                items: tacticItems,
+                getCellState: (user, itemId) => {
+                    const t = user.tactics && user.tactics[itemId];
+                    if (!t) return 'none';
+                    if (t.equipped) return 'equipped';
+                    if (t.owned) return 'owned';
                     return 'none';
                 }
             }
