@@ -382,7 +382,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-        import { getDatabase, ref, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+        import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDu9WB_iA_2i5qL4uir8g__LmfAFTeuOYI",
@@ -397,7 +397,7 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        window.firebaseDB = { database, ref, get, set, onValue };
+        window.firebaseDB = { database, ref, get, set, update, onValue };
         window.firebaseReady = true;
         document.dispatchEvent(new Event('firebaseReady'));
     </script>
@@ -745,6 +745,27 @@
             setTimeout(() => { toast.className = 'toast'; }, 2500);
         }
 
+        // Scroll position preservation
+        let pendingScrollRestore = null;
+
+        function saveScrollPosition() {
+            const wrapper = document.getElementById('tableWrapper');
+            if (wrapper) {
+                pendingScrollRestore = { left: wrapper.scrollLeft, top: wrapper.scrollTop };
+            }
+        }
+
+        function restoreScrollPosition() {
+            if (pendingScrollRestore) {
+                const wrapper = document.getElementById('tableWrapper');
+                if (wrapper) {
+                    wrapper.scrollLeft = pendingScrollRestore.left;
+                    wrapper.scrollTop = pendingScrollRestore.top;
+                }
+                pendingScrollRestore = null;
+            }
+        }
+
         // Toggle cell state between equipped ⇄ owned
         async function toggleCellState(username, catKey, itemId, itemData) {
             if (!window.firebaseReady) {
@@ -755,76 +776,84 @@
             const user = gameData[username];
             if (!user) return;
 
-            const { database, ref, set } = window.firebaseDB;
+            const { database, ref, set, update } = window.firebaseDB;
+
+            // Save scroll position before update
+            saveScrollPosition();
 
             try {
-                let newState, path, updateData;
+                let path, updateData, stateText;
 
                 // Handle different category types
                 if (catKey === 'weapon') {
                     const current = user.weapons?.[itemId]?.status;
-                    if (!current || current === '') return; // Not owned
-                    newState = current === 'equipped' ? 'owned' : 'equipped';
+                    if (!current || current === '') return;
+                    const newStatus = current === 'equipped' ? 'owned' : 'equipped';
                     path = `gameData/${username}/weapons/${itemId}/status`;
-                    updateData = newState;
+                    await set(ref(database, path), newStatus);
+                    stateText = newStatus === 'equipped' ? '装備中' : '所持のみ';
                 }
                 else if (catKey === 'spGeneral') {
                     const sp = user.spGenerals?.[itemId];
-                    if (!sp?.owned && !sp?.formed) return; // Not owned
-                    newState = sp.formed ? false : true;
-                    path = `gameData/${username}/spGenerals/${itemId}/formed`;
-                    updateData = newState;
+                    if (!sp?.owned && !sp?.formed) return;
+                    const newFormed = !sp.formed;
+                    path = `gameData/${username}/spGenerals/${itemId}`;
+                    await update(ref(database, path), { formed: newFormed, owned: true });
+                    stateText = newFormed ? '装備中' : '所持のみ';
                 }
                 else if (catKey.startsWith('general_')) {
                     const g = user.generals?.[itemId];
-                    if (!g?.owned && !g?.formed) return; // Not owned
-                    newState = g.formed ? false : true;
-                    path = `gameData/${username}/generals/${itemId}/formed`;
-                    updateData = newState;
+                    if (!g?.owned && !g?.formed) return;
+                    const newFormed = !g.formed;
+                    path = `gameData/${username}/generals/${itemId}`;
+                    await update(ref(database, path), { formed: newFormed, owned: true });
+                    stateText = newFormed ? '装備中' : '所持のみ';
                 }
                 else if (catKey === 'academy') {
                     const h = user.academy?.heiho?.[itemId];
                     if (!h?.owned && !h?.equipped) return;
-                    newState = h.equipped ? false : true;
-                    path = `gameData/${username}/academy/heiho/${itemId}/equipped`;
-                    updateData = newState;
+                    const newEquipped = !h.equipped;
+                    path = `gameData/${username}/academy/heiho/${itemId}`;
+                    await update(ref(database, path), { equipped: newEquipped, owned: true });
+                    stateText = newEquipped ? '装備中' : '所持のみ';
                 }
                 else if (catKey === 'asura') {
-                    // Asura skills are just unlocked or not, no toggle needed
                     return;
                 }
                 else if (catKey === 'armor') {
                     const m = user.armor?.masks?.[itemId];
                     if (!m?.owned && !m?.equipped) return;
-                    newState = m.equipped ? false : true;
-                    path = `gameData/${username}/armor/masks/${itemId}/equipped`;
-                    updateData = newState;
+                    const newEquipped = !m.equipped;
+                    path = `gameData/${username}/armor/masks/${itemId}`;
+                    await update(ref(database, path), { equipped: newEquipped, owned: true });
+                    stateText = newEquipped ? '装備中' : '所持のみ';
                 }
                 else if (catKey === 'flower') {
                     const f = user.flowers?.[itemId];
                     if (!f?.owned && !f?.equipped) return;
-                    newState = f.equipped ? false : true;
-                    path = `gameData/${username}/flowers/${itemId}/equipped`;
-                    updateData = newState;
+                    const newEquipped = !f.equipped;
+                    path = `gameData/${username}/flowers/${itemId}`;
+                    await update(ref(database, path), { equipped: newEquipped, owned: true });
+                    stateText = newEquipped ? '装備中' : '所持のみ';
                 }
                 else if (catKey === 'tactic') {
                     const t = user.tactics?.[itemId];
                     if (!t?.owned && !t?.equipped) return;
-                    newState = t.equipped ? false : true;
-                    path = `gameData/${username}/tactics/${itemId}/equipped`;
-                    updateData = newState;
+                    const newEquipped = !t.equipped;
+                    path = `gameData/${username}/tactics/${itemId}`;
+                    await update(ref(database, path), { equipped: newEquipped, owned: true });
+                    stateText = newEquipped ? '装備中' : '所持のみ';
                 }
                 else {
                     return;
                 }
 
-                await set(ref(database, path), updateData);
-                const stateText = (updateData === true || updateData === 'equipped') ? '装備中' : '所持のみ';
                 showToast(`${username}: ${itemId} → ${stateText}`, 'success');
 
             } catch (err) {
                 console.error('Toggle error:', err);
                 showToast('更新エラー: ' + err.message, 'error');
+                pendingScrollRestore = null;
             }
         }
 
@@ -923,6 +952,9 @@
 
             // Setup scroll observer for indicator highlighting
             setupScrollObserver();
+
+            // Restore scroll position if toggle was performed
+            restoreScrollPosition();
         }
 
         function setupScrollObserver() {
