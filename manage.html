@@ -863,6 +863,7 @@
                     <div class="form-row">
                         <select id="generalSubcategorySelect" onchange="onGeneralSubcategorySelectChange()">
                             <option value="_default">（カテゴリなし）</option>
+                            <option value="__new__">+ 新規カテゴリを作成</option>
                         </select>
                     </div>
                     <div class="form-row new-subcategory-row" id="newGeneralSubcategoryRow">
@@ -888,6 +889,7 @@
                     <div class="form-row">
                         <select id="itemCategorySelect" onchange="onCategorySelectChange()">
                             <option value="">-- カテゴリを選択 --</option>
+                            <option value="__new__">+ 新規カテゴリを作成</option>
                         </select>
                         <select id="itemSubcategorySelect" onchange="onSubcategorySelectChange()" style="display: none;">
                             <option value="">-- 小カテゴリを選択 --</option>
@@ -895,7 +897,7 @@
                     </div>
                     <div class="form-row new-category-row" id="newCategoryRow">
                         <input type="text" id="newCategoryName" placeholder="新規カテゴリ名を入力" maxlength="20">
-                        <input type="text" id="newSubcategoryName" placeholder="小カテゴリ名（省略可）" maxlength="20">
+                        <input type="text" id="newSubcategoryName" placeholder="新規小カテゴリ名（省略可）" maxlength="20">
                     </div>
                     <div class="form-row new-subcategory-row" id="newSubcategoryRow">
                         <input type="text" id="newSubcategoryNameOnly" placeholder="新規小カテゴリ名を入力" maxlength="20" style="flex: 1;">
