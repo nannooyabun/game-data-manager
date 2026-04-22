@@ -440,158 +440,6 @@
             color: var(--text-primary);
         }
 
-        /* Admin Section */
-        .admin-section {
-            background: linear-gradient(135deg, #1a1015 0%, #0a0a0f 100%);
-            border: 2px solid var(--accent-red);
-            border-radius: 12px;
-            margin-top: 2rem;
-            overflow: hidden;
-        }
-
-        .admin-header {
-            background: rgba(184, 60, 60, 0.1);
-            padding: 1rem 1.5rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .admin-header h3 {
-            color: var(--accent-red);
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-        }
-
-        .admin-password {
-            padding: 1.5rem;
-            display: none;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .admin-password.show {
-            display: block;
-        }
-
-        .admin-password input {
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.7rem 1rem;
-            color: var(--text-primary);
-            width: 200px;
-            margin-right: 0.5rem;
-        }
-
-        .admin-password button {
-            background: var(--accent-red);
-            color: white;
-            border: none;
-            padding: 0.7rem 1.5rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .admin-password button:hover {
-            background: #d04040;
-        }
-
-        .admin-content {
-            padding: 1.5rem;
-            display: none;
-        }
-
-        .admin-content.show {
-            display: block;
-        }
-
-        .admin-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .admin-btn {
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 0.7rem 1.2rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .admin-btn:hover {
-            border-color: var(--accent-gold);
-            background: var(--bg-secondary);
-        }
-
-        .admin-btn.primary {
-            background: var(--accent-gold);
-            color: var(--bg-primary);
-            border-color: var(--accent-gold);
-        }
-
-        .admin-btn.primary:hover {
-            background: #dab530;
-        }
-
-        .admin-btn.danger {
-            border-color: var(--accent-red);
-            color: var(--accent-red);
-        }
-
-        .admin-btn.danger:hover {
-            background: rgba(184, 60, 60, 0.2);
-        }
-
-        /* Data Table */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-        }
-
-        .data-table th, .data-table td {
-            padding: 0.8rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .data-table th {
-            background: var(--bg-secondary);
-            color: var(--accent-gold);
-            font-weight: 500;
-        }
-
-        .data-table tr:hover {
-            background: var(--bg-input);
-        }
-
-        .data-table .actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .data-table .actions button {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.75rem;
-            border-radius: 4px;
-            cursor: pointer;
-            border: 1px solid var(--border-color);
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-
         /* General List Editor */
         .general-list {
             background: var(--bg-input);
@@ -739,49 +587,6 @@
             font-size: 0.8rem;
         }
 
-        /* Custom General Input */
-        .custom-general {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            border: 1px dashed var(--border-color);
-        }
-
-        .custom-general h5 {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.8rem;
-        }
-
-        .custom-general-row {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .custom-general-row input {
-            flex: 1;
-            padding: 0.5rem;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-primary);
-        }
-
-        .custom-general-row input:first-child {
-            flex: 2;
-        }
-
-        .custom-general-row button {
-            padding: 0.5rem 1rem;
-            background: var(--accent-gold-dim);
-            border: none;
-            border-radius: 4px;
-            color: var(--text-primary);
-            cursor: pointer;
-        }
-
         /* Submit Button */
         .submit-section {
             text-align: center;
@@ -841,454 +646,6 @@
                 transform: translateX(0);
                 opacity: 1;
             }
-        }
-
-        /* Team Management Section */
-        .team-management-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .team-management-section h4 {
-            color: var(--accent-gold);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .team-create-form {
-            background: var(--bg-input);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .team-create-form input {
-            flex: 1;
-            min-width: 200px;
-            padding: 0.5rem;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-
-        .team-create-form button {
-            padding: 0.5rem 1rem;
-            background: var(--accent-green);
-            border: none;
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-            font-weight: 500;
-        }
-
-        .team-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-        }
-
-        .team-card {
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem;
-        }
-
-        .team-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.8rem;
-        }
-
-        .team-card-header h5 {
-            color: var(--accent-gold);
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .team-card-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .team-action-btn {
-            padding: 0.3rem 0.8rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.85rem;
-        }
-
-        .team-action-btn.delete {
-            background: var(--accent-red);
-            color: white;
-        }
-
-        .team-members-section {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .team-members-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .team-members-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-        }
-
-        .team-member-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            background: var(--bg-secondary);
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
-        }
-
-        .team-member-checkbox.selected {
-            background: var(--status-complete);
-            border-color: var(--accent-green);
-            color: var(--accent-green);
-        }
-
-        .team-member-checkbox input {
-            cursor: pointer;
-        }
-
-        /* Comparison Section */
-        .comparison-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .comparison-section h4 {
-            color: var(--accent-gold);
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .user-selector {
-            background: var(--bg-input);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .user-selector h5 {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.8rem;
-        }
-
-        .user-checkbox-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .user-checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: var(--bg-secondary);
-            padding: 0.4rem 0.8rem;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .user-checkbox-item:hover {
-            border-color: var(--accent-gold-dim);
-        }
-
-        .user-checkbox-item.selected {
-            border-color: var(--accent-gold);
-            background: rgba(201, 162, 39, 0.1);
-        }
-
-        .user-checkbox-item input {
-            accent-color: var(--accent-gold);
-        }
-
-        .user-checkbox-item label {
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-
-        .compare-btn {
-            background: var(--accent-blue);
-            color: white;
-            border: none;
-            padding: 0.7rem 1.5rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
-            margin-top: 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .compare-btn:hover {
-            background: #4a9cc8;
-        }
-
-        .compare-btn:disabled {
-            background: var(--text-muted);
-            cursor: not-allowed;
-        }
-
-        .comparison-results {
-            display: none;
-        }
-
-        .comparison-results.show {
-            display: block;
-        }
-
-        .comparison-category {
-            background: var(--bg-input);
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            overflow: hidden;
-        }
-
-        .comparison-category-header {
-            padding: 0.8rem 1rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            user-select: none;
-        }
-
-        .comparison-category-header.overlap {
-            background: linear-gradient(90deg, rgba(184, 60, 60, 0.2) 0%, var(--bg-input) 100%);
-            border-left: 3px solid var(--accent-red);
-        }
-
-        .comparison-category-header.unused {
-            background: linear-gradient(90deg, rgba(60, 140, 184, 0.2) 0%, var(--bg-input) 100%);
-            border-left: 3px solid var(--accent-blue);
-        }
-
-        .comparison-category-header.inconsistent {
-            background: linear-gradient(90deg, rgba(201, 162, 39, 0.2) 0%, var(--bg-input) 100%);
-            border-left: 3px solid var(--accent-gold);
-        }
-
-        .comparison-category-header h5 {
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .comparison-category-header .count {
-            font-size: 0.8rem;
-            padding: 0.2rem 0.6rem;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .comparison-category-content {
-            padding: 1rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .comparison-item {
-            background: var(--bg-secondary);
-            border-radius: 6px;
-            padding: 0.8rem 1rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .comparison-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .comparison-item .item-name {
-            font-weight: 500;
-            min-width: 150px;
-        }
-
-        .comparison-item .item-type {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            padding: 0.2rem 0.5rem;
-            background: var(--bg-card);
-            border-radius: 4px;
-        }
-
-        .comparison-item .users-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.3rem;
-        }
-
-        .comparison-item .user-tag {
-            font-size: 0.75rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            background: var(--accent-gold-dim);
-            color: var(--text-primary);
-        }
-
-        .comparison-item .user-tag.warning {
-            background: var(--accent-red);
-        }
-
-        .no-issues {
-            text-align: center;
-            padding: 2rem;
-            color: var(--accent-green);
-        }
-
-        .no-issues .icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        /* Comparison Sub-categories */
-        .comparison-subcategory {
-            margin-bottom: 0.8rem;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-        }
-
-        .comparison-subcategory-header {
-            padding: 0.6rem 1rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            user-select: none;
-        }
-
-        .comparison-subcategory-header .subcat-title {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 500;
-        }
-
-        .comparison-subcategory-header .subcat-count {
-            font-size: 0.75rem;
-            padding: 0.1rem 0.5rem;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .comparison-subcategory-content {
-            padding: 0.8rem;
-            display: none;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .comparison-subcategory-content.show {
-            display: block;
-        }
-
-        /* Sub-category colors by type */
-        .subcat-weapon {
-            background: linear-gradient(90deg, rgba(184, 80, 60, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid #b85040;
-        }
-        .subcat-spgeneral {
-            background: linear-gradient(90deg, rgba(201, 162, 39, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid var(--accent-gold);
-        }
-        .subcat-general {
-            background: linear-gradient(90deg, rgba(100, 160, 100, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid #64a064;
-        }
-        .subcat-academy {
-            background: linear-gradient(90deg, rgba(80, 140, 180, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid #508cb4;
-        }
-        .subcat-mask {
-            background: linear-gradient(90deg, rgba(140, 100, 180, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid #8c64b4;
-        }
-        .subcat-flower {
-            background: linear-gradient(90deg, rgba(220, 120, 160, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid #dc78a0;
-        }
-        .subcat-horse {
-            background: linear-gradient(90deg, rgba(160, 120, 80, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid #a07850;
-        }
-        .subcat-tactic {
-            background: linear-gradient(90deg, rgba(60, 140, 184, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid var(--accent-blue);
-        }
-        .subcat-asura {
-            background: linear-gradient(90deg, rgba(180, 60, 60, 0.15) 0%, var(--bg-secondary) 100%);
-            border-left: 3px solid #b43c3c;
-        }
-
-        .comparison-subcategory .comparison-item {
-            margin-bottom: 0.4rem;
-            padding: 0.6rem 0.8rem;
-        }
-
-        .selected-users-display {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.8rem;
-            padding-top: 0.8rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .selected-user-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            background: var(--accent-gold);
-            color: var(--bg-primary);
-            padding: 0.3rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .selected-user-badge .remove {
-            cursor: pointer;
-            opacity: 0.7;
-        }
-
-        .selected-user-badge .remove:hover {
-            opacity: 1;
         }
 
         /* Responsive */
@@ -1528,6 +885,7 @@
         <p>ゲームデータ入力・管理システム</p>
         <div style="margin-top: 1rem; position: relative;">
             <a href="view.html" style="display: inline-block; padding: 0.5rem 1.2rem; background: var(--bg-input); border: 1px solid var(--accent-gold-dim); border-radius: 6px; color: var(--accent-gold); text-decoration: none; font-size: 0.9rem;">📋 データ一覧ページへ</a>
+            <a href="manage.html" style="display: inline-block; padding: 0.5rem 1.2rem; background: var(--bg-input); border: 1px solid var(--accent-gold-dim); border-radius: 6px; color: var(--accent-gold); text-decoration: none; font-size: 0.9rem; margin-left: 0.5rem;">🔐 管理画面</a>
         </div>
     </header>
 
@@ -1690,6 +1048,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Custom Weapons Container -->
+                <div id="customWeaponsContainer"></div>
             </div>
         </div>
 
@@ -1831,20 +1192,6 @@
                     </div>
                 </div>
 
-                <div class="custom-general">
-                    <h5>リスト外の武将を追加（全ユーザー共通）</h5>
-                    <div id="customGenerals">
-                        <div class="custom-general-row">
-                            <input type="text" placeholder="武将名" class="customGeneralName">
-                            <input type="number" placeholder="覚醒Lv" min="0" max="12" value="10" class="customGeneralLevel">
-                            <button onclick="addCustomGeneral()">リストに追加</button>
-                        </div>
-                    </div>
-                    <div id="customGeneralsList" style="margin-top: 0.8rem; display: none;">
-                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">追加済み武将:</p>
-                        <div id="customGeneralsDisplay" style="display: flex; flex-wrap: wrap; gap: 0.4rem;"></div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -2010,15 +1357,15 @@
                     </div>
                     <div class="skill-grid" style="margin-top: 0.8rem;">
                         <div class="skill-item">
-                            <input type="checkbox" id="asura30_1" onchange="updateProgress()">
+                            <input type="checkbox" id="asura30_1" onchange="onAsuraSkillChange(30, 1)">
                             <label for="asura30_1">厄憑</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura30_2" onchange="updateProgress()">
+                            <input type="checkbox" id="asura30_2" onchange="onAsuraSkillChange(30, 2)">
                             <label for="asura30_2">金剛の鎧</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura30_3" onchange="updateProgress()">
+                            <input type="checkbox" id="asura30_3" onchange="onAsuraSkillChange(30, 3)">
                             <label for="asura30_3">稲田巡礼</label>
                         </div>
                     </div>
@@ -2034,23 +1381,23 @@
                     </div>
                     <div class="skill-grid" style="margin-top: 0.8rem;">
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_1" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_1" onchange="onAsuraSkillChange(60, 1)">
                             <label for="asura60_1">移花接木</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_2" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_2" onchange="onAsuraSkillChange(60, 2)">
                             <label for="asura60_2">攻守転換</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_3" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_3" onchange="onAsuraSkillChange(60, 3)">
                             <label for="asura60_3">風助火勢</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_4" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_4" onchange="onAsuraSkillChange(60, 4)">
                             <label for="asura60_4">俊敏狡猾</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_5" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_5" onchange="onAsuraSkillChange(60, 5)">
                             <label for="asura60_5">守攻転換</label>
                         </div>
                     </div>
@@ -2066,27 +1413,30 @@
                     </div>
                     <div class="skill-grid" style="margin-top: 0.8rem;">
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_1" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_1" onchange="onAsuraSkillChange(90, 1)">
                             <label for="asura90_1">破心断骨</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_2" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_2" onchange="onAsuraSkillChange(90, 2)">
                             <label for="asura90_2">適時出撃</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_3" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_3" onchange="onAsuraSkillChange(90, 3)">
                             <label for="asura90_3">麒麟の清め</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_4" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_4" onchange="onAsuraSkillChange(90, 4)">
                             <label for="asura90_4">隠刃</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_5" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_5" onchange="onAsuraSkillChange(90, 5)">
                             <label for="asura90_5">血戮</label>
                         </div>
                     </div>
                 </div>
+
+                <!-- Custom Asura Container -->
+                <div id="customAsuraContainer"></div>
             </div>
         </div>
 
@@ -2172,6 +1522,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Custom Masks Container -->
+                <div id="customMasksContainer"></div>
             </div>
         </div>
 
@@ -2194,6 +1547,9 @@
                 <div class="flower-grid" id="flowerGrid">
                     <!-- Will be populated by JS -->
                 </div>
+
+                <!-- Custom Flowers Container -->
+                <div id="customFlowersContainer"></div>
             </div>
         </div>
 
@@ -2264,6 +1620,8 @@
             </div>
             <div class="section-content" id="tacticContent">
                 <!-- Bulk Select (will be added by JS before tactic cards) -->
+                <!-- Custom Tactics Container -->
+                <div id="customTacticsContainer"></div>
             </div>
         </div>
 
@@ -2380,134 +1738,6 @@
             </div>
         </div>
 
-        <!-- Admin Section -->
-        <div class="admin-section" id="adminSection">
-            <div class="admin-header" onclick="toggleAdmin()">
-                <h3>
-                    <span>🔐</span>
-                    管理者エリア
-                </h3>
-                <span class="toggle-icon" id="adminToggle">▼</span>
-            </div>
-            <div class="admin-password" id="adminPassword" style="display: none;">
-                <input type="password" id="adminPwd" placeholder="パスワードを入力">
-                <button onclick="verifyPassword()">ログイン</button>
-                <button onclick="showPasswordChangeDialog()" style="margin-left: 10px; background: var(--accent-blue);">🔑 パスワード変更</button>
-            </div>
-
-            <!-- Password Change Dialog -->
-            <div id="passwordChangeDialog" style="display: none; padding: 1rem; background: var(--bg-input); border-radius: 8px; margin-top: 0.5rem;">
-                <h4 style="color: var(--accent-gold); margin-bottom: 1rem;">管理者パスワード変更</h4>
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <input type="password" id="masterPwd" placeholder="主管理者パスワード" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                    <input type="password" id="newAdminPwd" placeholder="新しい管理者パスワード" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                    <input type="password" id="confirmAdminPwd" placeholder="新しいパスワード（確認）" style="padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary);">
-                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                        <button onclick="changeAdminPassword()" style="flex: 1; padding: 0.5rem; background: var(--accent-green); border: none; border-radius: 4px; color: white; cursor: pointer;">変更</button>
-                        <button onclick="hidePasswordChangeDialog()" style="flex: 1; padding: 0.5rem; background: var(--text-muted); border: none; border-radius: 4px; color: white; cursor: pointer;">キャンセル</button>
-                    </div>
-                </div>
-            </div>
-            <div class="admin-content" id="adminContent">
-                <div class="admin-actions">
-                    <button class="admin-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
-                </div>
-
-                <h4 style="color: var(--accent-gold); margin-bottom: 1rem;">保存済みデータ一覧</h4>
-                <div style="overflow-x: auto;">
-                    <table class="data-table" id="dataTable">
-                        <thead>
-                            <tr>
-                                <th>ユーザー名</th>
-                                <th>兵種</th>
-                                <th>更新日時</th>
-                                <th>完成度</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dataTableBody">
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Team Management Section -->
-                <div class="team-management-section">
-                    <h4>👥 チーム管理</h4>
-
-                    <div class="team-create-form">
-                        <input type="text" id="newTeamName" placeholder="新しいチーム名を入力" maxlength="30">
-                        <button onclick="createTeam()">チーム作成</button>
-                    </div>
-
-                    <div class="team-list" id="teamList">
-                        <!-- Populated by JS -->
-                    </div>
-                </div>
-
-                <!-- Comparison Section -->
-                <div class="comparison-section">
-                    <h4>📊 ユーザー比較分析</h4>
-                    
-                    <div class="user-selector">
-                        <h5>比較するユーザーを選択（最大10人）</h5>
-                        <div class="user-checkbox-grid" id="userCheckboxGrid">
-                            <!-- Populated by JS -->
-                        </div>
-                        <div class="selected-users-display" id="selectedUsersDisplay">
-                            <!-- Selected users shown here -->
-                        </div>
-                        <button class="compare-btn" id="compareBtn" onclick="runComparison()" disabled>比較分析を実行</button>
-                    </div>
-
-                    <div class="comparison-results" id="comparisonResults">
-                        <!-- Overlap Section -->
-                        <div class="comparison-category" id="overlapCategory">
-                            <div class="comparison-category-header overlap" onclick="toggleComparisonCategory('overlapCategory')">
-                                <h5>
-                                    <span>📋</span>
-                                    編成/装備中の項目
-                                    <span class="count" id="overlapCount">0件</span>
-                                </h5>
-                                <span class="toggle-icon">▼</span>
-                            </div>
-                            <div class="comparison-category-content" id="overlapContent">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-
-                        <!-- Unused Section -->
-                        <div class="comparison-category" id="unusedCategory">
-                            <div class="comparison-category-header unused" onclick="toggleComparisonCategory('unusedCategory')">
-                                <h5>
-                                    <span>❓</span>
-                                    誰も装備していない項目
-                                    <span class="count" id="unusedCount">0件</span>
-                                </h5>
-                                <span class="toggle-icon">▼</span>
-                            </div>
-                            <div class="comparison-category-content" id="unusedContent">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-
-                        <!-- Inconsistent Section -->
-                        <div class="comparison-category" id="inconsistentCategory">
-                            <div class="comparison-category-header inconsistent" onclick="toggleComparisonCategory('inconsistentCategory')">
-                                <h5>
-                                    <span>📦</span>
-                                    所持しているが未装備の項目
-                                    <span class="count" id="inconsistentCount">0件</span>
-                                </h5>
-                                <span class="toggle-icon">▼</span>
-                            </div>
-                            <div class="comparison-category-content" id="inconsistentContent">
-                                <!-- Populated by JS -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
     <!-- Floating Navigation -->
@@ -2565,9 +1795,6 @@
     </script>
 
     <script>
-        // Configuration - Passwords loaded from Firebase
-        let MASTER_PASSWORD = null; // 主管理者パスワード（Firebaseから読み込み）
-        let ADMIN_PASSWORD = null;  // 管理者パスワード（Firebaseから読み込み）
 
         // Flower formations data
         const flowerFormations = [
@@ -2649,6 +1876,7 @@
         // Cache for data
         let cachedGameData = {};
         let cachedCustomGenerals = [];
+        let cachedCustomItems = {};
 
         // ========== Firebase Database Functions ==========
         
@@ -2700,6 +1928,13 @@
             }
         }
 
+        // Flatten custom generals object to array
+        function flattenCustomGenerals(data) {
+            if (Array.isArray(data)) return data;
+            if (!data || typeof data !== 'object') return [];
+            return Object.values(data).flat();
+        }
+
         // Get custom generals
         async function getCustomGenerals() {
             if (!window.firebaseReady) {
@@ -2708,7 +1943,8 @@
             try {
                 const { database, ref, get } = window.firebaseDB;
                 const snapshot = await get(ref(database, 'customGenerals'));
-                cachedCustomGenerals = snapshot.exists() ? snapshot.val() : [];
+                const data = snapshot.exists() ? snapshot.val() : [];
+                cachedCustomGenerals = flattenCustomGenerals(data);
                 return cachedCustomGenerals;
             } catch (error) {
                 console.error('Error getting custom generals:', error);
@@ -2716,12 +1952,12 @@
             }
         }
 
-        // Save custom generals
+        // Save custom generals (deprecated - use manage.html)
         async function saveCustomGenerals(generalsList) {
             if (!window.firebaseReady) return false;
             try {
                 const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, 'customGenerals'), generalsList);
+                await set(ref(database, 'customGenerals/_default'), generalsList);
                 cachedCustomGenerals = generalsList;
                 return true;
             } catch (error) {
@@ -2730,180 +1966,21 @@
             }
         }
 
-        // ========== Teams Management ==========
-
-        let cachedTeams = {};
-
-        // Get all teams from Firebase
-        async function getTeams() {
+        // Get custom items
+        async function getCustomItems() {
             if (!window.firebaseReady) {
-                return cachedTeams;
+                return cachedCustomItems;
             }
             try {
                 const { database, ref, get } = window.firebaseDB;
-                const snapshot = await get(ref(database, 'teams'));
-                cachedTeams = snapshot.exists() ? snapshot.val() : {};
-                return cachedTeams;
+                const snapshot = await get(ref(database, 'customItems'));
+                cachedCustomItems = snapshot.exists() ? snapshot.val() : {};
+                return cachedCustomItems;
             } catch (error) {
-                console.error('Error getting teams:', error);
-                return cachedTeams;
+                console.error('Error getting custom items:', error);
+                return cachedCustomItems;
             }
         }
-
-        // Save a single team to Firebase
-        async function saveTeam(teamId, teamData) {
-            if (!window.firebaseReady) return false;
-            try {
-                const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, `teams/${teamId}`), teamData);
-                cachedTeams[teamId] = teamData;
-                return true;
-            } catch (error) {
-                console.error('Error saving team:', error);
-                return false;
-            }
-        }
-
-        // Delete a team from Firebase
-        async function deleteTeamFromFirebase(teamId) {
-            if (!window.firebaseReady) return false;
-            try {
-                const { database, ref, remove } = window.firebaseDB;
-                await remove(ref(database, `teams/${teamId}`));
-                delete cachedTeams[teamId];
-                return true;
-            } catch (error) {
-                console.error('Error deleting team:', error);
-                return false;
-            }
-        }
-
-        // Create a new team
-        async function createTeam() {
-            const nameInput = document.getElementById('newTeamName');
-            const name = nameInput.value.trim();
-
-            if (!name) {
-                showToast('チーム名を入力してください', 'error');
-                return;
-            }
-
-            // Check for duplicate team names
-            const existing = Object.values(cachedTeams).find(t => t.name === name);
-            if (existing) {
-                showToast('同じ名前のチームが既に存在します', 'error');
-                return;
-            }
-
-            const teamId = `team_${Date.now()}`;
-            const teamData = {
-                id: teamId,
-                name: name,
-                members: [],
-                createdAt: new Date().toISOString()
-            };
-
-            const success = await saveTeam(teamId, teamData);
-            if (success) {
-                nameInput.value = '';
-                showToast(`チーム「${name}」を作成しました`, 'success');
-                renderTeamList();
-            } else {
-                showToast('チーム作成に失敗しました', 'error');
-            }
-        }
-
-        // Delete a team (with confirmation)
-        async function deleteTeam(teamId) {
-            const team = cachedTeams[teamId];
-            if (!team) return;
-
-            if (!confirm(`チーム「${team.name}」を削除しますか？`)) return;
-
-            const success = await deleteTeamFromFirebase(teamId);
-            if (success) {
-                showToast(`チーム「${team.name}」を削除しました`, 'success');
-                renderTeamList();
-            } else {
-                showToast('削除に失敗しました', 'error');
-            }
-        }
-
-        // Toggle user membership in a team
-        async function toggleTeamMember(teamId, username, checked) {
-            const team = cachedTeams[teamId];
-            if (!team) return;
-
-            const members = team.members || [];
-            let newMembers;
-
-            if (checked) {
-                if (!members.includes(username)) {
-                    newMembers = [...members, username];
-                } else {
-                    return;
-                }
-            } else {
-                newMembers = members.filter(m => m !== username);
-            }
-
-            const updatedTeam = { ...team, members: newMembers };
-            await saveTeam(teamId, updatedTeam);
-            renderTeamList();
-        }
-
-        // Render the team list UI
-        function renderTeamList() {
-            const container = document.getElementById('teamList');
-            if (!container) return;
-
-            const teams = Object.values(cachedTeams).sort((a, b) =>
-                new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
-            );
-
-            if (teams.length === 0) {
-                container.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 1rem;">チームがまだありません</div>';
-                return;
-            }
-
-            const allUsers = Object.keys(cachedGameData || {}).sort();
-
-            container.innerHTML = teams.map(team => {
-                const members = team.members || [];
-                const membersHtml = allUsers.length === 0
-                    ? '<div style="color: var(--text-muted); font-size: 0.85rem;">登録ユーザーがいません</div>'
-                    : allUsers.map(username => {
-                        const isChecked = members.includes(username);
-                        return `
-                            <label class="team-member-checkbox ${isChecked ? 'selected' : ''}">
-                                <input type="checkbox" ${isChecked ? 'checked' : ''}
-                                    onchange="toggleTeamMember('${team.id}', '${username.replace(/'/g, "\\'")}', this.checked)">
-                                ${username}
-                            </label>
-                        `;
-                    }).join('');
-
-                return `
-                    <div class="team-card">
-                        <div class="team-card-header">
-                            <h5>
-                                <span>👥</span>
-                                ${team.name}
-                                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: normal;">(${members.length}人)</span>
-                            </h5>
-                            <div class="team-card-actions">
-                                <button class="team-action-btn delete" onclick="deleteTeam('${team.id}')">削除</button>
-                            </div>
-                        </div>
-                        <div class="team-members-section">
-                            <div class="team-members-label">メンバー選択:</div>
-                            <div class="team-members-grid">${membersHtml}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
 
         // Set up real-time listeners
         function setupRealtimeListeners() {
@@ -2914,49 +1991,241 @@
             // Listen for game data changes
             onValue(ref(database, 'gameData'), (snapshot) => {
                 cachedGameData = snapshot.exists() ? snapshot.val() : {};
-                refreshDataTable();
-                refreshUserCheckboxGrid();
-                renderTeamList();
             });
 
             // Listen for custom generals changes
             onValue(ref(database, 'customGenerals'), (snapshot) => {
-                const newGenerals = snapshot.exists() ? snapshot.val() : [];
+                const data = snapshot.exists() ? snapshot.val() : [];
+                const newGenerals = flattenCustomGenerals(data);
                 if (JSON.stringify(newGenerals) !== JSON.stringify(cachedCustomGenerals)) {
                     cachedCustomGenerals = newGenerals;
                     initGeneralGrid();
-                    updateCustomGeneralsDisplay();
                 }
             });
 
-            // Listen for team changes
-            onValue(ref(database, 'teams'), (snapshot) => {
-                cachedTeams = snapshot.exists() ? snapshot.val() : {};
-                renderTeamList();
+            // Listen for custom items changes
+            onValue(ref(database, 'customItems'), (snapshot) => {
+                const newItems = snapshot.exists() ? snapshot.val() : {};
+                if (JSON.stringify(newItems) !== JSON.stringify(cachedCustomItems)) {
+                    cachedCustomItems = newItems;
+                    renderAllCustomItems();
+                }
             });
         }
 
 
+        // ========== Custom Items Rendering ==========
+
+        // Get items for a specific category from customItems
+        function getCustomItemsForCategory(category) {
+            const catData = cachedCustomItems[category];
+            if (!catData) return [];
+            // Flatten all subcategories into a single array
+            const items = [];
+            Object.entries(catData).forEach(([subcat, itemList]) => {
+                if (Array.isArray(itemList)) {
+                    itemList.forEach(item => {
+                        items.push({ name: item, subcategory: subcat === '_default' ? null : subcat });
+                    });
+                }
+            });
+            return items;
+        }
+
+        // Generate safe ID from item name
+        function safeId(name) {
+            return 'custom_' + name.replace(/[^a-zA-Z0-9぀-ゟ゠-ヿ一-龯]/g, '_');
+        }
+
+        // Render custom items for all categories
+        function renderAllCustomItems() {
+            renderCustomWeapons();
+            renderCustomMasks();
+            renderCustomFlowers();
+            renderCustomTactics();
+            renderCustomAsura();
+        }
+
+        // Render custom weapons
+        function renderCustomWeapons() {
+            const container = document.getElementById('customWeaponsContainer');
+            const items = getCustomItemsForCategory('兵器');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="equipment-card">
+                    <h4>${item.name}${item.subcategory ? ` <small style="color: var(--text-muted);">(${item.subcategory})</small>` : ''}</h4>
+                    <div class="equipment-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <select id="${safeId(item.name)}_status" onchange="updateProgress()">
+                                <option value="">未所持</option>
+                                <option value="owned">所持</option>
+                                <option value="equipped">装備中</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>昇級レベル</label>
+                            <input type="number" id="${safeId(item.name)}_upgrade" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>改装レベル</label>
+                            <input type="number" id="${safeId(item.name)}_reform" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render custom masks (核心具足)
+        function renderCustomMasks() {
+            const container = document.getElementById('customMasksContainer');
+            const items = getCustomItemsForCategory('核心具足');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="equipment-card" style="margin-top: 1rem;">
+                    <h4>カスタム核心具足</h4>
+                    <div class="flower-grid">
+                        ${items.map(item => `
+                            <div class="flower-item">
+                                <div>
+                                    <div class="name">${item.name}</div>
+                                    ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
+                                </div>
+                                <div class="checkboxes">
+                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render custom flowers (花陣)
+        function renderCustomFlowers() {
+            const container = document.getElementById('customFlowersContainer');
+            const items = getCustomItemsForCategory('花陣');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="equipment-card" style="margin-top: 1rem;">
+                    <h4>カスタム花陣</h4>
+                    <div class="flower-grid">
+                        ${items.map(item => `
+                            <div class="flower-item">
+                                <div>
+                                    <div class="name">${item.name}</div>
+                                    ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
+                                </div>
+                                <div class="checkboxes">
+                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render custom tactics (戦法)
+        function renderCustomTactics() {
+            const container = document.getElementById('customTacticsContainer');
+            const items = getCustomItemsForCategory('戦法');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="equipment-card" style="margin-top: 1rem;">
+                    <h4>カスタム戦法</h4>
+                    <div class="flower-grid">
+                        ${items.map(item => `
+                            <div class="flower-item">
+                                <div>
+                                    <div class="name">${item.name}</div>
+                                    ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
+                                </div>
+                                <div class="checkboxes">
+                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render custom asura skills (阿修羅)
+        function renderCustomAsura() {
+            const container = document.getElementById('customAsuraContainer');
+            const items = getCustomItemsForCategory('阿修羅');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            // Group by subcategory
+            const grouped = {};
+            items.forEach(item => {
+                const key = item.subcategory || 'その他';
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(item);
+            });
+
+            container.innerHTML = Object.entries(grouped).map(([subcat, items]) => `
+                <div class="skill-group" style="margin-top: 1rem;">
+                    <div class="skill-header">
+                        <span>カスタム: ${subcat}</span>
+                    </div>
+                    <div class="skill-items">
+                        ${items.map(item => `
+                            <div class="skill-item">
+                                <input type="checkbox" id="${safeId(item.name)}" onchange="updateProgress()">
+                                <label for="${safeId(item.name)}">${item.name}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // ========== Initialization ==========
-        
+
         async function initializeGameApp() {
             initFlowerGrid();
             initTacticSection();
 
-            // Load admin password from Firebase
-            await loadPasswords();
-
             // Load custom generals first
             cachedCustomGenerals = await getCustomGenerals();
             initGeneralGrid();
-            updateCustomGeneralsDisplay();
+
+            // Load custom items
+            cachedCustomItems = await getCustomItems();
+            renderAllCustomItems();
 
             // Load game data
             cachedGameData = await getGameData();
             loadSavedData();
-
-            // Load teams
-            cachedTeams = await getTeams();
 
             // Check for unsaved draft and restore if user confirms
             checkAndRestoreDraft();
@@ -3276,6 +2545,95 @@
                 };
             });
 
+            // Custom Items
+            data.customItems = {};
+
+            // Custom weapons
+            const customWeapons = getCustomItemsForCategory('兵器');
+            if (customWeapons.length > 0) {
+                data.customItems.weapons = {};
+                customWeapons.forEach(item => {
+                    const id = safeId(item.name);
+                    const statusEl = document.getElementById(`${id}_status`);
+                    const upgradeEl = document.getElementById(`${id}_upgrade`);
+                    const reformEl = document.getElementById(`${id}_reform`);
+                    if (statusEl) {
+                        data.customItems.weapons[item.name] = {
+                            status: statusEl.value,
+                            upgrade: upgradeEl?.value || '',
+                            reform: reformEl?.value || ''
+                        };
+                    }
+                });
+            }
+
+            // Custom masks
+            const customMasks = getCustomItemsForCategory('核心具足');
+            if (customMasks.length > 0) {
+                data.customItems.masks = {};
+                customMasks.forEach(item => {
+                    const id = safeId(item.name);
+                    const equippedEl = document.getElementById(`${id}_equipped`);
+                    const ownedEl = document.getElementById(`${id}_owned`);
+                    if (equippedEl) {
+                        data.customItems.masks[item.name] = {
+                            equipped: equippedEl.checked,
+                            owned: ownedEl?.checked || false
+                        };
+                    }
+                });
+            }
+
+            // Custom flowers
+            const customFlowers = getCustomItemsForCategory('花陣');
+            if (customFlowers.length > 0) {
+                data.customItems.flowers = {};
+                customFlowers.forEach(item => {
+                    const id = safeId(item.name);
+                    const equippedEl = document.getElementById(`${id}_equipped`);
+                    const ownedEl = document.getElementById(`${id}_owned`);
+                    if (equippedEl) {
+                        data.customItems.flowers[item.name] = {
+                            equipped: equippedEl.checked,
+                            owned: ownedEl?.checked || false
+                        };
+                    }
+                });
+            }
+
+            // Custom tactics
+            const customTactics = getCustomItemsForCategory('戦法');
+            if (customTactics.length > 0) {
+                data.customItems.tactics = {};
+                customTactics.forEach(item => {
+                    const id = safeId(item.name);
+                    const equippedEl = document.getElementById(`${id}_equipped`);
+                    const ownedEl = document.getElementById(`${id}_owned`);
+                    if (equippedEl) {
+                        data.customItems.tactics[item.name] = {
+                            equipped: equippedEl.checked,
+                            owned: ownedEl?.checked || false
+                        };
+                    }
+                });
+            }
+
+            // Custom asura
+            const customAsura = getCustomItemsForCategory('阿修羅');
+            if (customAsura.length > 0) {
+                data.customItems.asura = {};
+                customAsura.forEach(item => {
+                    const id = safeId(item.name);
+                    const el = document.getElementById(id);
+                    if (el) {
+                        data.customItems.asura[item.name] = {
+                            selected: el.checked,
+                            subcategory: item.subcategory
+                        };
+                    }
+                });
+            }
+
             return data;
         }
 
@@ -3292,7 +2650,6 @@
 
             if (success) {
                 showToast(`${data.username}のデータを保存しました`, 'success');
-                refreshDataTable();
             }
         }
 
@@ -3649,6 +3006,64 @@
                 });
             }
 
+            // Custom Items
+            if (data.customItems) {
+                // Custom weapons
+                if (data.customItems.weapons) {
+                    Object.entries(data.customItems.weapons).forEach(([name, weaponData]) => {
+                        const id = safeId(name);
+                        const statusEl = document.getElementById(`${id}_status`);
+                        const upgradeEl = document.getElementById(`${id}_upgrade`);
+                        const reformEl = document.getElementById(`${id}_reform`);
+                        if (statusEl) statusEl.value = weaponData.status || '';
+                        if (upgradeEl) upgradeEl.value = weaponData.upgrade || '';
+                        if (reformEl) reformEl.value = weaponData.reform || '';
+                    });
+                }
+
+                // Custom masks
+                if (data.customItems.masks) {
+                    Object.entries(data.customItems.masks).forEach(([name, maskData]) => {
+                        const id = safeId(name);
+                        const equippedEl = document.getElementById(`${id}_equipped`);
+                        const ownedEl = document.getElementById(`${id}_owned`);
+                        if (equippedEl) equippedEl.checked = maskData.equipped || false;
+                        if (ownedEl) ownedEl.checked = maskData.owned || false;
+                    });
+                }
+
+                // Custom flowers
+                if (data.customItems.flowers) {
+                    Object.entries(data.customItems.flowers).forEach(([name, flowerData]) => {
+                        const id = safeId(name);
+                        const equippedEl = document.getElementById(`${id}_equipped`);
+                        const ownedEl = document.getElementById(`${id}_owned`);
+                        if (equippedEl) equippedEl.checked = flowerData.equipped || false;
+                        if (ownedEl) ownedEl.checked = flowerData.owned || false;
+                    });
+                }
+
+                // Custom tactics
+                if (data.customItems.tactics) {
+                    Object.entries(data.customItems.tactics).forEach(([name, tacticData]) => {
+                        const id = safeId(name);
+                        const equippedEl = document.getElementById(`${id}_equipped`);
+                        const ownedEl = document.getElementById(`${id}_owned`);
+                        if (equippedEl) equippedEl.checked = tacticData.equipped || false;
+                        if (ownedEl) ownedEl.checked = tacticData.owned || false;
+                    });
+                }
+
+                // Custom asura
+                if (data.customItems.asura) {
+                    Object.entries(data.customItems.asura).forEach(([name, asuraData]) => {
+                        const id = safeId(name);
+                        const checkEl = document.getElementById(id);
+                        if (checkEl) checkEl.checked = asuraData.checked || false;
+                    });
+                }
+            }
+
             updateProgress();
             updateSummary();
             updateFormationCount();
@@ -3696,326 +3111,22 @@
         }
 
 
-        // ========== Admin Functions ==========
+        // ========== Asura Skill Selection (radio-like within level) ==========
 
-        // Toggle password input visibility
-        function toggleAdmin() {
-            const passwordSection = document.getElementById('adminPassword');
-            const toggle = document.getElementById('adminToggle');
-            const isHidden = passwordSection.style.display === 'none';
+        function onAsuraSkillChange(level, selectedIndex) {
+            const count = level === 30 ? 3 : 5;
+            const checkbox = document.getElementById(`asura${level}_${selectedIndex}`);
 
-            passwordSection.style.display = isHidden ? 'flex' : 'none';
-            toggle.textContent = isHidden ? '▲' : '▼';
-
-            // Hide password change dialog when closing
-            if (!isHidden) {
-                hidePasswordChangeDialog();
-            }
-        }
-
-        // Verify admin password and show content
-        function verifyPassword() {
-            const password = document.getElementById('adminPwd').value;
-            const content = document.getElementById('adminContent');
-
-            if (!ADMIN_PASSWORD) {
-                showToast('管理者パスワードが未設定です。Firebaseコンソールで設定してください。', 'error');
-                return;
-            }
-
-            if (password === ADMIN_PASSWORD) {
-                content.classList.add('show');
-                refreshDataTable();
-                refreshUserCheckboxGrid();
-                renderTeamList();
-                showToast('ログインしました', 'success');
-            } else {
-                showToast('パスワードが違います', 'error');
-            }
-        }
-
-        // Show password change dialog
-        function showPasswordChangeDialog() {
-            document.getElementById('passwordChangeDialog').style.display = 'block';
-        }
-
-        // Hide password change dialog
-        function hidePasswordChangeDialog() {
-            document.getElementById('passwordChangeDialog').style.display = 'none';
-            document.getElementById('masterPwd').value = '';
-            document.getElementById('newAdminPwd').value = '';
-            document.getElementById('confirmAdminPwd').value = '';
-        }
-
-        // Change admin password
-        async function changeAdminPassword() {
-            const masterPwd = document.getElementById('masterPwd').value;
-            const newPwd = document.getElementById('newAdminPwd').value;
-            const confirmPwd = document.getElementById('confirmAdminPwd').value;
-
-            // Check if master password is set
-            if (!MASTER_PASSWORD) {
-                showToast('主管理者パスワードが未設定です。Firebaseコンソールで設定してください。', 'error');
-                return;
-            }
-
-            // Validate master password
-            if (masterPwd !== MASTER_PASSWORD) {
-                showToast('主管理者パスワードが違います', 'error');
-                return;
-            }
-
-            // Validate new password
-            if (!newPwd || newPwd.length < 4) {
-                showToast('新しいパスワードは4文字以上で入力してください', 'error');
-                return;
-            }
-
-            if (newPwd !== confirmPwd) {
-                showToast('新しいパスワードが一致しません', 'error');
-                return;
-            }
-
-            // Save to Firebase
-            try {
-                const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, 'settings/adminPassword'), newPwd);
-                ADMIN_PASSWORD = newPwd;
-                hidePasswordChangeDialog();
-                showToast('パスワードを変更しました', 'success');
-            } catch (error) {
-                console.error('Password change error:', error);
-                showToast('パスワード変更に失敗しました', 'error');
-            }
-        }
-
-        // Load passwords from Firebase
-        async function loadPasswords() {
-            if (!window.firebaseReady) return;
-
-            try {
-                const { database, ref, get } = window.firebaseDB;
-
-                // Load admin password
-                const adminSnapshot = await get(ref(database, 'settings/adminPassword'));
-                if (adminSnapshot.exists()) {
-                    ADMIN_PASSWORD = adminSnapshot.val();
-                }
-
-                // Load master password
-                const masterSnapshot = await get(ref(database, 'settings/masterPassword'));
-                if (masterSnapshot.exists()) {
-                    MASTER_PASSWORD = masterSnapshot.val();
-                }
-            } catch (error) {
-                console.error('Failed to load passwords:', error);
-            }
-        }
-
-        function refreshDataTable() {
-            const tbody = document.getElementById('dataTableBody');
-            const allData = cachedGameData;
-            
-            if (!allData || Object.keys(allData).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">保存されたデータがありません</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = Object.entries(allData).map(([name, data]) => {
-                const completion = calculateCompletion(data);
-                const date = data.timestamp ? new Date(data.timestamp).toLocaleString('ja-JP') : '-';
-                return `
-                    <tr>
-                        <td>${name}</td>
-                        <td>${date}</td>
-                        <td>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${completion}%"></div>
-                            </div>
-                            <span style="font-size: 0.8rem;">${completion}%</span>
-                        </td>
-                        <td>
-                            <button class="action-btn" onclick="editUser('${name}')">編集</button>
-                            <button class="action-btn delete" onclick="confirmDeleteUser('${name}')">削除</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function calculateCompletion(data) {
-            let filled = 0;
-            let total = 0;
-
-            // Basic fields
-            total += 2;
-            if (data.username) filled++;
-            if (data.troopType) filled++;
-
-            // Weapons (3 items)
-            if (data.weapons) {
-                Object.values(data.weapons).forEach(w => {
-                    total += 3;
-                    if (w.status) filled++;
-                    if (w.upgrade) filled++;
-                    if (w.reform) filled++;
-                });
-            }
-
-            return Math.round((filled / Math.max(total, 1)) * 100);
-        }
-
-        function editUser(username) {
-            const data = cachedGameData[username];
-            if (data) {
-                clearForm();
-                loadDataToForm(data);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                showToast(`${username}のデータを読み込みました`, 'success');
-            }
-        }
-
-        function confirmDeleteUser(username) {
-            if (confirm(`${username}のデータを削除しますか？`)) {
-                deleteUser(username);
-            }
-        }
-
-        async function deleteUser(username) {
-            const success = await deleteUserData(username);
-            if (success) {
-                showToast(`${username}のデータを削除しました`, 'success');
-                refreshDataTable();
-                refreshUserCheckboxGrid();
-            } else {
-                showToast('削除に失敗しました', 'error');
-            }
-        }
-
-        function exportData() {
-            const dataStr = JSON.stringify(cachedGameData, null, 2);
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `game-data-backup-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('データをエクスポートしました', 'success');
-        }
-
-        function importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        // Save each user
-                        for (const [username, userData] of Object.entries(data)) {
-                            await saveUserData(username, userData);
-                        }
-                        showToast('データをインポートしました', 'success');
-                        refreshDataTable();
-                    } catch (error) {
-                        showToast('ファイルの読み込みに失敗しました', 'error');
+            if (checkbox && checkbox.checked) {
+                // Uncheck other checkboxes in the same level
+                for (let i = 1; i <= count; i++) {
+                    if (i !== selectedIndex) {
+                        const other = document.getElementById(`asura${level}_${i}`);
+                        if (other) other.checked = false;
                     }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        }
-
-        async function clearAllData() {
-            if (!confirm('全てのデータを削除しますか？この操作は取り消せません。')) return;
-            if (!confirm('本当に削除しますか？')) return;
-            
-            const { database, ref, remove } = window.firebaseDB;
-            try {
-                await remove(ref(database, 'gameData'));
-                cachedGameData = {};
-                showToast('全データを削除しました', 'success');
-                refreshDataTable();
-                refreshUserCheckboxGrid();
-            } catch (error) {
-                showToast('削除に失敗しました', 'error');
+                }
             }
-        }
-
-
-        // ========== Custom Generals Management ==========
-
-        async function addCustomGeneral() {
-            const container = document.getElementById('customGenerals');
-            const inputs = container.querySelectorAll('.custom-general-row');
-            const lastRow = inputs[inputs.length - 1];
-            const nameInput = lastRow.querySelector('.customGeneralName');
-            const levelInput = lastRow.querySelector('.customGeneralLevel');
-            
-            const generalName = nameInput.value.trim();
-            
-            if (!generalName) {
-                showToast('武将名を入力してください', 'error');
-                return;
-            }
-
-            // Check if already exists
-            const allGenerals = getAllGenerals();
-            if (allGenerals.includes(generalName)) {
-                showToast('この武将は既に登録されています', 'error');
-                return;
-            }
-
-            // Save to Firebase
-            const newList = [...cachedCustomGenerals, generalName];
-            const success = await saveCustomGenerals(newList);
-            
-            if (success) {
-                // Reinitialize the grid
-                initGeneralGrid();
-                
-                // Clear inputs
-                nameInput.value = '';
-                levelInput.value = '10';
-
-                updateCustomGeneralsDisplay();
-                showToast(`${generalName}を追加しました`, 'success');
-                updateProgress();
-            }
-        }
-
-        async function removeCustomGeneral(generalName) {
-            const newList = cachedCustomGenerals.filter(g => g !== generalName);
-            const success = await saveCustomGenerals(newList);
-            
-            if (success) {
-                initGeneralGrid();
-                updateCustomGeneralsDisplay();
-                showToast(`${generalName}を削除しました`, 'success');
-                updateProgress();
-            }
-        }
-
-        function updateCustomGeneralsDisplay() {
-            const display = document.getElementById('customGeneralsDisplay');
-            const customGenerals = cachedCustomGenerals || [];
-            
-            if (customGenerals.length === 0) {
-                display.innerHTML = '<span style="color: var(--text-muted);">追加された武将はありません</span>';
-                return;
-            }
-
-            display.innerHTML = customGenerals.map(g => `
-                <span class="custom-general-tag">
-                    ${g}
-                    <button onclick="removeCustomGeneral('${g}')" title="削除">✕</button>
-                </span>
-            `).join('');
+            updateProgress();
         }
 
         // ========== Progress Update ==========
@@ -4140,421 +3251,6 @@
                 if (document.getElementById(`tactic_${t.id}_owned`).checked) hasAny = true;
             });
             return hasAny ? 'partial' : 'empty';
-        }
-
-
-        // ========== User Comparison ==========
-
-        let selectedUsers = [];
-
-        function refreshUserCheckboxGrid() {
-            const grid = document.getElementById('userCheckboxGrid');
-            const allData = cachedGameData;
-            
-            if (!allData || Object.keys(allData).length === 0) {
-                grid.innerHTML = '<span style="color: var(--text-muted);">保存されたユーザーがありません</span>';
-                return;
-            }
-
-            grid.innerHTML = Object.keys(allData).map(name => `
-                <label class="user-checkbox ${selectedUsers.includes(name) ? 'selected' : ''}">
-                    <input type="checkbox" ${selectedUsers.includes(name) ? 'checked' : ''} onchange="toggleUserSelection('${name}', this.checked)">
-                    ${name}
-                </label>
-            `).join('');
-        }
-
-        function toggleUserSelection(username, checked) {
-            if (checked && !selectedUsers.includes(username)) {
-                if (selectedUsers.length >= 10) {
-                    showToast('最大10人まで選択できます', 'error');
-                    return;
-                }
-                selectedUsers.push(username);
-            } else {
-                selectedUsers = selectedUsers.filter(u => u !== username);
-            }
-            updateCompareButton();
-            refreshUserCheckboxGrid();
-        }
-
-        function updateCompareButton() {
-            const btn = document.getElementById('compareBtn');
-            const display = document.getElementById('selectedUsersDisplay');
-
-            if (selectedUsers.length >= 2) {
-                btn.disabled = false;
-                btn.textContent = `比較分析を実行 (${selectedUsers.length}人選択中)`;
-            } else {
-                btn.disabled = true;
-                btn.textContent = '比較分析を実行 (2人以上選択してください)';
-            }
-
-            display.innerHTML = selectedUsers.length > 0
-                ? `<span style="color: var(--accent-gold);">選択中: ${selectedUsers.join(', ')}</span>`
-                : '';
-        }
-
-        function runComparison() {
-            if (selectedUsers.length < 2) {
-                showToast('2人以上のユーザーを選択してください', 'error');
-                return;
-            }
-
-            const usersData = selectedUsers.map(name => ({ name, data: cachedGameData[name] }));
-            const equippableItems = getEquippableItems();
-
-            const equipped = [];
-            const unused = [];
-            const ownedNotEquipped = [];
-
-            equippableItems.forEach(item => {
-                const equippedBy = [];
-                const ownedBy = [];
-                const ownedButNotEquippedUsers = [];
-
-                usersData.forEach(({ name, data }) => {
-                    const status = getItemStatus(data, item);
-                    if (status.equipped) {
-                        equippedBy.push(name);
-                    }
-                    if (status.owned) {
-                        ownedBy.push(name);
-                        if (!status.equipped) {
-                            ownedButNotEquippedUsers.push(name);
-                        }
-                    }
-                });
-
-                if (equippedBy.length >= 1) {
-                    equipped.push({ ...item, users: equippedBy });
-                }
-
-                if (equippedBy.length === 0) {
-                    unused.push({ ...item, ownedBy: ownedBy });
-                }
-
-                if (ownedButNotEquippedUsers.length > 0) {
-                    ownedNotEquipped.push({ ...item, users: ownedButNotEquippedUsers });
-                }
-            });
-
-            displayComparisonResults(equipped, unused, ownedNotEquipped);
-        }
-
-        function getEquippableItems() {
-            const items = [];
-
-            // Weapons
-            ['赤鬼', '隕石', '般若'].forEach((name, i) => {
-                items.push({ id: ['akoni', 'inseki', 'hanya'][i], name, type: '兵器', category: 'weapon' });
-            });
-
-            // SP Generals
-            const spGeneralNames = { nobunaga: 'SP織田信長', hideyoshi: 'SP豊臣秀吉', ieyasu: 'SP徳川家康' };
-            Object.entries(spGeneralNames).forEach(([id, name]) => {
-                items.push({ id, name, type: 'SP武将', category: 'spgeneral' });
-            });
-
-            // Regular Generals
-            let globalIndex = 0;
-            generalCategories.forEach((cat, catIndex) => {
-                cat.generals.forEach((name, i) => {
-                    items.push({ 
-                        id: `general_${globalIndex}`, name, type: '武将', category: 'general', 
-                        index: globalIndex, generalName: name, subcategory: cat.title, subcategoryIndex: catIndex
-                    });
-                    globalIndex++;
-                });
-            });
-            
-            const customGenerals = cachedCustomGenerals || [];
-            customGenerals.forEach((name, i) => {
-                items.push({ 
-                    id: `general_${globalIndex}`, name, type: '武将', category: 'general', 
-                    index: globalIndex, generalName: name, subcategory: '追加武将', subcategoryIndex: generalCategories.length
-                });
-                globalIndex++;
-            });
-
-            // Academy
-            const gokudenHeiho = [
-                { id: 'momiji', name: '紅葉' }, { id: 'banseki', name: '盤石' },
-                { id: 'shishi', name: '獅子の洞入り' }, { id: 'tengu', name: '天狗抄' },
-                { id: 'attack', name: '攻撃' }, { id: 'defense', name: '防御' },
-                { id: 'combo', name: '連撃' }, { id: 'resist', name: '抵抗' },
-                { id: 'shield', name: '楯突' }, { id: 'pierce', name: '貫通' },
-                { id: 'evade', name: '回避' }, { id: 'accuracy', name: '命中' },
-                { id: 'barrier', name: '障壁' }
-            ];
-            gokudenHeiho.forEach(h => {
-                items.push({ id: h.id, name: h.name, type: '極伝兵法', category: 'academy' });
-            });
-
-            // Masks
-            const maskNames = { genko: '玄狐神使', kirin: '金麒麟', reikyo: '霊棘', kinen: '金猿', hanya: '般若', kiou: '鬼王' };
-            Object.entries(maskNames).forEach(([id, name]) => {
-                items.push({ id, name, type: '核心具足', category: 'mask' });
-            });
-
-            // Flowers
-            flowerFormations.forEach(f => {
-                items.push({ id: f.id, name: f.name, type: '花陣', category: 'flower', effect: f.effect });
-            });
-
-            // Tactics
-            tactics.forEach(t => {
-                items.push({ id: t.id, name: t.name, type: '戦法', category: 'tactic' });
-            });
-
-            // Asura skills
-            const asura30 = ['厄憑', '金剛の鎧', '稲田巡礼'];
-            const asura60 = ['移花接木', '攻守転換', '風助火勢', '俊敏狡猾', '守攻転換'];
-            const asura90 = ['破心断骨', '適時出撃', '麒麟の清め', '隠刃', '血戮'];
-            
-            asura30.forEach((name, i) => {
-                items.push({ id: `asura30_${i+1}`, name, type: '阿修羅30', category: 'asura', subcategory: 'asura30', index: i });
-            });
-            asura60.forEach((name, i) => {
-                items.push({ id: `asura60_${i+1}`, name, type: '阿修羅60', category: 'asura', subcategory: 'asura60', index: i });
-            });
-            asura90.forEach((name, i) => {
-                items.push({ id: `asura90_${i+1}`, name, type: '阿修羅90', category: 'asura', subcategory: 'asura90', index: i });
-            });
-
-            return items;
-        }
-
-        function getItemStatus(data, item) {
-            let equipped = false;
-            let owned = false;
-
-            switch(item.category) {
-                case 'weapon':
-                    const weaponData = data?.weapons?.[item.id];
-                    equipped = weaponData?.status === 'equipped';
-                    owned = weaponData?.status === 'owned' || weaponData?.status === 'equipped';
-                    break;
-                case 'spgeneral':
-                    const spData = data?.spGenerals?.[item.id];
-                    equipped = spData?.formed || false;
-                    owned = spData?.owned || false;
-                    break;
-                case 'general':
-                    const generalData = data?.generals?.[item.generalName];
-                    if (generalData && typeof generalData === 'object') {
-                        equipped = generalData.formed || false;
-                        owned = generalData.owned || false;
-                    }
-                    break;
-                case 'academy':
-                    const heihoData = data?.academy?.heiho?.[item.id];
-                    equipped = heihoData?.equipped || false;
-                    owned = heihoData?.owned || false;
-                    break;
-                case 'mask':
-                    const maskData = data?.armor?.masks?.[item.id];
-                    equipped = maskData?.equipped || false;
-                    owned = maskData?.owned || false;
-                    break;
-                case 'flower':
-                    const flowerData = data?.flowers?.[item.id];
-                    equipped = flowerData?.equipped || false;
-                    owned = flowerData?.owned || false;
-                    break;
-                case 'tactic':
-                    const tacticData = data?.tactics?.[item.id];
-                    equipped = tacticData?.equipped || false;
-                    owned = tacticData?.owned || false;
-                    break;
-                case 'asura':
-                    if (item.subcategory === 'asura30') {
-                        equipped = data?.asura?.skills30?.[item.index] || false;
-                    } else if (item.subcategory === 'asura60') {
-                        equipped = data?.asura?.skills60?.[item.index] || false;
-                    } else if (item.subcategory === 'asura90') {
-                        equipped = data?.asura?.skills90?.[item.index] || false;
-                    }
-                    owned = equipped;
-                    break;
-            }
-            return { equipped, owned };
-        }
-
-
-        function displayComparisonResults(overlaps, unused, ownedNotEquipped) {
-            const resultsDiv = document.getElementById('comparisonResults');
-            resultsDiv.classList.add('show');
-
-            const categoryStyles = {
-                'weapon': { class: 'subcat-weapon', label: '① 兵器', icon: '⚔️', order: 1 },
-                'spgeneral': { class: 'subcat-spgeneral', label: '②-1 SP武将', icon: '👑', order: 2 },
-                'general': { class: 'subcat-general', label: '②-2 武将', icon: '🎖️', order: 3, hasSubcategory: true },
-                'academy': { class: 'subcat-academy', label: '③ 極伝兵法', icon: '📚', order: 4 },
-                'asura': { class: 'subcat-asura', label: '④ 阿修羅', icon: '👹', order: 5, hasSubcategory: true },
-                'mask': { class: 'subcat-mask', label: '⑤ 核心具足', icon: '🎭', order: 6 },
-                'flower': { class: 'subcat-flower', label: '⑥ 花陣', icon: '🌸', order: 7 },
-                'horse': { class: 'subcat-horse', label: '⑦ 軍馬', icon: '🐴', order: 8 },
-                'tactic': { class: 'subcat-tactic', label: '⑧ 戦法', icon: '📜', order: 9 }
-            };
-
-            const asuraSubcatLabels = { 'asura30': '阿修羅30', 'asura60': '阿修羅60', 'asura90': '阿修羅90' };
-            const generalSubcatLabels = {};
-            generalCategories.forEach(cat => { generalSubcatLabels[cat.title] = cat.title; });
-            generalSubcatLabels['追加武将'] = '追加武将';
-
-            function groupByCategory(items) {
-                const groups = {};
-                items.forEach(item => {
-                    const cat = item.category;
-                    if (!groups[cat]) groups[cat] = [];
-                    groups[cat].push(item);
-                });
-                return groups;
-            }
-
-            function groupBySubcategory(items) {
-                const groups = {};
-                items.forEach(item => {
-                    const subcat = item.subcategory || 'default';
-                    if (!groups[subcat]) groups[subcat] = [];
-                    groups[subcat].push(item);
-                });
-                return groups;
-            }
-
-            function sortCategories(groups) {
-                return Object.entries(groups).sort((a, b) => {
-                    const orderA = categoryStyles[a[0]]?.order || 99;
-                    const orderB = categoryStyles[b[0]]?.order || 99;
-                    return orderA - orderB;
-                });
-            }
-
-            function renderItem(item) {
-                if (item.category === 'horse') {
-                    return `<div class="comparison-item"><div><span class="item-name">${item.name}</span><span class="item-type">${item.type}</span></div><div class="users-list">${item.details.map(d => `<span class="user-tag">${d.user}: 金${d.gold} 銀${d.silver}</span>`).join('')}</div></div>`;
-                }
-                if (item.users) {
-                    return `<div class="comparison-item"><div><span class="item-name">${item.name}</span><span class="item-type">${item.type}</span></div><div class="users-list">${item.users.map(u => `<span class="user-tag">${u}</span>`).join('')}</div></div>`;
-                }
-                if (item.ownedBy !== undefined) {
-                    return `<div class="comparison-item"><div><span class="item-name">${item.name}</span><span class="item-type">${item.type}</span></div><div class="users-list">${item.ownedBy.length > 0 ? item.ownedBy.map(u => `<span class="user-tag">${u}(所持)</span>`).join('') : '<span style="color: var(--text-muted); font-size: 0.8rem;">誰も所持していません</span>'}</div></div>`;
-                }
-                return '';
-            }
-
-            function renderLevel3(items) { return items.map(renderItem).join(''); }
-
-            function renderLevel2(cat, items, style) {
-                const subcatGroups = groupBySubcategory(items);
-                if (style.hasSubcategory && Object.keys(subcatGroups).length > 0) {
-                    const subcatLabels = cat === 'general' ? generalSubcatLabels : asuraSubcatLabels;
-                    let sortedSubcats;
-                    if (cat === 'general') {
-                        sortedSubcats = Object.entries(subcatGroups).sort((a, b) => {
-                            const indexA = items.find(i => i.subcategory === a[0])?.subcategoryIndex ?? 99;
-                            const indexB = items.find(i => i.subcategory === b[0])?.subcategoryIndex ?? 99;
-                            return indexA - indexB;
-                        });
-                    } else {
-                        const asuraOrder = { 'asura30': 1, 'asura60': 2, 'asura90': 3 };
-                        sortedSubcats = Object.entries(subcatGroups).sort((a, b) => (asuraOrder[a[0]] || 99) - (asuraOrder[b[0]] || 99));
-                    }
-                    return sortedSubcats.map(([subcat, subItems]) => {
-                        const subcatId = `subcat2_${cat}_${subcat}_${Math.random().toString(36).substr(2, 9)}`;
-                        const label = subcatLabels[subcat] || subcat;
-                        return `<div class="comparison-level-2"><div class="comparison-subcategory-header" style="padding: 0.5rem 0.8rem; font-size: 0.85rem;" onclick="toggleSubcategory('${subcatId}')"><span class="subcat-title"><span>●</span>${label}<span class="subcat-count">${subItems.length}件</span></span><span class="toggle-icon">▶</span></div><div class="comparison-subcategory-content comparison-level-3" id="${subcatId}">${renderLevel3(subItems)}</div></div>`;
-                    }).join('');
-                }
-                return renderLevel3(items);
-            }
-
-            function renderSubcategories(groups) {
-                if (Object.keys(groups).length === 0) return '<div class="no-issues"><div class="icon">✓</div>該当なし</div>';
-                const sortedGroups = sortCategories(groups);
-                return sortedGroups.map(([cat, items]) => {
-                    const style = categoryStyles[cat] || { class: '', label: cat, icon: '📋', order: 99 };
-                    const subcatId = `subcat_${cat}_${Math.random().toString(36).substr(2, 9)}`;
-                    return `<div class="comparison-subcategory"><div class="comparison-subcategory-header ${style.class}" onclick="toggleSubcategory('${subcatId}')"><span class="subcat-title"><span>${style.icon}</span>${style.label}<span class="subcat-count">${items.length}件</span></span><span class="toggle-icon">▶</span></div><div class="comparison-subcategory-content" id="${subcatId}">${renderLevel2(cat, items, style)}</div></div>`;
-                }).join('');
-            }
-
-            // Horse analysis
-            const usersData = selectedUsers.map(name => ({ name, data: cachedGameData[name] }));
-            const horseAnalysis = analyzeHorseSkills(usersData);
-            if (horseAnalysis.overlaps.length > 0) {
-                horseAnalysis.overlaps.forEach(item => overlaps.push(item));
-            }
-
-            const overlapGroups = groupByCategory(overlaps);
-            document.getElementById('overlapCount').textContent = `${overlaps.length}件`;
-            document.getElementById('overlapContent').innerHTML = renderSubcategories(overlapGroups);
-
-            const unusedGroups = groupByCategory(unused);
-            document.getElementById('unusedCount').textContent = `${unused.length}件`;
-            document.getElementById('unusedContent').innerHTML = renderSubcategories(unusedGroups);
-
-            const ownedNotEquippedGroups = groupByCategory(ownedNotEquipped);
-            document.getElementById('inconsistentCount').textContent = `${ownedNotEquipped.length}件`;
-            document.getElementById('inconsistentContent').innerHTML = renderSubcategories(ownedNotEquippedGroups);
-
-            showToast('比較分析が完了しました', 'success');
-        }
-
-        function analyzeHorseSkills(usersData) {
-            const overlaps = [];
-            const horseTypes = [
-                { key: 'kago', name: '駒・加護', type: 'ダメージ減' },
-                { key: 'kobu', name: '駒・鼓舞', type: 'ダメージ増' },
-                { key: 'hangeki', name: '駒・反撃', type: 'ダメージ跳ね返し' }
-            ];
-            horseTypes.forEach(horseType => {
-                const usersWithSkill = [];
-                usersData.forEach(({ name, data }) => {
-                    const horseData = data?.horse?.[horseType.key];
-                    const gold = parseInt(horseData?.gold) || 0;
-                    const silver = parseInt(horseData?.silver) || 0;
-                    if (gold > 0 || silver > 0) {
-                        usersWithSkill.push({ user: name, gold, silver });
-                    }
-                });
-                if (usersWithSkill.length > 1) {
-                    const totalGold = usersWithSkill.reduce((sum, u) => sum + u.gold, 0);
-                    const totalSilver = usersWithSkill.reduce((sum, u) => sum + u.silver, 0);
-                    overlaps.push({
-                        name: `${horseType.name}（金計${totalGold} / 銀計${totalSilver}）`,
-                        type: horseType.type, category: 'horse', details: usersWithSkill
-                    });
-                }
-            });
-            return { overlaps };
-        }
-
-        function toggleSubcategory(subcatId) {
-            const content = document.getElementById(subcatId);
-            const header = content.previousElementSibling;
-            const icon = header.querySelector('.toggle-icon');
-            if (content.classList.contains('show')) {
-                content.classList.remove('show');
-                icon.textContent = '▶';
-            } else {
-                content.classList.add('show');
-                icon.textContent = '▼';
-            }
-        }
-
-        function toggleComparisonCategory(categoryId) {
-            const content = document.querySelector(`#${categoryId} .comparison-category-content`);
-            const header = document.querySelector(`#${categoryId} .comparison-category-header`);
-            const icon = header.querySelector('.toggle-icon');
-            if (content.classList.contains('show')) {
-                content.classList.remove('show');
-                icon.textContent = '▶';
-            } else {
-                content.classList.add('show');
-                icon.textContent = '▼';
-            }
         }
 
 

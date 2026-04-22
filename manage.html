@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理画面 - 武将データ管理</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-input: #22222f;
+            --border-color: #2a2a3a;
+            --border-accent: #4a3a2a;
+            --text-primary: #e8e4dc;
+            --text-secondary: #9a9490;
+            --text-muted: #6a6560;
+            --accent-gold: #c9a227;
+            --accent-gold-dim: #8a7020;
+            --accent-red: #b83c3c;
+            --accent-green: #3cb878;
+            --accent-blue: #3c8cb8;
+            --status-complete: #2a6a4a;
+            --status-partial: #6a5a2a;
+            --status-empty: #4a2a2a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1510 0%, #0a0a0f 100%);
+            border-bottom: 2px solid var(--accent-gold-dim);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            letter-spacing: 0.1em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-actions a {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .header-actions a:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        /* Main container */
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Login section */
+        .login-section {
+            max-width: 400px;
+            margin: 4rem auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .login-section h2 {
+            color: var(--accent-gold);
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .login-form input {
+            padding: 0.8rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: var(--accent-gold-dim);
+        }
+
+        .login-form button {
+            padding: 0.8rem 1rem;
+            background: var(--accent-gold);
+            border: none;
+            border-radius: 6px;
+            color: var(--bg-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .login-form button:hover {
+            filter: brightness(1.1);
+        }
+
+        .password-change-link {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .password-change-link a {
+            color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        .password-change-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Password change dialog */
+        .password-dialog {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-input);
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .password-dialog.show {
+            display: block;
+        }
+
+        .password-dialog h4 {
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .password-dialog input {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .password-dialog-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .password-dialog-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .password-dialog-actions .btn-confirm {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .password-dialog-actions .btn-cancel {
+            background: var(--text-muted);
+            color: white;
+        }
+
+        /* Admin content (hidden until login) */
+        .admin-content {
+            display: none;
+        }
+
+        .admin-content.show {
+            display: block;
+        }
+
+        /* Section card */
+        .section-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-card h3 {
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Action buttons row */
+        .action-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .action-btn.primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .action-btn.success {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .action-btn.danger {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .action-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Data table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: var(--bg-secondary);
+            color: var(--accent-gold);
+            font-weight: 500;
+        }
+
+        .data-table tr:hover td {
+            background: var(--bg-input);
+        }
+
+        .data-table .actions {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .data-table .btn-edit {
+            padding: 0.3rem 0.6rem;
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .data-table .btn-delete {
+            padding: 0.3rem 0.6rem;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 80px;
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-green);
+            transition: width 0.3s;
+        }
+
+        /* Team management */
+        .team-create-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .team-create-form input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        .team-create-form button {
+            padding: 0.6rem 1.2rem;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .team-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .team-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .team-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .team-card-header h4 {
+            color: var(--accent-gold);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .team-card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .team-member-tools {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-member-search {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .team-copy-select {
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .team-bulk-btn {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            background: var(--accent-blue);
+            color: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .team-member-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+
+        .team-members-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .team-member-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--bg-secondary);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .team-member-checkbox.selected {
+            background: var(--status-complete);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .team-member-checkbox input {
+            cursor: pointer;
+        }
+
+        .team-members-grid.filtered .team-member-checkbox {
+            display: none;
+        }
+
+        .team-members-grid.filtered .team-member-checkbox.visible {
+            display: flex;
+        }
+
+        /* Custom generals */
+        .custom-general-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .custom-general-form input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        .custom-general-form button {
+            padding: 0.6rem 1.2rem;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .custom-general-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .custom-general-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .custom-general-tag button {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .custom-general-tag button:hover {
+            opacity: 0.7;
+        }
+
+        /* Custom items by category */
+        .custom-item-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .custom-item-form .form-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .custom-item-form select {
+            flex: 1;
+            min-width: 180px;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        .custom-item-form input {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        .custom-item-form button {
+            padding: 0.6rem 1.2rem;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .new-category-row, .new-subcategory-row {
+            display: none !important;
+        }
+
+        .new-category-row.show, .new-subcategory-row.show {
+            display: flex !important;
+        }
+
+        .subcategory-group {
+            margin-left: 1rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .subcategory-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .subcategory-group-header:hover {
+            color: var(--accent-gold);
+        }
+
+        .subcategory-group-title {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .subcategory-group-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            padding: 0.4rem 0;
+        }
+
+        .category-group {
+            margin-bottom: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .category-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+        }
+
+        .category-group-header:hover {
+            background: var(--border-color);
+        }
+
+        .category-group-title {
+            font-weight: 500;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-group-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: var(--bg-primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .category-group-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .category-group-actions button {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem;
+        }
+
+        .category-group-actions button:hover {
+            opacity: 0.7;
+        }
+
+        .category-group-content {
+            padding: 0.8rem 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .category-item-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .category-item-tag button {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 0.9rem;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .category-item-tag button:hover {
+            opacity: 0.7;
+        }
+
+        /* Data management */
+        .data-management-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            border: 1px solid var(--accent-gold);
+            border-radius: 8px;
+            padding: 0.8rem 1.5rem;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--accent-green);
+        }
+
+        .toast.error {
+            border-color: var(--accent-red);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+
+            .data-table {
+                font-size: 0.8rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 管理画面</h1>
+        <div class="header-actions">
+            <a href="index.html">← 入力画面</a>
+            <a href="view.html">📊 一覧表示</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- Login Section -->
+        <div class="login-section" id="loginSection">
+            <h2>管理者ログイン</h2>
+            <div class="login-form">
+                <input type="password" id="adminPwd" placeholder="パスワードを入力">
+                <button onclick="verifyPassword()">ログイン</button>
+            </div>
+            <div class="password-change-link">
+                <a onclick="togglePasswordDialog()">パスワードを変更する</a>
+            </div>
+            <div class="password-dialog" id="passwordDialog">
+                <h4>管理者パスワード変更</h4>
+                <input type="password" id="masterPwd" placeholder="主管理者パスワード">
+                <input type="password" id="newAdminPwd" placeholder="新しい管理者パスワード">
+                <input type="password" id="confirmAdminPwd" placeholder="新しいパスワード（確認）">
+                <div class="password-dialog-actions">
+                    <button class="btn-confirm" onclick="changeAdminPassword()">変更</button>
+                    <button class="btn-cancel" onclick="togglePasswordDialog()">キャンセル</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Content (hidden until login) -->
+        <div class="admin-content" id="adminContent">
+            <!-- User Data Section -->
+            <div class="section-card">
+                <h3>👥 ユーザーデータ管理</h3>
+                <div class="action-row">
+                    <button class="action-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>ユーザー名</th>
+                                <th>兵種</th>
+                                <th>更新日時</th>
+                                <th>完成度</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr><td colspan="5" class="empty-state">データを読み込んでいます...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Team Management Section -->
+            <div class="section-card" id="teamSection">
+                <h3>🎯 チーム管理</h3>
+                <div class="team-create-form">
+                    <input type="text" id="newTeamName" placeholder="新しいチーム名を入力" maxlength="30">
+                    <button onclick="createTeam()">チーム作成</button>
+                </div>
+                <div class="team-list" id="teamList">
+                    <div class="empty-state">チームがありません</div>
+                </div>
+            </div>
+
+            <!-- Custom Generals Section -->
+            <div class="section-card" id="customGeneralSection">
+                <h3>⚔️ カスタム武将管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    デフォルトの武将リストに含まれない武将を追加できます。追加した武将は全ユーザーの入力フォームに表示されます。
+                </p>
+                <div class="custom-item-form">
+                    <div class="form-row">
+                        <select id="generalSubcategorySelect" onchange="onGeneralSubcategorySelectChange()">
+                            <option value="_default">（カテゴリなし）</option>
+                            <optgroup label="既存カテゴリ">
+                                <option value="この辺は一人は欲しい武将">この辺は一人は欲しい武将</option>
+                                <option value="集結で使う武将">集結で使う武将</option>
+                                <option value="全兵種対応武将">全兵種対応武将</option>
+                                <option value="馬用">馬用</option>
+                                <option value="歩用">歩用</option>
+                                <option value="弓用">弓用</option>
+                            </optgroup>
+                            <option value="__new__">+ 新規カテゴリを作成</option>
+                        </select>
+                    </div>
+                    <div class="form-row new-subcategory-row" id="newGeneralSubcategoryRow">
+                        <input type="text" id="newGeneralSubcategoryName" placeholder="新規カテゴリ名を入力" maxlength="20" style="flex: 1;">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="newGeneralName" placeholder="武将名を入力" maxlength="20" style="flex: 1;">
+                        <button onclick="addCustomGeneral()">追加</button>
+                    </div>
+                </div>
+                <div class="custom-general-list" id="customGeneralList">
+                    <span style="color: var(--text-muted);">読み込み中...</span>
+                </div>
+            </div>
+
+            <!-- Custom Items by Category Section -->
+            <div class="section-card" id="customItemSection">
+                <h3>📦 カスタムアイテム管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    既存カテゴリにアイテムを追加、または新しいカテゴリ・小カテゴリを作成できます。
+                </p>
+                <div class="custom-item-form">
+                    <div class="form-row">
+                        <select id="itemCategorySelect" onchange="onCategorySelectChange()">
+                            <option value="">-- カテゴリを選択 --</option>
+                            <option value="__new__">+ 新規カテゴリを作成</option>
+                        </select>
+                        <select id="itemSubcategorySelect" onchange="onSubcategorySelectChange()" style="display: none;">
+                            <option value="">-- 小カテゴリを選択 --</option>
+                        </select>
+                    </div>
+                    <div class="form-row new-category-row" id="newCategoryRow">
+                        <input type="text" id="newCategoryName" placeholder="新規カテゴリ名を入力" maxlength="20">
+                        <input type="text" id="newSubcategoryName" placeholder="新規小カテゴリ名（省略可）" maxlength="20">
+                    </div>
+                    <div class="form-row new-subcategory-row" id="newSubcategoryRow">
+                        <input type="text" id="newSubcategoryNameOnly" placeholder="新規小カテゴリ名を入力" maxlength="20" style="flex: 1;">
+                    </div>
+                    <div class="form-row">
+                        <input type="text" id="newItemName" placeholder="アイテム名を入力" maxlength="30" style="flex: 1;">
+                        <button onclick="addCustomItem()">追加</button>
+                    </div>
+                </div>
+                <div id="customItemsList">
+                    <span style="color: var(--text-muted);">読み込み中...</span>
+                </div>
+            </div>
+
+            <!-- Data Export/Import Section -->
+            <div class="section-card">
+                <h3>💾 データエクスポート/インポート</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    全ユーザーデータをJSONファイルとしてバックアップ・復元できます。
+                </p>
+                <div class="data-management-row">
+                    <button class="action-btn primary" onclick="exportData()">📤 エクスポート</button>
+                    <button class="action-btn success" onclick="importData()">📥 インポート</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getDatabase, ref, get, set, remove, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDu9WB_iA_2i5qL4uir8g__LmfAFTeuOYI",
+            authDomain: "game-data-manager-6f18b.firebaseapp.com",
+            databaseURL: "https://game-data-manager-6f18b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "game-data-manager-6f18b",
+            storageBucket: "game-data-manager-6f18b.firebasestorage.app",
+            messagingSenderId: "528465841462",
+            appId: "1:528465841462:web:3262de1288dfb1326b3797"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        window.firebaseDB = { database, ref, get, set, remove, onValue };
+        window.firebaseReady = true;
+        document.dispatchEvent(new Event('firebaseReady'));
+    </script>
+
+    <script>
+        // Global state
+        let MASTER_PASSWORD = null;
+        let ADMIN_PASSWORD = null;
+        let gameData = {};
+        let teams = {};
+        let customGenerals = {};  // { "カテゴリ": ["武将1"], "_default": ["武将2"] }
+        let customItems = {};
+
+        // Existing general categories (from index.html)
+        const EXISTING_GENERAL_CATEGORIES = [
+            'この辺は一人は欲しい武将',
+            '集結で使う武将',
+            '全兵種対応武将',
+            '馬用',
+            '歩用',
+            '弓用'
+        ];
+
+        // Predefined categories with subcategories
+        const PREDEFINED_CATEGORIES = {
+            '兵器': { icon: '⚔️', subcategories: [] },
+            'SP武将': { icon: '👑', subcategories: [] },
+            '極伝兵法': { icon: '📚', subcategories: [] },
+            '阿修羅': { icon: '👹', subcategories: ['30レベル', '60レベル', '90レベル'] },
+            '核心具足': { icon: '🎭', subcategories: [] },
+            '花陣': { icon: '🌸', subcategories: [] },
+            '戦法': { icon: '📜', subcategories: [] },
+            '軍馬': { icon: '🐴', subcategories: [] }
+        };
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => { toast.className = 'toast'; }, 2500);
+        }
+
+        // Load passwords from Firebase
+        async function loadPasswords() {
+            if (!window.firebaseReady) return;
+
+            try {
+                const { database, ref, get } = window.firebaseDB;
+
+                const adminSnapshot = await get(ref(database, 'settings/adminPassword'));
+                if (adminSnapshot.exists()) {
+                    ADMIN_PASSWORD = adminSnapshot.val();
+                }
+
+                const masterSnapshot = await get(ref(database, 'settings/masterPassword'));
+                if (masterSnapshot.exists()) {
+                    MASTER_PASSWORD = masterSnapshot.val();
+                }
+            } catch (error) {
+                console.error('Failed to load passwords:', error);
+            }
+        }
+
+        // Verify admin password
+        function verifyPassword() {
+            const password = document.getElementById('adminPwd').value;
+
+            if (!ADMIN_PASSWORD) {
+                showToast('管理者パスワードが未設定です。Firebaseコンソールで設定してください。', 'error');
+                return;
+            }
+
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminContent').classList.add('show');
+                refreshDataTable();
+                renderTeamList();
+                renderCustomGenerals();
+                updateGeneralSubcategorySelect();
+                renderCustomItems();
+                updateCategorySelect();
+                showToast('ログインしました', 'success');
+            } else {
+                showToast('パスワードが違います', 'error');
+            }
+        }
+
+        // Toggle password change dialog
+        function togglePasswordDialog() {
+            const dialog = document.getElementById('passwordDialog');
+            dialog.classList.toggle('show');
+            if (!dialog.classList.contains('show')) {
+                document.getElementById('masterPwd').value = '';
+                document.getElementById('newAdminPwd').value = '';
+                document.getElementById('confirmAdminPwd').value = '';
+            }
+        }
+
+        // Change admin password
+        async function changeAdminPassword() {
+            const masterPwd = document.getElementById('masterPwd').value;
+            const newPwd = document.getElementById('newAdminPwd').value;
+            const confirmPwd = document.getElementById('confirmAdminPwd').value;
+
+            if (!MASTER_PASSWORD) {
+                showToast('主管理者パスワードが未設定です。', 'error');
+                return;
+            }
+
+            if (masterPwd !== MASTER_PASSWORD) {
+                showToast('主管理者パスワードが違います', 'error');
+                return;
+            }
+
+            if (!newPwd || newPwd.length < 4) {
+                showToast('新しいパスワードは4文字以上で入力してください', 'error');
+                return;
+            }
+
+            if (newPwd !== confirmPwd) {
+                showToast('新しいパスワードが一致しません', 'error');
+                return;
+            }
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, 'settings/adminPassword'), newPwd);
+                ADMIN_PASSWORD = newPwd;
+                togglePasswordDialog();
+                showToast('パスワードを変更しました', 'success');
+            } catch (error) {
+                console.error('Password change error:', error);
+                showToast('パスワード変更に失敗しました', 'error');
+            }
+        }
+
+        // Load game data
+        async function loadGameData() {
+            if (!window.firebaseReady) return;
+
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const [gameSnap, teamSnap, genSnap] = await Promise.all([
+                    get(ref(database, 'gameData')),
+                    get(ref(database, 'teams')),
+                    get(ref(database, 'customGenerals'))
+                ]);
+                gameData = gameSnap.exists() ? gameSnap.val() : {};
+                teams = teamSnap.exists() ? teamSnap.val() : {};
+                customGenerals = genSnap.exists() ? genSnap.val() : [];
+            } catch (error) {
+                console.error('Failed to load data:', error);
+            }
+        }
+
+        // Subscribe to realtime updates
+        function subscribeRealtime() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+
+            onValue(ref(database, 'gameData'), (snap) => {
+                gameData = snap.exists() ? snap.val() : {};
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    refreshDataTable();
+                    renderTeamList();
+                }
+            });
+
+            onValue(ref(database, 'teams'), (snap) => {
+                teams = snap.exists() ? snap.val() : {};
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    renderTeamList();
+                }
+            });
+
+            onValue(ref(database, 'customGenerals'), (snap) => {
+                const data = snap.exists() ? snap.val() : {};
+                // Backward compatibility: convert array to object format
+                if (Array.isArray(data)) {
+                    customGenerals = { '_default': data };
+                } else {
+                    customGenerals = data;
+                }
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    renderCustomGenerals();
+                    updateGeneralSubcategorySelect();
+                }
+            });
+
+            onValue(ref(database, 'customItems'), (snap) => {
+                customItems = snap.exists() ? snap.val() : {};
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    renderCustomItems();
+                    updateCategorySelect();
+                }
+            });
+        }
+
+        // Refresh data table
+        function refreshDataTable() {
+            const tbody = document.getElementById('dataTableBody');
+
+            if (!gameData || Object.keys(gameData).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">保存されたデータがありません</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = Object.entries(gameData).map(([name, data]) => {
+                const completion = calculateCompletion(data);
+                const date = data.timestamp ? new Date(data.timestamp).toLocaleString('ja-JP') : '-';
+                const troop = data.troopType || '-';
+                return `
+                    <tr>
+                        <td>${escapeHtml(name)}</td>
+                        <td>${escapeHtml(troop)}</td>
+                        <td>${date}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${completion}%"></div>
+                            </div>
+                            <span>${completion}%</span>
+                        </td>
+                        <td class="actions">
+                            <button class="btn-edit" onclick="editUser('${escapeHtml(name)}')">編集</button>
+                            <button class="btn-delete" onclick="confirmDeleteUser('${escapeHtml(name)}')">削除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Calculate completion percentage
+        function calculateCompletion(data) {
+            let filled = 0;
+            let total = 0;
+
+            total += 2;
+            if (data.username) filled++;
+            if (data.troopType) filled++;
+
+            if (data.weapons) {
+                Object.values(data.weapons).forEach(w => {
+                    total += 1;
+                    if (w.status) filled++;
+                });
+            }
+
+            if (data.spGenerals) {
+                Object.values(data.spGenerals).forEach(sp => {
+                    total += 1;
+                    if (sp.owned || sp.formed) filled++;
+                });
+            }
+
+            if (data.generals) {
+                Object.values(data.generals).forEach(g => {
+                    total += 1;
+                    if (g.owned || g.formed) filled++;
+                });
+            }
+
+            return Math.round((filled / Math.max(total, 1)) * 100);
+        }
+
+        // Edit user - redirect to index.html with username
+        function editUser(username) {
+            window.location.href = `index.html?edit=${encodeURIComponent(username)}`;
+        }
+
+        // Confirm delete user
+        function confirmDeleteUser(username) {
+            if (confirm(`${username}のデータを削除しますか？`)) {
+                deleteUser(username);
+            }
+        }
+
+        // Delete user
+        async function deleteUser(username) {
+            try {
+                const { database, ref, remove } = window.firebaseDB;
+                await remove(ref(database, `gameData/${username}`));
+                showToast(`${username}のデータを削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // Clear all data
+        async function clearAllData() {
+            if (!confirm('全てのデータを削除しますか？この操作は取り消せません。')) return;
+            if (!confirm('本当に削除しますか？')) return;
+
+            try {
+                const { database, ref, remove } = window.firebaseDB;
+                await remove(ref(database, 'gameData'));
+                gameData = {};
+                refreshDataTable();
+                showToast('全データを削除しました', 'success');
+            } catch (error) {
+                console.error('Clear all error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // ========== Team Management ==========
+
+        // Create new team
+        async function createTeam() {
+            const nameInput = document.getElementById('newTeamName');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showToast('チーム名を入力してください', 'error');
+                return;
+            }
+
+            const teamId = 'team_' + Date.now();
+            const teamData = {
+                id: teamId,
+                name: name,
+                members: [],
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `teams/${teamId}`), teamData);
+                nameInput.value = '';
+                showToast(`チーム「${name}」を作成しました`, 'success');
+            } catch (error) {
+                console.error('Create team error:', error);
+                showToast('チームの作成に失敗しました', 'error');
+            }
+        }
+
+        // Delete team
+        async function deleteTeam(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+
+            if (!confirm(`チーム「${team.name}」を削除しますか？`)) return;
+
+            try {
+                const { database, ref, remove } = window.firebaseDB;
+                await remove(ref(database, `teams/${teamId}`));
+                showToast(`チーム「${team.name}」を削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete team error:', error);
+                showToast('チームの削除に失敗しました', 'error');
+            }
+        }
+
+        // Toggle team member
+        async function toggleTeamMember(teamId, username, checked) {
+            const team = teams[teamId];
+            if (!team) return;
+
+            let members = team.members || [];
+
+            if (checked && !members.includes(username)) {
+                members = [...members, username];
+            } else if (!checked) {
+                members = members.filter(m => m !== username);
+            }
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `teams/${teamId}/members`), members);
+            } catch (error) {
+                console.error('Toggle member error:', error);
+                showToast('メンバーの更新に失敗しました', 'error');
+            }
+        }
+
+        // Filter team members by search query
+        function filterTeamMembers(teamId, query) {
+            const grid = document.getElementById(`teamMembersGrid_${teamId}`);
+            if (!grid) return;
+
+            const checkboxes = grid.querySelectorAll('.team-member-checkbox');
+            const lowerQuery = query.toLowerCase();
+
+            if (!query) {
+                grid.classList.remove('filtered');
+                checkboxes.forEach(cb => cb.classList.remove('visible'));
+            } else {
+                grid.classList.add('filtered');
+                checkboxes.forEach(cb => {
+                    const name = cb.dataset.username.toLowerCase();
+                    if (name.includes(lowerQuery)) {
+                        cb.classList.add('visible');
+                    } else {
+                        cb.classList.remove('visible');
+                    }
+                });
+            }
+        }
+
+        // Copy members from another team
+        async function copyFromTeam(targetTeamId, sourceTeamId) {
+            if (!sourceTeamId) return;
+
+            const sourceTeam = teams[sourceTeamId];
+            const targetTeam = teams[targetTeamId];
+            if (!sourceTeam || !targetTeam) return;
+
+            const sourceMembers = sourceTeam.members || [];
+            if (sourceMembers.length === 0) {
+                showToast('コピー元のチームにメンバーがいません', 'error');
+                return;
+            }
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `teams/${targetTeamId}/members`), [...sourceMembers]);
+                showToast(`${sourceTeam.name}から${sourceMembers.length}人をコピーしました`, 'success');
+            } catch (error) {
+                console.error('Copy team error:', error);
+                showToast('コピーに失敗しました', 'error');
+            }
+        }
+
+        // Clear all team members
+        async function clearTeamMembers(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+
+            if (!confirm(`${team.name}のメンバーを全て解除しますか？`)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `teams/${teamId}/members`), []);
+                showToast('メンバーを全て解除しました', 'success');
+            } catch (error) {
+                console.error('Clear members error:', error);
+                showToast('解除に失敗しました', 'error');
+            }
+        }
+
+        // Render team list
+        function renderTeamList() {
+            const container = document.getElementById('teamList');
+            const teamList = Object.values(teams);
+            const allUsers = Object.keys(gameData).sort();
+
+            if (teamList.length === 0) {
+                container.innerHTML = '<div class="empty-state">チームがありません</div>';
+                return;
+            }
+
+            container.innerHTML = teamList.map(team => {
+                const members = team.members || [];
+                const memberCount = members.length;
+
+                // Build other teams dropdown for copy feature
+                const otherTeams = teamList.filter(t => t.id !== team.id);
+                const copyOptions = otherTeams.map(t =>
+                    `<option value="${t.id}">${escapeHtml(t.name)}</option>`
+                ).join('');
+
+                // Build member checkboxes
+                const memberCheckboxes = allUsers.map(username => {
+                    const isSelected = members.includes(username);
+                    return `
+                        <label class="team-member-checkbox ${isSelected ? 'selected' : ''}" data-username="${escapeHtml(username)}">
+                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleTeamMember('${team.id}', '${escapeHtml(username)}', this.checked)">
+                            ${escapeHtml(username)}
+                        </label>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="team-card">
+                        <div class="team-card-header">
+                            <h4>🎯 ${escapeHtml(team.name)}</h4>
+                            <div class="team-card-actions">
+                                <button class="action-btn danger" onclick="deleteTeam('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">削除</button>
+                            </div>
+                        </div>
+                        <div class="team-member-tools">
+                            <input type="text" class="team-member-search" placeholder="名前で検索..." oninput="filterTeamMembers('${team.id}', this.value)">
+                            <select class="team-copy-select" onchange="copyFromTeam('${team.id}', this.value); this.value='';">
+                                <option value="">他チームからコピー</option>
+                                ${copyOptions}
+                            </select>
+                            <button class="team-bulk-btn" onclick="clearTeamMembers('${team.id}')">全解除</button>
+                            <span class="team-member-count">${memberCount}人選択中</span>
+                        </div>
+                        <div class="team-members-grid" id="teamMembersGrid_${team.id}">
+                            ${memberCheckboxes || '<span style="color: var(--text-muted);">ユーザーがいません</span>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== Custom Generals Management ==========
+
+        function getGeneralSubcategories() {
+            if (!customGenerals || typeof customGenerals !== 'object') return [];
+            return Object.keys(customGenerals).filter(k => k !== '_default').sort();
+        }
+
+        function getAllGeneralsList() {
+            if (!customGenerals || typeof customGenerals !== 'object') return [];
+            return Object.values(customGenerals).flat();
+        }
+
+        function onGeneralSubcategorySelectChange() {
+            const select = document.getElementById('generalSubcategorySelect');
+            const newRow = document.getElementById('newGeneralSubcategoryRow');
+
+            if (select.value === '__new__') {
+                newRow.classList.add('show');
+                document.getElementById('newGeneralSubcategoryName').focus();
+            } else {
+                newRow.classList.remove('show');
+            }
+        }
+
+        function updateGeneralSubcategorySelect() {
+            const select = document.getElementById('generalSubcategorySelect');
+            const currentValue = select.value;
+            const customSubcategories = getGeneralSubcategories();
+
+            // Combine existing categories and custom subcategories
+            const allCategories = [...EXISTING_GENERAL_CATEGORIES];
+            customSubcategories.forEach(sub => {
+                if (!allCategories.includes(sub)) {
+                    allCategories.push(sub);
+                }
+            });
+
+            select.innerHTML = `
+                <option value="_default">（カテゴリなし）</option>
+                <optgroup label="既存カテゴリ">
+                    ${EXISTING_GENERAL_CATEGORIES.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('')}
+                </optgroup>
+                ${customSubcategories.length > 0 ? `
+                <optgroup label="カスタムカテゴリ">
+                    ${customSubcategories.filter(sub => !EXISTING_GENERAL_CATEGORIES.includes(sub)).map(sub => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join('')}
+                </optgroup>
+                ` : ''}
+                <option value="__new__">+ 新規カテゴリを作成</option>
+            `;
+
+            if (currentValue && (allCategories.includes(currentValue) || currentValue === '_default' || currentValue === '__new__')) {
+                select.value = currentValue;
+            }
+        }
+
+        function renderCustomGenerals() {
+            const container = document.getElementById('customGeneralList');
+
+            if (!customGenerals || typeof customGenerals !== 'object') {
+                container.innerHTML = '<span style="color: var(--text-muted);">追加された武将はありません</span>';
+                return;
+            }
+
+            const categories = Object.keys(customGenerals);
+            const hasAnyGenerals = categories.some(cat => customGenerals[cat] && customGenerals[cat].length > 0);
+
+            if (!hasAnyGenerals) {
+                container.innerHTML = '<span style="color: var(--text-muted);">追加された武将はありません</span>';
+                return;
+            }
+
+            // Render default (uncategorized) generals first
+            const defaultGenerals = customGenerals._default || [];
+            const subcategories = categories.filter(k => k !== '_default' && customGenerals[k]?.length > 0);
+
+            let html = '';
+
+            if (defaultGenerals.length > 0) {
+                html += `
+                    <div style="margin-bottom: 0.8rem;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            ${defaultGenerals.map(name => `
+                                <span class="custom-general-tag">
+                                    ${escapeHtml(name)}
+                                    <button onclick="removeCustomGeneral('_default', '${escapeHtml(name)}')" title="削除">✕</button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            subcategories.forEach(cat => {
+                const generals = customGenerals[cat] || [];
+                html += `
+                    <div class="subcategory-group" style="margin-left: 0;">
+                        <div class="subcategory-group-header">
+                            <span class="subcategory-group-title">
+                                📂 ${escapeHtml(cat)}
+                                <span class="category-group-count">${generals.length}人</span>
+                            </span>
+                            <button onclick="deleteGeneralSubcategory('${escapeHtml(cat)}')" style="background: none; border: none; color: var(--accent-red); cursor: pointer; font-size: 0.8rem;">削除</button>
+                        </div>
+                        <div class="subcategory-group-content">
+                            ${generals.map(name => `
+                                <span class="custom-general-tag">
+                                    ${escapeHtml(name)}
+                                    <button onclick="removeCustomGeneral('${escapeHtml(cat)}', '${escapeHtml(name)}')" title="削除">✕</button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        async function addCustomGeneral() {
+            const subcatSelect = document.getElementById('generalSubcategorySelect');
+            const nameInput = document.getElementById('newGeneralName');
+            const newSubcatInput = document.getElementById('newGeneralSubcategoryName');
+
+            let subcategory = subcatSelect.value;
+            const name = nameInput.value.trim();
+
+            if (subcategory === '__new__') {
+                subcategory = newSubcatInput.value.trim();
+                if (!subcategory) {
+                    showToast('カテゴリ名を入力してください', 'error');
+                    return;
+                }
+            }
+
+            if (!name) {
+                showToast('武将名を入力してください', 'error');
+                return;
+            }
+
+            // Check if already exists in any category
+            const allGenerals = getAllGeneralsList();
+            if (allGenerals.includes(name)) {
+                showToast('この武将は既に登録されています', 'error');
+                return;
+            }
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const currentList = customGenerals[subcategory] || [];
+                const newList = [...currentList, name];
+                await set(ref(database, `customGenerals/${subcategory}`), newList);
+
+                nameInput.value = '';
+                if (subcatSelect.value === '__new__') {
+                    newSubcatInput.value = '';
+                    document.getElementById('newGeneralSubcategoryRow').classList.remove('show');
+                }
+
+                const displayName = subcategory === '_default' ? name : `${subcategory} > ${name}`;
+                showToast(`${displayName}を追加しました`, 'success');
+            } catch (error) {
+                console.error('Add general error:', error);
+                showToast('追加に失敗しました', 'error');
+            }
+        }
+
+        async function removeCustomGeneral(subcategory, name) {
+            if (!confirm(`${name}を削除しますか？`)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const currentList = customGenerals[subcategory] || [];
+                const newList = currentList.filter(g => g !== name);
+
+                if (newList.length === 0) {
+                    await set(ref(database, `customGenerals/${subcategory}`), null);
+                } else {
+                    await set(ref(database, `customGenerals/${subcategory}`), newList);
+                }
+
+                showToast(`${name}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Remove general error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        async function deleteGeneralSubcategory(subcategory) {
+            const generals = customGenerals[subcategory] || [];
+            const msg = generals.length > 0
+                ? `${subcategory}（${generals.length}人の武将を含む）を削除しますか？`
+                : `${subcategory}を削除しますか？`;
+
+            if (!confirm(msg)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `customGenerals/${subcategory}`), null);
+                showToast(`${subcategory}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete subcategory error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // ========== Custom Items by Category ==========
+
+        function getAllCategories() {
+            const predefined = Object.keys(PREDEFINED_CATEGORIES);
+            const custom = Object.keys(customItems).filter(c => !predefined.includes(c));
+            return [...predefined, ...custom.sort()];
+        }
+
+        function getSubcategoriesForCategory(category) {
+            const predefined = PREDEFINED_CATEGORIES[category]?.subcategories || [];
+            const customSubcats = customItems[category] ? Object.keys(customItems[category]).filter(s => s !== '_default') : [];
+            const allSubcats = [...new Set([...predefined, ...customSubcats])];
+            return allSubcats.sort();
+        }
+
+        function onCategorySelectChange() {
+            const categorySelect = document.getElementById('itemCategorySelect');
+            const subcategorySelect = document.getElementById('itemSubcategorySelect');
+            const newCategoryRow = document.getElementById('newCategoryRow');
+            const newSubcategoryRow = document.getElementById('newSubcategoryRow');
+
+            const category = categorySelect.value;
+
+            newCategoryRow.classList.remove('show');
+            newSubcategoryRow.classList.remove('show');
+            subcategorySelect.style.display = 'none';
+
+            if (category === '__new__') {
+                newCategoryRow.classList.add('show');
+                document.getElementById('newCategoryName').focus();
+            } else if (category) {
+                updateSubcategorySelect(category);
+                subcategorySelect.style.display = 'block';
+            }
+        }
+
+        function onSubcategorySelectChange() {
+            const subcategorySelect = document.getElementById('itemSubcategorySelect');
+            const newSubcategoryRow = document.getElementById('newSubcategoryRow');
+
+            if (subcategorySelect.value === '__new__') {
+                newSubcategoryRow.classList.add('show');
+                document.getElementById('newSubcategoryNameOnly').focus();
+            } else {
+                newSubcategoryRow.classList.remove('show');
+            }
+        }
+
+        function updateCategorySelect() {
+            const select = document.getElementById('itemCategorySelect');
+            const currentValue = select.value;
+
+            const categories = getAllCategories();
+
+            select.innerHTML = `
+                <option value="">-- カテゴリを選択 --</option>
+                ${categories.map(cat => {
+                    const icon = PREDEFINED_CATEGORIES[cat]?.icon || '📁';
+                    return `<option value="${escapeHtml(cat)}">${icon} ${escapeHtml(cat)}</option>`;
+                }).join('')}
+                <option value="__new__">+ 新規カテゴリを作成</option>
+            `;
+
+            if (currentValue && (categories.includes(currentValue) || currentValue === '__new__')) {
+                select.value = currentValue;
+                if (currentValue !== '__new__' && currentValue) {
+                    updateSubcategorySelect(currentValue);
+                }
+            }
+        }
+
+        function updateSubcategorySelect(category) {
+            const select = document.getElementById('itemSubcategorySelect');
+            const subcategories = getSubcategoriesForCategory(category);
+
+            if (subcategories.length === 0) {
+                select.innerHTML = `
+                    <option value="_default">（小カテゴリなし）</option>
+                    <option value="__new__">+ 新規小カテゴリを作成</option>
+                `;
+            } else {
+                select.innerHTML = `
+                    <option value="">-- 小カテゴリを選択 --</option>
+                    ${subcategories.map(sub => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join('')}
+                    <option value="_default">（小カテゴリなし）</option>
+                    <option value="__new__">+ 新規小カテゴリを作成</option>
+                `;
+            }
+            select.style.display = 'block';
+        }
+
+        function renderCustomItems() {
+            const container = document.getElementById('customItemsList');
+            const allCategories = getAllCategories();
+
+            const categoriesWithItems = allCategories.filter(cat => {
+                const catData = customItems[cat];
+                if (!catData) return false;
+                return Object.values(catData).some(items => Array.isArray(items) && items.length > 0);
+            });
+
+            if (categoriesWithItems.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-muted);">カスタムアイテムはありません</span>';
+                return;
+            }
+
+            container.innerHTML = categoriesWithItems.map(category => {
+                const catData = customItems[category] || {};
+                const icon = PREDEFINED_CATEGORIES[category]?.icon || '📁';
+                const isPredefined = !!PREDEFINED_CATEGORIES[category];
+
+                const subcategories = Object.keys(catData).filter(s => s !== '_default' && Array.isArray(catData[s]) && catData[s].length > 0);
+                const defaultItems = catData._default || [];
+
+                const totalItems = Object.values(catData).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0);
+
+                return `
+                    <div class="category-group">
+                        <div class="category-group-header" onclick="toggleCategoryGroup(this)">
+                            <span class="category-group-title">
+                                ${icon} ${escapeHtml(category)}
+                                <span class="category-group-count">${totalItems}件</span>
+                            </span>
+                            ${!isPredefined ? `
+                                <span class="category-group-actions">
+                                    <button onclick="event.stopPropagation(); deleteCategory('${escapeHtml(category)}')" title="カテゴリを削除">🗑️ 削除</button>
+                                </span>
+                            ` : ''}
+                        </div>
+                        <div class="category-group-content" style="flex-direction: column; align-items: stretch;">
+                            ${defaultItems.length > 0 ? `
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem;">
+                                    ${defaultItems.map(item => `
+                                        <span class="category-item-tag">
+                                            ${escapeHtml(item)}
+                                            <button onclick="removeCustomItem('${escapeHtml(category)}', '_default', '${escapeHtml(item)}')" title="削除">✕</button>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            ${subcategories.map(subcat => `
+                                <div class="subcategory-group">
+                                    <div class="subcategory-group-header" onclick="toggleSubcategoryGroup(this)">
+                                        <span class="subcategory-group-title">
+                                            ▸ ${escapeHtml(subcat)}
+                                            <span class="category-group-count">${catData[subcat].length}件</span>
+                                        </span>
+                                        <button onclick="event.stopPropagation(); deleteSubcategory('${escapeHtml(category)}', '${escapeHtml(subcat)}')" style="background: none; border: none; color: var(--accent-red); cursor: pointer; font-size: 0.8rem;">削除</button>
+                                    </div>
+                                    <div class="subcategory-group-content">
+                                        ${catData[subcat].map(item => `
+                                            <span class="category-item-tag">
+                                                ${escapeHtml(item)}
+                                                <button onclick="removeCustomItem('${escapeHtml(category)}', '${escapeHtml(subcat)}', '${escapeHtml(item)}')" title="削除">✕</button>
+                                            </span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleCategoryGroup(header) {
+            const content = header.nextElementSibling;
+            content.style.display = content.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function toggleSubcategoryGroup(header) {
+            const content = header.nextElementSibling;
+            content.style.display = content.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        async function addCustomItem() {
+            const categorySelect = document.getElementById('itemCategorySelect');
+            const subcategorySelect = document.getElementById('itemSubcategorySelect');
+            const itemNameInput = document.getElementById('newItemName');
+            const newCategoryInput = document.getElementById('newCategoryName');
+            const newSubcategoryInput = document.getElementById('newSubcategoryName');
+            const newSubcategoryOnlyInput = document.getElementById('newSubcategoryNameOnly');
+
+            let categoryName = categorySelect.value;
+            let subcategoryName = subcategorySelect.value;
+            const itemName = itemNameInput.value.trim();
+
+            if (categoryName === '__new__') {
+                categoryName = newCategoryInput.value.trim();
+                subcategoryName = newSubcategoryInput.value.trim() || '_default';
+                if (!categoryName) {
+                    showToast('カテゴリ名を入力してください', 'error');
+                    return;
+                }
+            } else if (subcategoryName === '__new__') {
+                subcategoryName = newSubcategoryOnlyInput.value.trim();
+                if (!subcategoryName) {
+                    showToast('小カテゴリ名を入力してください', 'error');
+                    return;
+                }
+            }
+
+            if (!categoryName) {
+                showToast('カテゴリを選択してください', 'error');
+                return;
+            }
+
+            if (!subcategoryName) {
+                showToast('小カテゴリを選択してください', 'error');
+                return;
+            }
+
+            if (!itemName) {
+                showToast('アイテム名を入力してください', 'error');
+                return;
+            }
+
+            const catData = customItems[categoryName] || {};
+            const currentItems = catData[subcategoryName] || [];
+            if (currentItems.includes(itemName)) {
+                showToast('このアイテムは既に登録されています', 'error');
+                return;
+            }
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const newItems = [...currentItems, itemName];
+                await set(ref(database, `customItems/${categoryName}/${subcategoryName}`), newItems);
+
+                itemNameInput.value = '';
+
+                if (categorySelect.value === '__new__') {
+                    newCategoryInput.value = '';
+                    newSubcategoryInput.value = '';
+                    document.getElementById('newCategoryRow').classList.remove('show');
+                }
+                if (subcategorySelect.value === '__new__') {
+                    newSubcategoryOnlyInput.value = '';
+                    document.getElementById('newSubcategoryRow').classList.remove('show');
+                }
+
+                const displayName = subcategoryName === '_default' ? categoryName : `${categoryName} > ${subcategoryName}`;
+                showToast(`${displayName}に${itemName}を追加しました`, 'success');
+            } catch (error) {
+                console.error('Add item error:', error);
+                showToast('追加に失敗しました', 'error');
+            }
+        }
+
+        async function removeCustomItem(category, subcategory, item) {
+            if (!confirm(`${item}を削除しますか？`)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const catData = customItems[category] || {};
+                const newItems = (catData[subcategory] || []).filter(i => i !== item);
+
+                if (newItems.length === 0) {
+                    await set(ref(database, `customItems/${category}/${subcategory}`), null);
+                } else {
+                    await set(ref(database, `customItems/${category}/${subcategory}`), newItems);
+                }
+
+                showToast(`${item}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Remove item error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        async function deleteSubcategory(category, subcategory) {
+            const items = customItems[category]?.[subcategory] || [];
+            const msg = items.length > 0
+                ? `${subcategory}（${items.length}件のアイテムを含む）を削除しますか？`
+                : `${subcategory}を削除しますか？`;
+
+            if (!confirm(msg)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `customItems/${category}/${subcategory}`), null);
+                showToast(`${subcategory}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete subcategory error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        async function deleteCategory(category) {
+            const catData = customItems[category] || {};
+            const totalItems = Object.values(catData).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0);
+            const msg = totalItems > 0
+                ? `${category}（${totalItems}件のアイテムを含む）を削除しますか？`
+                : `${category}を削除しますか？`;
+
+            if (!confirm(msg)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `customItems/${category}`), null);
+                showToast(`${category}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete category error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // ========== Data Export/Import ==========
+
+        // Export all data to JSON
+        function exportData() {
+            const exportObj = {
+                gameData: gameData,
+                teams: teams,
+                customGenerals: customGenerals,
+                customItems: customItems,
+                exportedAt: new Date().toISOString()
+            };
+
+            const dataStr = JSON.stringify(exportObj, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `game-data-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('データをエクスポートしました', 'success');
+        }
+
+        // Import data from JSON
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+
+                        if (!confirm('インポートすると既存データが上書きされます。続行しますか？')) return;
+
+                        const { database, ref, set } = window.firebaseDB;
+
+                        // Import gameData
+                        if (data.gameData) {
+                            await set(ref(database, 'gameData'), data.gameData);
+                        }
+
+                        // Import teams
+                        if (data.teams) {
+                            await set(ref(database, 'teams'), data.teams);
+                        }
+
+                        // Import customGenerals
+                        if (data.customGenerals) {
+                            await set(ref(database, 'customGenerals'), data.customGenerals);
+                        }
+
+                        // Import customItems
+                        if (data.customItems) {
+                            await set(ref(database, 'customItems'), data.customItems);
+                        }
+
+                        showToast('データをインポートしました', 'success');
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        showToast('インポートに失敗しました。ファイル形式を確認してください。', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Escape HTML
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        // Handle Enter key on password input
+        document.getElementById('adminPwd').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyPassword();
+        });
+
+        // Init
+        document.addEventListener('firebaseReady', async () => {
+            await loadPasswords();
+            await loadGameData();
+            subscribeRealtime();
+        });
+
+        if (window.firebaseReady) {
+            loadPasswords().then(() => {
+                loadGameData().then(subscribeRealtime);
+            });
+        }
+    </script>
+</body>
+</html>
