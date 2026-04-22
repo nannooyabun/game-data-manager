@@ -1056,6 +1056,114 @@
             return cats;
         }
 
+        // Get flattened list of custom items for a category
+        function getCustomItemsList(category) {
+            const catData = customItems[category];
+            if (!catData) return [];
+            const items = [];
+            Object.entries(catData).forEach(([subcat, itemList]) => {
+                if (Array.isArray(itemList)) {
+                    itemList.forEach(name => items.push(name));
+                }
+            });
+            return items;
+        }
+
+        // Build custom item categories dynamically
+        function buildCustomItemCategories() {
+            const cats = [];
+
+            // Custom weapons (兵器)
+            const customWeaponsList = getCustomItemsList('兵器');
+            if (customWeaponsList.length > 0) {
+                cats.push({
+                    key: 'custom_weapon',
+                    title: '① 兵器(カスタム)',
+                    colorClass: 'cat-weapon',
+                    items: customWeaponsList.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => {
+                        const w = user.customItems?.weapons?.[item.id];
+                        if (!w) return 'none';
+                        if (w.status === 'equipped') return 'equipped';
+                        if (w.status === 'owned') return 'owned';
+                        return 'none';
+                    }
+                });
+            }
+
+            // Custom masks (仮面)
+            const customMasksList = getCustomItemsList('仮面');
+            if (customMasksList.length > 0) {
+                cats.push({
+                    key: 'custom_mask',
+                    title: '⑤ 仮面(カスタム)',
+                    colorClass: 'cat-armor',
+                    items: customMasksList.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => {
+                        const m = user.customItems?.masks?.[item.id];
+                        if (!m) return 'none';
+                        if (m.equipped) return 'equipped';
+                        if (m.owned) return 'owned';
+                        return 'none';
+                    }
+                });
+            }
+
+            // Custom flowers (花陣)
+            const customFlowersList = getCustomItemsList('花陣');
+            if (customFlowersList.length > 0) {
+                cats.push({
+                    key: 'custom_flower',
+                    title: '⑥ 花陣(カスタム)',
+                    colorClass: 'cat-flower',
+                    items: customFlowersList.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => {
+                        const f = user.customItems?.flowers?.[item.id];
+                        if (!f) return 'none';
+                        if (f.equipped) return 'equipped';
+                        if (f.owned) return 'owned';
+                        return 'none';
+                    }
+                });
+            }
+
+            // Custom tactics (戦法)
+            const customTacticsList = getCustomItemsList('戦法');
+            if (customTacticsList.length > 0) {
+                cats.push({
+                    key: 'custom_tactic',
+                    title: '⑧ 戦法(カスタム)',
+                    colorClass: 'cat-tactic',
+                    items: customTacticsList.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => {
+                        const t = user.customItems?.tactics?.[item.id];
+                        if (!t) return 'none';
+                        if (t.equipped) return 'equipped';
+                        if (t.owned) return 'owned';
+                        return 'none';
+                    }
+                });
+            }
+
+            // Custom asura (阿修羅)
+            const customAsuraList = getCustomItemsList('阿修羅');
+            if (customAsuraList.length > 0) {
+                cats.push({
+                    key: 'custom_asura',
+                    title: '④ 阿修羅(カスタム)',
+                    colorClass: 'cat-asura',
+                    items: customAsuraList.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => {
+                        const a = user.customItems?.asura?.[item.id];
+                        if (!a) return 'none';
+                        return a.checked ? 'equipped' : 'none';
+                    }
+                });
+            }
+
+            return cats;
+        }
+
         const tableCategories = [
             {
                 key: 'weapon',
@@ -1151,12 +1259,15 @@
             }
         ];
 
-        // Get full category list including dynamic generals
+        // Get full category list including dynamic generals and custom items
         function getAllCategories() {
             const genCats = buildGeneralCategories();
+            const customCats = buildCustomItemCategories();
             // Insert general categories after SP武将 (index 1)
             const result = [...tableCategories];
             result.splice(2, 0, ...genCats);
+            // Add custom item categories at the end
+            result.push(...customCats);
             return result;
         }
 
@@ -1304,6 +1415,46 @@
                     path = `gameData/${username}/tactics/${itemId}`;
                     await update(ref(database, path), { equipped: newEquipped, owned: true });
                     stateText = newEquipped ? '装備中' : '所持のみ';
+                }
+                // Custom items
+                else if (catKey === 'custom_weapon') {
+                    const w = user.customItems?.weapons?.[itemId];
+                    if (!w?.status || w.status === '') return;
+                    const newStatus = w.status === 'equipped' ? 'owned' : 'equipped';
+                    path = `gameData/${username}/customItems/weapons/${itemId}/status`;
+                    await set(ref(database, path), newStatus);
+                    stateText = newStatus === 'equipped' ? '装備中' : '所持のみ';
+                }
+                else if (catKey === 'custom_mask') {
+                    const m = user.customItems?.masks?.[itemId];
+                    if (!m?.owned && !m?.equipped) return;
+                    const newEquipped = !m.equipped;
+                    path = `gameData/${username}/customItems/masks/${itemId}`;
+                    await update(ref(database, path), { equipped: newEquipped, owned: true });
+                    stateText = newEquipped ? '装備中' : '所持のみ';
+                }
+                else if (catKey === 'custom_flower') {
+                    const f = user.customItems?.flowers?.[itemId];
+                    if (!f?.owned && !f?.equipped) return;
+                    const newEquipped = !f.equipped;
+                    path = `gameData/${username}/customItems/flowers/${itemId}`;
+                    await update(ref(database, path), { equipped: newEquipped, owned: true });
+                    stateText = newEquipped ? '装備中' : '所持のみ';
+                }
+                else if (catKey === 'custom_tactic') {
+                    const t = user.customItems?.tactics?.[itemId];
+                    if (!t?.owned && !t?.equipped) return;
+                    const newEquipped = !t.equipped;
+                    path = `gameData/${username}/customItems/tactics/${itemId}`;
+                    await update(ref(database, path), { equipped: newEquipped, owned: true });
+                    stateText = newEquipped ? '装備中' : '所持のみ';
+                }
+                else if (catKey === 'custom_asura') {
+                    const a = user.customItems?.asura?.[itemId];
+                    const newChecked = !(a?.checked);
+                    path = `gameData/${username}/customItems/asura/${itemId}/checked`;
+                    await set(ref(database, path), newChecked);
+                    stateText = newChecked ? '選択' : '解除';
                 }
                 else {
                     return;
@@ -1618,6 +1769,32 @@
                 items.push({ id: `asura90_${i}`, name, type: '阿修羅90', category: 'asura', subcategory: 'asura90', index: i });
             });
 
+            // Custom items
+            const customWeaponsList = getCustomItemsList('兵器');
+            customWeaponsList.forEach(name => {
+                items.push({ id: name, name, type: '兵器(カスタム)', category: 'custom_weapon' });
+            });
+
+            const customMasksList = getCustomItemsList('仮面');
+            customMasksList.forEach(name => {
+                items.push({ id: name, name, type: '仮面(カスタム)', category: 'custom_mask' });
+            });
+
+            const customFlowersList = getCustomItemsList('花陣');
+            customFlowersList.forEach(name => {
+                items.push({ id: name, name, type: '花陣(カスタム)', category: 'custom_flower' });
+            });
+
+            const customTacticsList = getCustomItemsList('戦法');
+            customTacticsList.forEach(name => {
+                items.push({ id: name, name, type: '戦法(カスタム)', category: 'custom_tactic' });
+            });
+
+            const customAsuraList = getCustomItemsList('阿修羅');
+            customAsuraList.forEach(name => {
+                items.push({ id: name, name, type: '阿修羅(カスタム)', category: 'custom_asura' });
+            });
+
             return items;
         }
 
@@ -1671,6 +1848,31 @@
                     } else if (item.subcategory === 'asura90') {
                         equipped = data?.asura?.skills90?.[item.index] || false;
                     }
+                    owned = equipped;
+                    break;
+                case 'custom_weapon':
+                    const customWeaponData = data?.customItems?.weapons?.[item.id];
+                    equipped = customWeaponData?.status === 'equipped';
+                    owned = customWeaponData?.status === 'owned' || customWeaponData?.status === 'equipped';
+                    break;
+                case 'custom_mask':
+                    const customMaskData = data?.customItems?.masks?.[item.id];
+                    equipped = customMaskData?.equipped || false;
+                    owned = customMaskData?.owned || false;
+                    break;
+                case 'custom_flower':
+                    const customFlowerData = data?.customItems?.flowers?.[item.id];
+                    equipped = customFlowerData?.equipped || false;
+                    owned = customFlowerData?.owned || false;
+                    break;
+                case 'custom_tactic':
+                    const customTacticData = data?.customItems?.tactics?.[item.id];
+                    equipped = customTacticData?.equipped || false;
+                    owned = customTacticData?.owned || false;
+                    break;
+                case 'custom_asura':
+                    const customAsuraData = data?.customItems?.asura?.[item.id];
+                    equipped = customAsuraData?.checked || false;
                     owned = equipped;
                     break;
             }
@@ -1768,7 +1970,12 @@
             'mask': { class: 'subcat-mask', label: '⑤ 核心具足', icon: '🎭', order: 6 },
             'flower': { class: 'subcat-flower', label: '⑥ 花陣', icon: '🌸', order: 7 },
             'horse': { class: 'subcat-horse', label: '⑦ 軍馬', icon: '🐴', order: 8 },
-            'tactic': { class: 'subcat-tactic', label: '⑧ 戦法', icon: '📜', order: 9 }
+            'tactic': { class: 'subcat-tactic', label: '⑧ 戦法', icon: '📜', order: 9 },
+            'custom_weapon': { class: 'subcat-weapon', label: '① 兵器(カスタム)', icon: '⚔️', order: 10 },
+            'custom_mask': { class: 'subcat-mask', label: '⑤ 仮面(カスタム)', icon: '🎭', order: 11 },
+            'custom_flower': { class: 'subcat-flower', label: '⑥ 花陣(カスタム)', icon: '🌸', order: 12 },
+            'custom_asura': { class: 'subcat-asura', label: '④ 阿修羅(カスタム)', icon: '👹', order: 13 },
+            'custom_tactic': { class: 'subcat-tactic', label: '⑧ 戦法(カスタム)', icon: '📜', order: 14 }
         };
 
         const asuraSubcatLabels = { 'asura30': '阿修羅30', 'asura60': '阿修羅60', 'asura90': '阿修羅90' };

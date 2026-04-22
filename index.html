@@ -1048,6 +1048,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Custom Weapons Container -->
+                <div id="customWeaponsContainer"></div>
             </div>
         </div>
 
@@ -1431,6 +1434,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Custom Asura Container -->
+                <div id="customAsuraContainer"></div>
             </div>
         </div>
 
@@ -1516,6 +1522,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Custom Masks Container -->
+                <div id="customMasksContainer"></div>
             </div>
         </div>
 
@@ -1538,6 +1547,9 @@
                 <div class="flower-grid" id="flowerGrid">
                     <!-- Will be populated by JS -->
                 </div>
+
+                <!-- Custom Flowers Container -->
+                <div id="customFlowersContainer"></div>
             </div>
         </div>
 
@@ -1608,6 +1620,8 @@
             </div>
             <div class="section-content" id="tacticContent">
                 <!-- Bulk Select (will be added by JS before tactic cards) -->
+                <!-- Custom Tactics Container -->
+                <div id="customTacticsContainer"></div>
             </div>
         </div>
 
@@ -1862,6 +1876,7 @@
         // Cache for data
         let cachedGameData = {};
         let cachedCustomGenerals = [];
+        let cachedCustomItems = {};
 
         // ========== Firebase Database Functions ==========
         
@@ -1951,6 +1966,22 @@
             }
         }
 
+        // Get custom items
+        async function getCustomItems() {
+            if (!window.firebaseReady) {
+                return cachedCustomItems;
+            }
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const snapshot = await get(ref(database, 'customItems'));
+                cachedCustomItems = snapshot.exists() ? snapshot.val() : {};
+                return cachedCustomItems;
+            } catch (error) {
+                console.error('Error getting custom items:', error);
+                return cachedCustomItems;
+            }
+        }
+
         // Set up real-time listeners
         function setupRealtimeListeners() {
             if (!window.firebaseReady) return;
@@ -1971,11 +2002,215 @@
                     initGeneralGrid();
                 }
             });
+
+            // Listen for custom items changes
+            onValue(ref(database, 'customItems'), (snapshot) => {
+                const newItems = snapshot.exists() ? snapshot.val() : {};
+                if (JSON.stringify(newItems) !== JSON.stringify(cachedCustomItems)) {
+                    cachedCustomItems = newItems;
+                    renderAllCustomItems();
+                }
+            });
         }
 
 
+        // ========== Custom Items Rendering ==========
+
+        // Get items for a specific category from customItems
+        function getCustomItemsForCategory(category) {
+            const catData = cachedCustomItems[category];
+            if (!catData) return [];
+            // Flatten all subcategories into a single array
+            const items = [];
+            Object.entries(catData).forEach(([subcat, itemList]) => {
+                if (Array.isArray(itemList)) {
+                    itemList.forEach(item => {
+                        items.push({ name: item, subcategory: subcat === '_default' ? null : subcat });
+                    });
+                }
+            });
+            return items;
+        }
+
+        // Generate safe ID from item name
+        function safeId(name) {
+            return 'custom_' + name.replace(/[^a-zA-Z0-9぀-ゟ゠-ヿ一-龯]/g, '_');
+        }
+
+        // Render custom items for all categories
+        function renderAllCustomItems() {
+            renderCustomWeapons();
+            renderCustomMasks();
+            renderCustomFlowers();
+            renderCustomTactics();
+            renderCustomAsura();
+        }
+
+        // Render custom weapons
+        function renderCustomWeapons() {
+            const container = document.getElementById('customWeaponsContainer');
+            const items = getCustomItemsForCategory('兵器');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="equipment-card">
+                    <h4>${item.name}${item.subcategory ? ` <small style="color: var(--text-muted);">(${item.subcategory})</small>` : ''}</h4>
+                    <div class="equipment-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <select id="${safeId(item.name)}_status" onchange="updateProgress()">
+                                <option value="">未所持</option>
+                                <option value="owned">所持</option>
+                                <option value="equipped">装備中</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>昇級レベル</label>
+                            <input type="number" id="${safeId(item.name)}_upgrade" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>改装レベル</label>
+                            <input type="number" id="${safeId(item.name)}_reform" min="0" placeholder="0" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render custom masks (核心具足)
+        function renderCustomMasks() {
+            const container = document.getElementById('customMasksContainer');
+            const items = getCustomItemsForCategory('核心具足');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="equipment-card" style="margin-top: 1rem;">
+                    <h4>カスタム核心具足</h4>
+                    <div class="flower-grid">
+                        ${items.map(item => `
+                            <div class="flower-item">
+                                <div>
+                                    <div class="name">${item.name}</div>
+                                    ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
+                                </div>
+                                <div class="checkboxes">
+                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render custom flowers (花陣)
+        function renderCustomFlowers() {
+            const container = document.getElementById('customFlowersContainer');
+            const items = getCustomItemsForCategory('花陣');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="equipment-card" style="margin-top: 1rem;">
+                    <h4>カスタム花陣</h4>
+                    <div class="flower-grid">
+                        ${items.map(item => `
+                            <div class="flower-item">
+                                <div>
+                                    <div class="name">${item.name}</div>
+                                    ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
+                                </div>
+                                <div class="checkboxes">
+                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render custom tactics (戦法)
+        function renderCustomTactics() {
+            const container = document.getElementById('customTacticsContainer');
+            const items = getCustomItemsForCategory('戦法');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="equipment-card" style="margin-top: 1rem;">
+                    <h4>カスタム戦法</h4>
+                    <div class="flower-grid">
+                        ${items.map(item => `
+                            <div class="flower-item">
+                                <div>
+                                    <div class="name">${item.name}</div>
+                                    ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
+                                </div>
+                                <div class="checkboxes">
+                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
+                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render custom asura skills (阿修羅)
+        function renderCustomAsura() {
+            const container = document.getElementById('customAsuraContainer');
+            const items = getCustomItemsForCategory('阿修羅');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            // Group by subcategory
+            const grouped = {};
+            items.forEach(item => {
+                const key = item.subcategory || 'その他';
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(item);
+            });
+
+            container.innerHTML = Object.entries(grouped).map(([subcat, items]) => `
+                <div class="skill-group" style="margin-top: 1rem;">
+                    <div class="skill-header">
+                        <span>カスタム: ${subcat}</span>
+                    </div>
+                    <div class="skill-items">
+                        ${items.map(item => `
+                            <div class="skill-item">
+                                <input type="checkbox" id="${safeId(item.name)}" onchange="updateProgress()">
+                                <label for="${safeId(item.name)}">${item.name}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // ========== Initialization ==========
-        
+
         async function initializeGameApp() {
             initFlowerGrid();
             initTacticSection();
@@ -1983,6 +2218,10 @@
             // Load custom generals first
             cachedCustomGenerals = await getCustomGenerals();
             initGeneralGrid();
+
+            // Load custom items
+            cachedCustomItems = await getCustomItems();
+            renderAllCustomItems();
 
             // Load game data
             cachedGameData = await getGameData();
@@ -2305,6 +2544,95 @@
                     owned: document.getElementById(`tactic_${t.id}_owned`).checked
                 };
             });
+
+            // Custom Items
+            data.customItems = {};
+
+            // Custom weapons
+            const customWeapons = getCustomItemsForCategory('兵器');
+            if (customWeapons.length > 0) {
+                data.customItems.weapons = {};
+                customWeapons.forEach(item => {
+                    const id = safeId(item.name);
+                    const statusEl = document.getElementById(`${id}_status`);
+                    const upgradeEl = document.getElementById(`${id}_upgrade`);
+                    const reformEl = document.getElementById(`${id}_reform`);
+                    if (statusEl) {
+                        data.customItems.weapons[item.name] = {
+                            status: statusEl.value,
+                            upgrade: upgradeEl?.value || '',
+                            reform: reformEl?.value || ''
+                        };
+                    }
+                });
+            }
+
+            // Custom masks
+            const customMasks = getCustomItemsForCategory('核心具足');
+            if (customMasks.length > 0) {
+                data.customItems.masks = {};
+                customMasks.forEach(item => {
+                    const id = safeId(item.name);
+                    const equippedEl = document.getElementById(`${id}_equipped`);
+                    const ownedEl = document.getElementById(`${id}_owned`);
+                    if (equippedEl) {
+                        data.customItems.masks[item.name] = {
+                            equipped: equippedEl.checked,
+                            owned: ownedEl?.checked || false
+                        };
+                    }
+                });
+            }
+
+            // Custom flowers
+            const customFlowers = getCustomItemsForCategory('花陣');
+            if (customFlowers.length > 0) {
+                data.customItems.flowers = {};
+                customFlowers.forEach(item => {
+                    const id = safeId(item.name);
+                    const equippedEl = document.getElementById(`${id}_equipped`);
+                    const ownedEl = document.getElementById(`${id}_owned`);
+                    if (equippedEl) {
+                        data.customItems.flowers[item.name] = {
+                            equipped: equippedEl.checked,
+                            owned: ownedEl?.checked || false
+                        };
+                    }
+                });
+            }
+
+            // Custom tactics
+            const customTactics = getCustomItemsForCategory('戦法');
+            if (customTactics.length > 0) {
+                data.customItems.tactics = {};
+                customTactics.forEach(item => {
+                    const id = safeId(item.name);
+                    const equippedEl = document.getElementById(`${id}_equipped`);
+                    const ownedEl = document.getElementById(`${id}_owned`);
+                    if (equippedEl) {
+                        data.customItems.tactics[item.name] = {
+                            equipped: equippedEl.checked,
+                            owned: ownedEl?.checked || false
+                        };
+                    }
+                });
+            }
+
+            // Custom asura
+            const customAsura = getCustomItemsForCategory('阿修羅');
+            if (customAsura.length > 0) {
+                data.customItems.asura = {};
+                customAsura.forEach(item => {
+                    const id = safeId(item.name);
+                    const el = document.getElementById(id);
+                    if (el) {
+                        data.customItems.asura[item.name] = {
+                            selected: el.checked,
+                            subcategory: item.subcategory
+                        };
+                    }
+                });
+            }
 
             return data;
         }
@@ -2676,6 +3004,64 @@
                         document.getElementById(`tactic_${t.id}_owned`).checked = data.tactics[t.id].owned || false;
                     }
                 });
+            }
+
+            // Custom Items
+            if (data.customItems) {
+                // Custom weapons
+                if (data.customItems.weapons) {
+                    Object.entries(data.customItems.weapons).forEach(([name, weaponData]) => {
+                        const id = safeId(name);
+                        const statusEl = document.getElementById(`${id}_status`);
+                        const upgradeEl = document.getElementById(`${id}_upgrade`);
+                        const reformEl = document.getElementById(`${id}_reform`);
+                        if (statusEl) statusEl.value = weaponData.status || '';
+                        if (upgradeEl) upgradeEl.value = weaponData.upgrade || '';
+                        if (reformEl) reformEl.value = weaponData.reform || '';
+                    });
+                }
+
+                // Custom masks
+                if (data.customItems.masks) {
+                    Object.entries(data.customItems.masks).forEach(([name, maskData]) => {
+                        const id = safeId(name);
+                        const equippedEl = document.getElementById(`${id}_equipped`);
+                        const ownedEl = document.getElementById(`${id}_owned`);
+                        if (equippedEl) equippedEl.checked = maskData.equipped || false;
+                        if (ownedEl) ownedEl.checked = maskData.owned || false;
+                    });
+                }
+
+                // Custom flowers
+                if (data.customItems.flowers) {
+                    Object.entries(data.customItems.flowers).forEach(([name, flowerData]) => {
+                        const id = safeId(name);
+                        const equippedEl = document.getElementById(`${id}_equipped`);
+                        const ownedEl = document.getElementById(`${id}_owned`);
+                        if (equippedEl) equippedEl.checked = flowerData.equipped || false;
+                        if (ownedEl) ownedEl.checked = flowerData.owned || false;
+                    });
+                }
+
+                // Custom tactics
+                if (data.customItems.tactics) {
+                    Object.entries(data.customItems.tactics).forEach(([name, tacticData]) => {
+                        const id = safeId(name);
+                        const equippedEl = document.getElementById(`${id}_equipped`);
+                        const ownedEl = document.getElementById(`${id}_owned`);
+                        if (equippedEl) equippedEl.checked = tacticData.equipped || false;
+                        if (ownedEl) ownedEl.checked = tacticData.owned || false;
+                    });
+                }
+
+                // Custom asura
+                if (data.customItems.asura) {
+                    Object.entries(data.customItems.asura).forEach(([name, asuraData]) => {
+                        const id = safeId(name);
+                        const checkEl = document.getElementById(id);
+                        if (checkEl) checkEl.checked = asuraData.checked || false;
+                    });
+                }
             }
 
             updateProgress();
