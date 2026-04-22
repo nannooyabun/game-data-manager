@@ -449,6 +449,7 @@
 
         // Toggle category collapse
         function toggleCategory(catKey) {
+            saveScrollPosition();
             if (collapsedCategories.has(catKey)) {
                 collapsedCategories.delete(catKey);
             } else {
@@ -818,7 +819,33 @@
                     stateText = newEquipped ? '装備中' : '所持のみ';
                 }
                 else if (catKey === 'asura') {
-                    return;
+                    // Parse itemId like 'asura30_0' to get group and index
+                    const match = itemId.match(/^asura(\d+)_(\d+)$/);
+                    if (!match) return;
+                    const level = match[1]; // '30', '60', or '90'
+                    const index = parseInt(match[2]);
+                    const groupKey = `skills${level}`;
+
+                    const a = user.asura;
+                    if (!a) return;
+
+                    const skills = a[groupKey] || [];
+                    const currentlySelected = skills[index] === true;
+
+                    // Build new skills array: toggle clicked, deselect others in same level
+                    const groupSize = level === '30' ? 3 : 5;
+                    const newSkills = [];
+                    for (let i = 0; i < groupSize; i++) {
+                        if (i === index) {
+                            newSkills[i] = !currentlySelected; // Toggle clicked skill
+                        } else {
+                            newSkills[i] = false; // Deselect others in same level
+                        }
+                    }
+
+                    path = `gameData/${username}/asura/${groupKey}`;
+                    await set(ref(database, path), newSkills);
+                    stateText = !currentlySelected ? '選択' : '解除';
                 }
                 else if (catKey === 'armor') {
                     const m = user.armor?.masks?.[itemId];
@@ -908,7 +935,9 @@
                     return cat.items.map((item, itemIdx) => {
                         const state = cat.getCellState(user, item);
                         const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
-                        const isClickable = (state === 'equipped' || state === 'owned') && cat.key !== 'asura';
+                        // Asura: all cells clickable (radio-like selection within level)
+                        // Others: only equipped/owned cells clickable
+                        const isClickable = cat.key === 'asura' || (state === 'equipped' || state === 'owned');
                         const clickClass = isClickable ? ' cell-clickable' : '';
                         const itemIdStr = item.id || item.name || '';
                         const clickHandler = isClickable

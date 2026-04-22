@@ -2010,15 +2010,15 @@
                     </div>
                     <div class="skill-grid" style="margin-top: 0.8rem;">
                         <div class="skill-item">
-                            <input type="checkbox" id="asura30_1" onchange="updateProgress()">
+                            <input type="checkbox" id="asura30_1" onchange="onAsuraSkillChange(30, 1)">
                             <label for="asura30_1">厄憑</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura30_2" onchange="updateProgress()">
+                            <input type="checkbox" id="asura30_2" onchange="onAsuraSkillChange(30, 2)">
                             <label for="asura30_2">金剛の鎧</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura30_3" onchange="updateProgress()">
+                            <input type="checkbox" id="asura30_3" onchange="onAsuraSkillChange(30, 3)">
                             <label for="asura30_3">稲田巡礼</label>
                         </div>
                     </div>
@@ -2034,23 +2034,23 @@
                     </div>
                     <div class="skill-grid" style="margin-top: 0.8rem;">
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_1" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_1" onchange="onAsuraSkillChange(60, 1)">
                             <label for="asura60_1">移花接木</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_2" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_2" onchange="onAsuraSkillChange(60, 2)">
                             <label for="asura60_2">攻守転換</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_3" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_3" onchange="onAsuraSkillChange(60, 3)">
                             <label for="asura60_3">風助火勢</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_4" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_4" onchange="onAsuraSkillChange(60, 4)">
                             <label for="asura60_4">俊敏狡猾</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura60_5" onchange="updateProgress()">
+                            <input type="checkbox" id="asura60_5" onchange="onAsuraSkillChange(60, 5)">
                             <label for="asura60_5">守攻転換</label>
                         </div>
                     </div>
@@ -2066,23 +2066,23 @@
                     </div>
                     <div class="skill-grid" style="margin-top: 0.8rem;">
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_1" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_1" onchange="onAsuraSkillChange(90, 1)">
                             <label for="asura90_1">破心断骨</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_2" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_2" onchange="onAsuraSkillChange(90, 2)">
                             <label for="asura90_2">適時出撃</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_3" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_3" onchange="onAsuraSkillChange(90, 3)">
                             <label for="asura90_3">麒麟の清め</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_4" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_4" onchange="onAsuraSkillChange(90, 4)">
                             <label for="asura90_4">隠刃</label>
                         </div>
                         <div class="skill-item">
-                            <input type="checkbox" id="asura90_5" onchange="updateProgress()">
+                            <input type="checkbox" id="asura90_5" onchange="onAsuraSkillChange(90, 5)">
                             <label for="asura90_5">血戮</label>
                         </div>
                     </div>
@@ -4016,6 +4016,24 @@
                     <button onclick="removeCustomGeneral('${g}')" title="削除">✕</button>
                 </span>
             `).join('');
+        }
+
+        // ========== Asura Skill Selection (radio-like within level) ==========
+
+        function onAsuraSkillChange(level, selectedIndex) {
+            const count = level === 30 ? 3 : 5;
+            const checkbox = document.getElementById(`asura${level}_${selectedIndex}`);
+
+            if (checkbox && checkbox.checked) {
+                // Uncheck other checkboxes in the same level
+                for (let i = 1; i <= count; i++) {
+                    if (i !== selectedIndex) {
+                        const other = document.getElementById(`asura${level}_${i}`);
+                        if (other) other.checked = false;
+                    }
+                }
+            }
+            updateProgress();
         }
 
         // ========== Progress Update ==========
