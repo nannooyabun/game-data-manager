@@ -224,6 +224,11 @@
         .col-username { min-width: 140px; }
         .col-troop { min-width: 80px; }
 
+        /* Category border enhancement - thicker border at category boundaries */
+        .cat-border-left {
+            border-left: 3px solid var(--accent-gold-dim) !important;
+        }
+
         /* Legend */
         .legend {
             padding: 0.5rem 2rem;
@@ -431,8 +436,65 @@
             { id: 'kiou', name: '鬼王' }
         ];
 
+        const academyHeihoItems = [
+            { id: 'momiji', name: '紅葉' }, { id: 'banseki', name: '盤石' },
+            { id: 'shishi', name: '獅子の洞入り' }, { id: 'tengu', name: '天狗抄' },
+            { id: 'attack', name: '攻撃' }, { id: 'defense', name: '防御' },
+            { id: 'combo', name: '連撃' }, { id: 'resist', name: '抵抗' },
+            { id: 'shield', name: '楯突' }, { id: 'pierce', name: '貫通' },
+            { id: 'evade', name: '回避' }, { id: 'accuracy', name: '命中' },
+            { id: 'barrier', name: '障壁' }
+        ];
+
+        const asuraSkillItems = [
+            { id: 'asura30_0', name: '厄憑', group: 'skills30', index: 0 },
+            { id: 'asura30_1', name: '金剛の鎧', group: 'skills30', index: 1 },
+            { id: 'asura30_2', name: '稲田巡礼', group: 'skills30', index: 2 },
+            { id: 'asura60_0', name: '移花接木', group: 'skills60', index: 0 },
+            { id: 'asura60_1', name: '攻守転換', group: 'skills60', index: 1 },
+            { id: 'asura60_2', name: '風助火勢', group: 'skills60', index: 2 },
+            { id: 'asura60_3', name: '俊敏狡猾', group: 'skills60', index: 3 },
+            { id: 'asura60_4', name: '守攻転換', group: 'skills60', index: 4 },
+            { id: 'asura90_0', name: '破心断骨', group: 'skills90', index: 0 },
+            { id: 'asura90_1', name: '適時出撃', group: 'skills90', index: 1 },
+            { id: 'asura90_2', name: '麒麟の清め', group: 'skills90', index: 2 },
+            { id: 'asura90_3', name: '隠刃', group: 'skills90', index: 3 },
+            { id: 'asura90_4', name: '血戮', group: 'skills90', index: 4 }
+        ];
+
         const tacticItems = tactics.map(t => ({ id: t.id, name: t.name }));
         const flowerItems = flowerFormations.map(f => ({ id: f.id, name: f.name }));
+
+        // Helper for general cell state
+        function getGeneralCellState(user, generalName) {
+            const g = user.generals && user.generals[generalName];
+            if (!g) return 'none';
+            if (g.formed) return 'equipped';
+            if (g.owned) return 'owned';
+            return 'none';
+        }
+
+        // Build general categories dynamically
+        function buildGeneralCategories() {
+            const cats = generalCategories.map((gc, i) => ({
+                key: `general_${i}`,
+                title: `②-2 ${gc.title}`,
+                colorClass: 'cat-general',
+                items: gc.generals.map(name => ({ id: name, name })),
+                getCellState: (user, item) => getGeneralCellState(user, item.id)
+            }));
+            // Add custom generals if any
+            if (customGenerals.length > 0) {
+                cats.push({
+                    key: 'general_custom',
+                    title: '②-2 カスタム',
+                    colorClass: 'cat-general',
+                    items: customGenerals.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => getGeneralCellState(user, item.id)
+                });
+            }
+            return cats;
+        }
 
         const tableCategories = [
             {
@@ -440,8 +502,8 @@
                 title: '① 兵器',
                 colorClass: 'cat-weapon',
                 items: weaponItems,
-                getCellState: (user, itemId) => {
-                    const w = user.weapons && user.weapons[itemId];
+                getCellState: (user, item) => {
+                    const w = user.weapons && user.weapons[item.id];
                     if (!w) return 'none';
                     if (w.status === 'equipped') return 'equipped';
                     if (w.status === 'owned') return 'owned';
@@ -453,12 +515,39 @@
                 title: '②-1 SP武将',
                 colorClass: 'cat-sp',
                 items: spGeneralItems,
-                getCellState: (user, itemId) => {
-                    const sp = user.spGenerals && user.spGenerals[itemId];
+                getCellState: (user, item) => {
+                    const sp = user.spGenerals && user.spGenerals[item.id];
                     if (!sp) return 'none';
                     if (sp.formed) return 'equipped';
                     if (sp.owned) return 'owned';
                     return 'none';
+                }
+            },
+            // Generals will be inserted here dynamically
+            {
+                key: 'academy',
+                title: '③ 軍学道場',
+                colorClass: 'cat-academy',
+                items: academyHeihoItems,
+                getCellState: (user, item) => {
+                    const h = user.academy && user.academy.heiho && user.academy.heiho[item.id];
+                    if (!h) return 'none';
+                    if (h.equipped) return 'equipped';
+                    if (h.owned) return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'asura',
+                title: '④ 阿修羅',
+                colorClass: 'cat-asura',
+                items: asuraSkillItems,
+                getCellState: (user, item) => {
+                    const a = user.asura;
+                    if (!a) return 'none';
+                    const skills = a[item.group];
+                    if (!skills || !skills[item.index]) return 'none';
+                    return 'equipped';
                 }
             },
             {
@@ -466,8 +555,8 @@
                 title: '⑤ 核心具足',
                 colorClass: 'cat-armor',
                 items: armorMaskItems,
-                getCellState: (user, itemId) => {
-                    const m = user.armor && user.armor.masks && user.armor.masks[itemId];
+                getCellState: (user, item) => {
+                    const m = user.armor && user.armor.masks && user.armor.masks[item.id];
                     if (!m) return 'none';
                     if (m.equipped) return 'equipped';
                     if (m.owned) return 'owned';
@@ -479,8 +568,8 @@
                 title: '⑥ 花陣',
                 colorClass: 'cat-flower',
                 items: flowerItems,
-                getCellState: (user, itemId) => {
-                    const f = user.flowers && user.flowers[itemId];
+                getCellState: (user, item) => {
+                    const f = user.flowers && user.flowers[item.id];
                     if (!f) return 'none';
                     if (f.equipped) return 'equipped';
                     if (f.owned) return 'owned';
@@ -492,8 +581,8 @@
                 title: '⑧ 戦法',
                 colorClass: 'cat-tactic',
                 items: tacticItems,
-                getCellState: (user, itemId) => {
-                    const t = user.tactics && user.tactics[itemId];
+                getCellState: (user, item) => {
+                    const t = user.tactics && user.tactics[item.id];
                     if (!t) return 'none';
                     if (t.equipped) return 'equipped';
                     if (t.owned) return 'owned';
@@ -501,6 +590,15 @@
                 }
             }
         ];
+
+        // Get full category list including dynamic generals
+        function getAllCategories() {
+            const genCats = buildGeneralCategories();
+            // Insert general categories after SP武将 (index 1)
+            const result = [...tableCategories];
+            result.splice(2, 0, ...genCats);
+            return result;
+        }
 
         function stateSymbol(state) {
             if (state === 'equipped') return '<span class="cell-equipped">●</span>';
@@ -522,26 +620,32 @@
                 return;
             }
 
-            // Build category header row
-            const catRowCells = tableCategories.map(cat =>
-                `<th class="cat-header ${cat.colorClass}" colspan="${cat.items.length}">${escapeHtml(cat.title)}</th>`
+            // Get all categories including dynamic generals
+            const allCats = getAllCategories();
+
+            // Build category header row (with border on first cell of each category except first)
+            const catRowCells = allCats.map((cat, catIdx) => {
+                const borderClass = catIdx > 0 ? ' cat-border-left' : '';
+                return `<th class="cat-header ${cat.colorClass}${borderClass}" colspan="${cat.items.length}">${escapeHtml(cat.title)}</th>`;
+            }).join('');
+
+            // Build item header row (with border on first item of each category except first)
+            const itemRowCells = allCats.flatMap((cat, catIdx) =>
+                cat.items.map((item, itemIdx) => {
+                    const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
+                    return `<th class="${cat.colorClass}${borderClass}">${escapeHtml(item.name)}</th>`;
+                })
             ).join('');
 
-            // Build item header row
-            const itemRowCells = tableCategories.flatMap(cat =>
-                cat.items.map(item =>
-                    `<th class="${cat.colorClass}">${escapeHtml(item.name)}</th>`
-                )
-            ).join('');
-
-            // Build body rows
+            // Build body rows (with border on first cell of each category except first)
             const bodyRows = usernames.map(username => {
                 const user = gameData[username] || {};
                 const troop = user.troopType || '-';
-                const dataCells = tableCategories.flatMap(cat =>
-                    cat.items.map(item => {
-                        const state = cat.getCellState(user, item.id);
-                        return `<td class="${cat.colorClass}">${stateSymbol(state)}</td>`;
+                const dataCells = allCats.flatMap((cat, catIdx) =>
+                    cat.items.map((item, itemIdx) => {
+                        const state = cat.getCellState(user, item);
+                        const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
+                        return `<td class="${cat.colorClass}${borderClass}">${stateSymbol(state)}</td>`;
                     })
                 ).join('');
                 return `
