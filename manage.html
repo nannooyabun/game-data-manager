@@ -484,6 +484,72 @@
             display: flex;
         }
 
+        /* Custom generals */
+        .custom-general-form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .custom-general-form input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        .custom-general-form button {
+            padding: 0.6rem 1.2rem;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .custom-general-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .custom-general-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .custom-general-tag button {
+            background: none;
+            border: none;
+            color: var(--accent-red);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .custom-general-tag button:hover {
+            opacity: 0.7;
+        }
+
+        /* Data management */
+        .data-management-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
         /* Toast notification */
         .toast {
             position: fixed;
@@ -609,10 +675,31 @@
                 </div>
             </div>
 
-            <!-- Custom Generals Section (Phase C placeholder) -->
-            <div class="section-card" id="customGeneralSection" style="display: none;">
+            <!-- Custom Generals Section -->
+            <div class="section-card" id="customGeneralSection">
                 <h3>⚔️ カスタム武将管理</h3>
-                <p style="color: var(--text-muted);">Phase C で実装予定</p>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    デフォルトの武将リストに含まれない武将を追加できます。追加した武将は全ユーザーの入力フォームに表示されます。
+                </p>
+                <div class="custom-general-form">
+                    <input type="text" id="newGeneralName" placeholder="武将名を入力" maxlength="20">
+                    <button onclick="addCustomGeneral()">追加</button>
+                </div>
+                <div class="custom-general-list" id="customGeneralList">
+                    <span style="color: var(--text-muted);">読み込み中...</span>
+                </div>
+            </div>
+
+            <!-- Data Export/Import Section -->
+            <div class="section-card">
+                <h3>💾 データエクスポート/インポート</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    全ユーザーデータをJSONファイルとしてバックアップ・復元できます。
+                </p>
+                <div class="data-management-row">
+                    <button class="action-btn primary" onclick="exportData()">📤 エクスポート</button>
+                    <button class="action-btn success" onclick="importData()">📥 インポート</button>
+                </div>
             </div>
         </div>
     </div>
@@ -648,6 +735,7 @@
         let ADMIN_PASSWORD = null;
         let gameData = {};
         let teams = {};
+        let customGenerals = [];
 
         // Toast notification
         function showToast(message, type = 'success') {
@@ -692,6 +780,7 @@
                 document.getElementById('adminContent').classList.add('show');
                 refreshDataTable();
                 renderTeamList();
+                renderCustomGenerals();
                 showToast('ログインしました', 'success');
             } else {
                 showToast('パスワードが違います', 'error');
@@ -753,12 +842,14 @@
 
             try {
                 const { database, ref, get } = window.firebaseDB;
-                const [gameSnap, teamSnap] = await Promise.all([
+                const [gameSnap, teamSnap, genSnap] = await Promise.all([
                     get(ref(database, 'gameData')),
-                    get(ref(database, 'teams'))
+                    get(ref(database, 'teams')),
+                    get(ref(database, 'customGenerals'))
                 ]);
                 gameData = gameSnap.exists() ? gameSnap.val() : {};
                 teams = teamSnap.exists() ? teamSnap.val() : {};
+                customGenerals = genSnap.exists() ? genSnap.val() : [];
             } catch (error) {
                 console.error('Failed to load data:', error);
             }
@@ -781,6 +872,13 @@
                 teams = snap.exists() ? snap.val() : {};
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderTeamList();
+                }
+            });
+
+            onValue(ref(database, 'customGenerals'), (snap) => {
+                customGenerals = snap.exists() ? snap.val() : [];
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    renderCustomGenerals();
                 }
             });
         }
@@ -1082,6 +1180,134 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        // ========== Custom Generals Management ==========
+
+        // Render custom generals list
+        function renderCustomGenerals() {
+            const container = document.getElementById('customGeneralList');
+
+            if (!customGenerals || customGenerals.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-muted);">追加された武将はありません</span>';
+                return;
+            }
+
+            container.innerHTML = customGenerals.map(name => `
+                <span class="custom-general-tag">
+                    ${escapeHtml(name)}
+                    <button onclick="removeCustomGeneral('${escapeHtml(name)}')" title="削除">✕</button>
+                </span>
+            `).join('');
+        }
+
+        // Add custom general
+        async function addCustomGeneral() {
+            const input = document.getElementById('newGeneralName');
+            const name = input.value.trim();
+
+            if (!name) {
+                showToast('武将名を入力してください', 'error');
+                return;
+            }
+
+            // Check if already exists
+            if (customGenerals.includes(name)) {
+                showToast('この武将は既に登録されています', 'error');
+                return;
+            }
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const newList = [...customGenerals, name];
+                await set(ref(database, 'customGenerals'), newList);
+                input.value = '';
+                showToast(`${name}を追加しました`, 'success');
+            } catch (error) {
+                console.error('Add general error:', error);
+                showToast('追加に失敗しました', 'error');
+            }
+        }
+
+        // Remove custom general
+        async function removeCustomGeneral(name) {
+            if (!confirm(`${name}を削除しますか？`)) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const newList = customGenerals.filter(g => g !== name);
+                await set(ref(database, 'customGenerals'), newList);
+                showToast(`${name}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Remove general error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // ========== Data Export/Import ==========
+
+        // Export all data to JSON
+        function exportData() {
+            const exportObj = {
+                gameData: gameData,
+                teams: teams,
+                customGenerals: customGenerals,
+                exportedAt: new Date().toISOString()
+            };
+
+            const dataStr = JSON.stringify(exportObj, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `game-data-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('データをエクスポートしました', 'success');
+        }
+
+        // Import data from JSON
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+
+                        if (!confirm('インポートすると既存データが上書きされます。続行しますか？')) return;
+
+                        const { database, ref, set } = window.firebaseDB;
+
+                        // Import gameData
+                        if (data.gameData) {
+                            await set(ref(database, 'gameData'), data.gameData);
+                        }
+
+                        // Import teams
+                        if (data.teams) {
+                            await set(ref(database, 'teams'), data.teams);
+                        }
+
+                        // Import customGenerals
+                        if (data.customGenerals) {
+                            await set(ref(database, 'customGenerals'), data.customGenerals);
+                        }
+
+                        showToast('データをインポートしました', 'success');
+                    } catch (error) {
+                        console.error('Import error:', error);
+                        showToast('インポートに失敗しました。ファイル形式を確認してください。', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
         }
 
         // Escape HTML
