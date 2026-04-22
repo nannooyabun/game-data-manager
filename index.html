@@ -843,6 +843,138 @@
             }
         }
 
+        /* Team Management Section */
+        .team-management-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .team-management-section h4 {
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .team-create-form {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .team-create-form input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .team-create-form button {
+            padding: 0.5rem 1rem;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .team-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .team-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .team-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .team-card-header h5 {
+            color: var(--accent-gold);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .team-card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .team-action-btn {
+            padding: 0.3rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .team-action-btn.delete {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .team-members-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .team-members-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .team-members-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .team-member-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--bg-secondary);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .team-member-checkbox.selected {
+            background: var(--status-complete);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .team-member-checkbox input {
+            cursor: pointer;
+        }
+
         /* Comparison Section */
         .comparison-section {
             margin-top: 2rem;
@@ -1394,6 +1526,9 @@
     <header class="header">
         <h1>武将データ管理</h1>
         <p>ゲームデータ入力・管理システム</p>
+        <div style="margin-top: 1rem; position: relative;">
+            <a href="view.html" style="display: inline-block; padding: 0.5rem 1.2rem; background: var(--bg-input); border: 1px solid var(--accent-gold-dim); border-radius: 6px; color: var(--accent-gold); text-decoration: none; font-size: 0.9rem;">📋 データ一覧ページへ</a>
+        </div>
     </header>
 
     <main class="container">
@@ -2295,6 +2430,20 @@
                     </table>
                 </div>
 
+                <!-- Team Management Section -->
+                <div class="team-management-section">
+                    <h4>👥 チーム管理</h4>
+
+                    <div class="team-create-form">
+                        <input type="text" id="newTeamName" placeholder="新しいチーム名を入力" maxlength="30">
+                        <button onclick="createTeam()">チーム作成</button>
+                    </div>
+
+                    <div class="team-list" id="teamList">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
                 <!-- Comparison Section -->
                 <div class="comparison-section">
                     <h4>📊 ユーザー比較分析</h4>
@@ -2581,17 +2730,193 @@
             }
         }
 
+        // ========== Teams Management ==========
+
+        let cachedTeams = {};
+
+        // Get all teams from Firebase
+        async function getTeams() {
+            if (!window.firebaseReady) {
+                return cachedTeams;
+            }
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const snapshot = await get(ref(database, 'teams'));
+                cachedTeams = snapshot.exists() ? snapshot.val() : {};
+                return cachedTeams;
+            } catch (error) {
+                console.error('Error getting teams:', error);
+                return cachedTeams;
+            }
+        }
+
+        // Save a single team to Firebase
+        async function saveTeam(teamId, teamData) {
+            if (!window.firebaseReady) return false;
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `teams/${teamId}`), teamData);
+                cachedTeams[teamId] = teamData;
+                return true;
+            } catch (error) {
+                console.error('Error saving team:', error);
+                return false;
+            }
+        }
+
+        // Delete a team from Firebase
+        async function deleteTeamFromFirebase(teamId) {
+            if (!window.firebaseReady) return false;
+            try {
+                const { database, ref, remove } = window.firebaseDB;
+                await remove(ref(database, `teams/${teamId}`));
+                delete cachedTeams[teamId];
+                return true;
+            } catch (error) {
+                console.error('Error deleting team:', error);
+                return false;
+            }
+        }
+
+        // Create a new team
+        async function createTeam() {
+            const nameInput = document.getElementById('newTeamName');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showToast('チーム名を入力してください', 'error');
+                return;
+            }
+
+            // Check for duplicate team names
+            const existing = Object.values(cachedTeams).find(t => t.name === name);
+            if (existing) {
+                showToast('同じ名前のチームが既に存在します', 'error');
+                return;
+            }
+
+            const teamId = `team_${Date.now()}`;
+            const teamData = {
+                id: teamId,
+                name: name,
+                members: [],
+                createdAt: new Date().toISOString()
+            };
+
+            const success = await saveTeam(teamId, teamData);
+            if (success) {
+                nameInput.value = '';
+                showToast(`チーム「${name}」を作成しました`, 'success');
+                renderTeamList();
+            } else {
+                showToast('チーム作成に失敗しました', 'error');
+            }
+        }
+
+        // Delete a team (with confirmation)
+        async function deleteTeam(teamId) {
+            const team = cachedTeams[teamId];
+            if (!team) return;
+
+            if (!confirm(`チーム「${team.name}」を削除しますか？`)) return;
+
+            const success = await deleteTeamFromFirebase(teamId);
+            if (success) {
+                showToast(`チーム「${team.name}」を削除しました`, 'success');
+                renderTeamList();
+            } else {
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // Toggle user membership in a team
+        async function toggleTeamMember(teamId, username, checked) {
+            const team = cachedTeams[teamId];
+            if (!team) return;
+
+            const members = team.members || [];
+            let newMembers;
+
+            if (checked) {
+                if (!members.includes(username)) {
+                    newMembers = [...members, username];
+                } else {
+                    return;
+                }
+            } else {
+                newMembers = members.filter(m => m !== username);
+            }
+
+            const updatedTeam = { ...team, members: newMembers };
+            await saveTeam(teamId, updatedTeam);
+            renderTeamList();
+        }
+
+        // Render the team list UI
+        function renderTeamList() {
+            const container = document.getElementById('teamList');
+            if (!container) return;
+
+            const teams = Object.values(cachedTeams).sort((a, b) =>
+                new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+            );
+
+            if (teams.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 1rem;">チームがまだありません</div>';
+                return;
+            }
+
+            const allUsers = Object.keys(cachedGameData || {}).sort();
+
+            container.innerHTML = teams.map(team => {
+                const members = team.members || [];
+                const membersHtml = allUsers.length === 0
+                    ? '<div style="color: var(--text-muted); font-size: 0.85rem;">登録ユーザーがいません</div>'
+                    : allUsers.map(username => {
+                        const isChecked = members.includes(username);
+                        return `
+                            <label class="team-member-checkbox ${isChecked ? 'selected' : ''}">
+                                <input type="checkbox" ${isChecked ? 'checked' : ''}
+                                    onchange="toggleTeamMember('${team.id}', '${username.replace(/'/g, "\\'")}', this.checked)">
+                                ${username}
+                            </label>
+                        `;
+                    }).join('');
+
+                return `
+                    <div class="team-card">
+                        <div class="team-card-header">
+                            <h5>
+                                <span>👥</span>
+                                ${team.name}
+                                <span style="color: var(--text-muted); font-size: 0.85rem; font-weight: normal;">(${members.length}人)</span>
+                            </h5>
+                            <div class="team-card-actions">
+                                <button class="team-action-btn delete" onclick="deleteTeam('${team.id}')">削除</button>
+                            </div>
+                        </div>
+                        <div class="team-members-section">
+                            <div class="team-members-label">メンバー選択:</div>
+                            <div class="team-members-grid">${membersHtml}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+
         // Set up real-time listeners
         function setupRealtimeListeners() {
             if (!window.firebaseReady) return;
-            
+
             const { database, ref, onValue } = window.firebaseDB;
-            
+
             // Listen for game data changes
             onValue(ref(database, 'gameData'), (snapshot) => {
                 cachedGameData = snapshot.exists() ? snapshot.val() : {};
                 refreshDataTable();
                 refreshUserCheckboxGrid();
+                renderTeamList();
             });
 
             // Listen for custom generals changes
@@ -2602,6 +2927,12 @@
                     initGeneralGrid();
                     updateCustomGeneralsDisplay();
                 }
+            });
+
+            // Listen for team changes
+            onValue(ref(database, 'teams'), (snapshot) => {
+                cachedTeams = snapshot.exists() ? snapshot.val() : {};
+                renderTeamList();
             });
         }
 
@@ -2623,6 +2954,9 @@
             // Load game data
             cachedGameData = await getGameData();
             loadSavedData();
+
+            // Load teams
+            cachedTeams = await getTeams();
 
             // Check for unsaved draft and restore if user confirms
             checkAndRestoreDraft();
@@ -3393,6 +3727,7 @@
                 content.classList.add('show');
                 refreshDataTable();
                 refreshUserCheckboxGrid();
+                renderTeamList();
                 showToast('ログインしました', 'success');
             } else {
                 showToast('パスワードが違います', 'error');

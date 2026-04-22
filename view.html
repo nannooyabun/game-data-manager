@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武将データ一覧 - チーム編成ビュー</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a25;
+            --bg-input: #22222f;
+            --border-color: #2a2a3a;
+            --border-accent: #4a3a2a;
+            --text-primary: #e8e4dc;
+            --text-secondary: #9a9490;
+            --text-muted: #6a6560;
+            --accent-gold: #c9a227;
+            --accent-gold-dim: #8a7020;
+            --accent-red: #b83c3c;
+            --accent-green: #3cb878;
+            --accent-blue: #3c8cb8;
+            --status-complete: #2a6a4a;
+            --status-partial: #6a5a2a;
+            --status-empty: #4a2a2a;
+            --shadow-glow: 0 0 30px rgba(201, 162, 39, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1510 0%, #0a0a0f 100%);
+            border-bottom: 2px solid var(--accent-gold-dim);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header h1 {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            letter-spacing: 0.1em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-actions a,
+        .header-actions select {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .header-actions a:hover,
+        .header-actions select:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        /* Status area */
+        .status-area {
+            padding: 1rem 2rem;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .status-area .status-label {
+            color: var(--accent-gold);
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        /* Table wrapper: horizontal scroll */
+        .table-wrapper {
+            overflow: auto;
+            max-height: calc(100vh - 180px);
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Main view table */
+        .view-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        .view-table th,
+        .view-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.6rem;
+            text-align: center;
+            background: var(--bg-card);
+        }
+
+        /* Header rows */
+        .view-table thead th {
+            position: sticky;
+            background: var(--bg-secondary);
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .view-table thead tr:nth-child(1) th {
+            top: 0;
+            z-index: 3;
+        }
+
+        .view-table thead tr:nth-child(2) th {
+            top: 36px;
+            z-index: 3;
+        }
+
+        /* Category row cells */
+        .cat-header {
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        /* Category color classes (applied to both header and body cells) */
+        .view-table thead .cat-weapon  { background: #3a2a20 !important; color: #e8a878; }
+        .view-table thead .cat-sp      { background: #3a2a3a !important; color: #d8a8d8; }
+        .view-table thead .cat-general { background: #2a3a3a !important; color: #88c8c8; }
+        .view-table thead .cat-academy { background: #3a3a20 !important; color: #d8d878; }
+        .view-table thead .cat-asura   { background: #3a2020 !important; color: #e89090; }
+        .view-table thead .cat-armor   { background: #2a2a3a !important; color: #9090e8; }
+        .view-table thead .cat-flower  { background: #2a3a2a !important; color: #90d890; }
+        .view-table thead .cat-horse   { background: #3a3520 !important; color: #d8c078; }
+        .view-table thead .cat-tactic  { background: #20303a !important; color: #78c0e0; }
+
+        /* Body cells use a slightly dimmer tint of the same category color */
+        .view-table tbody td.cat-weapon  { background: #2a1f18; }
+        .view-table tbody td.cat-sp      { background: #2a1f2a; }
+        .view-table tbody td.cat-general { background: #1f2a2a; }
+        .view-table tbody td.cat-academy { background: #2a2a18; }
+        .view-table tbody td.cat-asura   { background: #2a1818; }
+        .view-table tbody td.cat-armor   { background: #1f1f2a; }
+        .view-table tbody td.cat-flower  { background: #1f2a1f; }
+        .view-table tbody td.cat-horse   { background: #2a2618; }
+        .view-table tbody td.cat-tactic  { background: #18242a; }
+
+        /* Sticky left columns */
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: var(--bg-secondary);
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .sticky-col-2 {
+            left: 140px;
+            z-index: 2;
+        }
+
+        /* Top-left corner cells (both sticky) */
+        .view-table thead tr th.sticky-col {
+            z-index: 4;
+            background: var(--bg-secondary);
+        }
+
+        /* Body rows */
+        .view-table tbody tr:hover td {
+            background: #20202d;
+        }
+
+        .view-table tbody tr:hover td.sticky-col {
+            background: #25253a;
+        }
+
+        /* Cell state symbols: ● equipped, ○ owned, blank none */
+        .cell-equipped {
+            color: var(--accent-green);
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+        .cell-owned {
+            color: var(--accent-gold);
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+        .cell-none {
+            color: transparent;
+        }
+
+        /* First user column width */
+        .col-username { min-width: 140px; }
+        .col-troop { min-width: 80px; }
+
+        /* Category border enhancement - thicker border at category boundaries */
+        .cat-border-left {
+            border-left: 3px solid var(--accent-gold-dim) !important;
+        }
+
+        /* Category collapse toggle */
+        .cat-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .cat-header:hover {
+            filter: brightness(1.2);
+        }
+        .cat-toggle {
+            margin-left: 0.3rem;
+            font-size: 0.7rem;
+            opacity: 0.7;
+        }
+        .collapsed-col {
+            display: none !important;
+        }
+        .cat-collapsed-placeholder {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            padding: 0.5rem 0.3rem !important;
+            font-size: 0.75rem;
+            min-width: 30px;
+            max-width: 30px;
+            cursor: pointer;
+        }
+        .cat-collapsed-placeholder:hover {
+            filter: brightness(1.2);
+        }
+
+        /* Scroll position indicator */
+        .scroll-indicator {
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            background: var(--bg-primary);
+            border-bottom: 2px solid var(--accent-gold-dim);
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            color: var(--accent-gold);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .scroll-indicator-item {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .scroll-indicator-item:hover {
+            opacity: 0.8;
+        }
+        .scroll-indicator-item.active {
+            opacity: 1;
+            font-weight: 600;
+        }
+
+        /* Legend */
+        .legend {
+            padding: 0.5rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .legend .cell-equipped,
+        .legend .cell-owned,
+        .legend .cell-none {
+            margin-right: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>武将データ一覧 - チーム編成ビュー</h1>
+        <div class="header-actions">
+            <select id="teamFilter">
+                <option value="__all__">全ユーザー</option>
+            </select>
+            <a href="index.html">← 入力画面へ戻る</a>
+        </div>
+    </div>
+
+    <div class="status-area">
+        <span class="status-label">状態:</span>
+        <span id="statusText">Firebase接続中...</span>
+    </div>
+
+    <div class="legend">
+        <span><span class="cell-equipped">●</span> 装備/編成中</span>
+        <span><span class="cell-owned">○</span> 所持のみ</span>
+        <span>（空欄）未所持</span>
+    </div>
+
+    <div id="mainContent">
+        <div class="loading">データを読み込んでいます...</div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getDatabase, ref, get, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDu9WB_iA_2i5qL4uir8g__LmfAFTeuOYI",
+            authDomain: "game-data-manager-6f18b.firebaseapp.com",
+            databaseURL: "https://game-data-manager-6f18b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "game-data-manager-6f18b",
+            storageBucket: "game-data-manager-6f18b.firebasestorage.app",
+            messagingSenderId: "528465841462",
+            appId: "1:528465841462:web:3262de1288dfb1326b3797"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        window.firebaseDB = { database, ref, get, onValue };
+        window.firebaseReady = true;
+        document.dispatchEvent(new Event('firebaseReady'));
+    </script>
+
+    <script>
+        // Shared data definitions (keep in sync with index.html)
+        const flowerFormations = [
+            { id: 'higanbana', name: '彼岸花' }, { id: 'sekichiku', name: '石竹' },
+            { id: 'kikyo', name: '桔梗' }, { id: 'shobu', name: '菖蒲' },
+            { id: 'nozen', name: '凌霄' }, { id: 'oniyuri', name: '鬼百合' },
+            { id: 'matsuyoi', name: '待宵' }, { id: 'koho', name: '香蒲' },
+            { id: 'tsubaki', name: '椿' }, { id: 'hakubai', name: '白梅' },
+            { id: 'bara', name: '薔薇' }, { id: 'hagi', name: '萩' },
+            { id: 'suzuran', name: '鈴蘭' }, { id: 'sekko', name: '雪光' },
+            { id: 'yugao', name: '夕顔' }, { id: 'asagao', name: '朝顔' },
+            { id: 'maizuru', name: '舞鶴' }, { id: 'nemu', name: '合歓' },
+            { id: 'ryuga', name: '龍牙' }, { id: 'tensei', name: '天星' },
+            { id: 'rindo', name: '竜胆' }, { id: 'tona', name: '十菜' },
+            { id: 'akashi', name: '明石' }, { id: 'toyo', name: '桃夭' },
+            { id: 'mandara', name: '曼荼羅' }, { id: 'udonge', name: '優曇華' },
+            { id: 'yaezakura', name: '八重桜' }, { id: 'suisen', name: '水仙' },
+            { id: 'kocho', name: '胡蝶' }, { id: 'kaigyo', name: '海業' },
+            { id: 'shakuyaku', name: '芍薬' }, { id: 'washio', name: '鷲尾' }
+        ];
+
+        const tactics = [
+            { id: 'tsurinobuse', name: '釣り野伏' },
+            { id: 'kagemusha', name: '影武者' },
+            { id: 'kibateppo', name: '騎馬鉄砲' },
+            { id: 'kitsutsuki', name: '啄木鳥' },
+            { id: 'kurumagai', name: '車懸り' },
+            { id: 'sandanuchi', name: '三段打ち' }
+        ];
+
+        const generalCategories = [
+            { title: 'この辺は一人は欲しい武将', generals: ['鈴木重秀', '寿桂尼', 'おつやの方', '鍋島直茂', '加藤清正', '吉川広家', '加藤嘉明', '足利義昭', '真柄直隆', '加藤段蔵', '山内一豊'] },
+            { title: '集結で使う武将', generals: ['北条早雲', '織田信長', '本多忠勝', '北条氏康', '山本勘助', '毛利元就', '島津家久', '堀秀政', '真田幸村', '黒田官兵衛', '徳川家康', '村井貞勝', '上泉信綱', '真田幸隆', '柳生宗厳', '太田道灌'] },
+            { title: '全兵種対応武将', generals: ['井伊直虎', '櫛橋光', '直江兼続', '豊臣秀吉', '尼子経久', '立花宗茂', '緋村剣心', '神谷薫', '宇喜多直家', '井伊直政', '森長可', '果心居士', '藤堂高虎', '秋山信友', '榊原康政', '三浦按針', '上杉景勝'] },
+            { title: '馬用', generals: ['武田信玄', '伊達政宗', '北条氏綱', '山中鹿之介', '甲斐姫', '山県昌景', '義姫', '高坂昌信', '真田信之', '綾御前', '柿崎景家', '佐々成政'] },
+            { title: '歩用', generals: ['宮本武蔵', 'リヴァイ', '淀', '小早川', '細川忠興', '武田信繁', '三好長慶', '千代', '北条綱成', 'ねね', '高橋紹運', '愛姫', '福島正則', '伊達成実'] },
+            { title: '弓用', generals: ['斎藤利三', '赤井直正', '出雲阿国', '伊達植宗', '春日局', '織田信忠', '島津歳久', '天草四郎'] }
+        ];
+
+        // Global state
+        let gameData = {};
+        let teams = {};
+        let customGenerals = [];
+        let collapsedCategories = new Set();
+
+        // Toggle category collapse
+        function toggleCategory(catKey) {
+            if (collapsedCategories.has(catKey)) {
+                collapsedCategories.delete(catKey);
+            } else {
+                collapsedCategories.add(catKey);
+            }
+            renderTable();
+        }
+
+        // Scroll to category
+        function scrollToCategory(catKey) {
+            const th = document.querySelector(`[data-cat-key="${catKey}"]`);
+            if (th) {
+                th.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+            }
+        }
+
+        function setStatus(text) {
+            document.getElementById('statusText').textContent = text;
+        }
+
+        async function loadAllData() {
+            if (!window.firebaseReady) {
+                setStatus('Firebase未接続');
+                return;
+            }
+            const { database, ref, get } = window.firebaseDB;
+            try {
+                setStatus('データ取得中...');
+                const [gameSnap, teamSnap, genSnap] = await Promise.all([
+                    get(ref(database, 'gameData')),
+                    get(ref(database, 'teams')),
+                    get(ref(database, 'customGenerals'))
+                ]);
+                gameData = gameSnap.exists() ? gameSnap.val() : {};
+                teams = teamSnap.exists() ? teamSnap.val() : {};
+                customGenerals = genSnap.exists() ? genSnap.val() : [];
+
+                const userCount = Object.keys(gameData).length;
+                const teamCount = Object.keys(teams).length;
+                setStatus(`読み込み完了: ユーザー ${userCount}人 / チーム ${teamCount}件 / カスタム武将 ${customGenerals.length}件`);
+
+                populateTeamFilter();
+                renderPreview();
+            } catch (err) {
+                console.error('Load error:', err);
+                setStatus('読み込みエラー: ' + err.message);
+            }
+        }
+
+        function subscribeRealtime() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+            onValue(ref(database, 'gameData'), (snap) => {
+                gameData = snap.exists() ? snap.val() : {};
+                renderPreview();
+            });
+            onValue(ref(database, 'teams'), (snap) => {
+                teams = snap.exists() ? snap.val() : {};
+                populateTeamFilter();
+                renderPreview();
+            });
+            onValue(ref(database, 'customGenerals'), (snap) => {
+                customGenerals = snap.exists() ? snap.val() : [];
+                renderPreview();
+            });
+        }
+
+        function populateTeamFilter() {
+            const sel = document.getElementById('teamFilter');
+            const current = sel.value || '__all__';
+            sel.innerHTML = '<option value="__all__">全ユーザー</option>';
+            Object.values(teams).forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = `${t.name} (${(t.members || []).length}人)`;
+                sel.appendChild(opt);
+            });
+            sel.value = current;
+        }
+
+        function getVisibleUsernames() {
+            const filter = document.getElementById('teamFilter').value;
+            const allUsers = Object.keys(gameData);
+            if (filter === '__all__') return allUsers.sort();
+            const team = teams[filter];
+            if (!team) return [];
+            return (team.members || []).filter(u => gameData[u]).sort();
+        }
+
+        // Category definitions for table columns
+        // Each category: { key, title, colorClass, items: [{ id, name }], getCellState(userData, itemId) }
+        const weaponItems = [
+            { id: 'akoni', name: '赤鬼' },
+            { id: 'inseki', name: '隕石' },
+            { id: 'hanya', name: '般若' }
+        ];
+
+        const spGeneralItems = [
+            { id: 'nobunaga', name: '信長' },
+            { id: 'hideyoshi', name: '秀吉' },
+            { id: 'ieyasu', name: '家康' }
+        ];
+
+        const armorMaskItems = [
+            { id: 'genko', name: '玄狐神使' },
+            { id: 'kirin', name: '金麒麟' },
+            { id: 'reikyo', name: '霊棘' },
+            { id: 'kinen', name: '金猿' },
+            { id: 'hanya', name: '般若' },
+            { id: 'kiou', name: '鬼王' }
+        ];
+
+        const academyHeihoItems = [
+            { id: 'momiji', name: '紅葉' }, { id: 'banseki', name: '盤石' },
+            { id: 'shishi', name: '獅子の洞入り' }, { id: 'tengu', name: '天狗抄' },
+            { id: 'attack', name: '攻撃' }, { id: 'defense', name: '防御' },
+            { id: 'combo', name: '連撃' }, { id: 'resist', name: '抵抗' },
+            { id: 'shield', name: '楯突' }, { id: 'pierce', name: '貫通' },
+            { id: 'evade', name: '回避' }, { id: 'accuracy', name: '命中' },
+            { id: 'barrier', name: '障壁' }
+        ];
+
+        const asuraSkillItems = [
+            { id: 'asura30_0', name: '厄憑', group: 'skills30', index: 0 },
+            { id: 'asura30_1', name: '金剛の鎧', group: 'skills30', index: 1 },
+            { id: 'asura30_2', name: '稲田巡礼', group: 'skills30', index: 2 },
+            { id: 'asura60_0', name: '移花接木', group: 'skills60', index: 0 },
+            { id: 'asura60_1', name: '攻守転換', group: 'skills60', index: 1 },
+            { id: 'asura60_2', name: '風助火勢', group: 'skills60', index: 2 },
+            { id: 'asura60_3', name: '俊敏狡猾', group: 'skills60', index: 3 },
+            { id: 'asura60_4', name: '守攻転換', group: 'skills60', index: 4 },
+            { id: 'asura90_0', name: '破心断骨', group: 'skills90', index: 0 },
+            { id: 'asura90_1', name: '適時出撃', group: 'skills90', index: 1 },
+            { id: 'asura90_2', name: '麒麟の清め', group: 'skills90', index: 2 },
+            { id: 'asura90_3', name: '隠刃', group: 'skills90', index: 3 },
+            { id: 'asura90_4', name: '血戮', group: 'skills90', index: 4 }
+        ];
+
+        const tacticItems = tactics.map(t => ({ id: t.id, name: t.name }));
+        const flowerItems = flowerFormations.map(f => ({ id: f.id, name: f.name }));
+
+        // Helper for general cell state
+        function getGeneralCellState(user, generalName) {
+            const g = user.generals && user.generals[generalName];
+            if (!g) return 'none';
+            if (g.formed) return 'equipped';
+            if (g.owned) return 'owned';
+            return 'none';
+        }
+
+        // Build general categories dynamically
+        function buildGeneralCategories() {
+            const cats = generalCategories.map((gc, i) => ({
+                key: `general_${i}`,
+                title: `②-2 ${gc.title}`,
+                colorClass: 'cat-general',
+                items: gc.generals.map(name => ({ id: name, name })),
+                getCellState: (user, item) => getGeneralCellState(user, item.id)
+            }));
+            // Add custom generals if any
+            if (customGenerals.length > 0) {
+                cats.push({
+                    key: 'general_custom',
+                    title: '②-2 カスタム',
+                    colorClass: 'cat-general',
+                    items: customGenerals.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => getGeneralCellState(user, item.id)
+                });
+            }
+            return cats;
+        }
+
+        const tableCategories = [
+            {
+                key: 'weapon',
+                title: '① 兵器',
+                colorClass: 'cat-weapon',
+                items: weaponItems,
+                getCellState: (user, item) => {
+                    const w = user.weapons && user.weapons[item.id];
+                    if (!w) return 'none';
+                    if (w.status === 'equipped') return 'equipped';
+                    if (w.status === 'owned') return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'spGeneral',
+                title: '②-1 SP武将',
+                colorClass: 'cat-sp',
+                items: spGeneralItems,
+                getCellState: (user, item) => {
+                    const sp = user.spGenerals && user.spGenerals[item.id];
+                    if (!sp) return 'none';
+                    if (sp.formed) return 'equipped';
+                    if (sp.owned) return 'owned';
+                    return 'none';
+                }
+            },
+            // Generals will be inserted here dynamically
+            {
+                key: 'academy',
+                title: '③ 軍学道場',
+                colorClass: 'cat-academy',
+                items: academyHeihoItems,
+                getCellState: (user, item) => {
+                    const h = user.academy && user.academy.heiho && user.academy.heiho[item.id];
+                    if (!h) return 'none';
+                    if (h.equipped) return 'equipped';
+                    if (h.owned) return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'asura',
+                title: '④ 阿修羅',
+                colorClass: 'cat-asura',
+                items: asuraSkillItems,
+                getCellState: (user, item) => {
+                    const a = user.asura;
+                    if (!a) return 'none';
+                    const skills = a[item.group];
+                    if (!skills || !skills[item.index]) return 'none';
+                    return 'equipped';
+                }
+            },
+            {
+                key: 'armor',
+                title: '⑤ 核心具足',
+                colorClass: 'cat-armor',
+                items: armorMaskItems,
+                getCellState: (user, item) => {
+                    const m = user.armor && user.armor.masks && user.armor.masks[item.id];
+                    if (!m) return 'none';
+                    if (m.equipped) return 'equipped';
+                    if (m.owned) return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'flower',
+                title: '⑥ 花陣',
+                colorClass: 'cat-flower',
+                items: flowerItems,
+                getCellState: (user, item) => {
+                    const f = user.flowers && user.flowers[item.id];
+                    if (!f) return 'none';
+                    if (f.equipped) return 'equipped';
+                    if (f.owned) return 'owned';
+                    return 'none';
+                }
+            },
+            {
+                key: 'tactic',
+                title: '⑧ 戦法',
+                colorClass: 'cat-tactic',
+                items: tacticItems,
+                getCellState: (user, item) => {
+                    const t = user.tactics && user.tactics[item.id];
+                    if (!t) return 'none';
+                    if (t.equipped) return 'equipped';
+                    if (t.owned) return 'owned';
+                    return 'none';
+                }
+            }
+        ];
+
+        // Get full category list including dynamic generals
+        function getAllCategories() {
+            const genCats = buildGeneralCategories();
+            // Insert general categories after SP武将 (index 1)
+            const result = [...tableCategories];
+            result.splice(2, 0, ...genCats);
+            return result;
+        }
+
+        function stateSymbol(state) {
+            if (state === 'equipped') return '<span class="cell-equipped">●</span>';
+            if (state === 'owned') return '<span class="cell-owned">○</span>';
+            return '';
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function renderTable() {
+            const main = document.getElementById('mainContent');
+            const usernames = getVisibleUsernames();
+            if (usernames.length === 0) {
+                main.innerHTML = '<div class="loading">表示対象のユーザーがいません</div>';
+                return;
+            }
+
+            // Get all categories including dynamic generals
+            const allCats = getAllCategories();
+
+            // Build scroll indicator
+            const scrollIndicator = allCats.map(cat => {
+                const shortTitle = cat.title.replace(/^②-2\s*/, '').substring(0, 8);
+                return `<span class="scroll-indicator-item ${cat.colorClass}" onclick="scrollToCategory('${cat.key}')" data-cat-indicator="${cat.key}">${escapeHtml(shortTitle)}</span>`;
+            }).join('');
+
+            // Build category header row
+            const catRowCells = allCats.map((cat, catIdx) => {
+                const borderClass = catIdx > 0 ? ' cat-border-left' : '';
+                const isCollapsed = collapsedCategories.has(cat.key);
+                const toggleIcon = isCollapsed ? '▶' : '▼';
+
+                if (isCollapsed) {
+                    return `<th class="cat-header cat-collapsed-placeholder ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" rowspan="2">${escapeHtml(cat.title.substring(0, 6))}…</th>`;
+                }
+                return `<th class="cat-header ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" colspan="${cat.items.length}">${escapeHtml(cat.title)}<span class="cat-toggle">${toggleIcon}</span></th>`;
+            }).join('');
+
+            // Build item header row (skip collapsed categories)
+            const itemRowCells = allCats.flatMap((cat, catIdx) => {
+                if (collapsedCategories.has(cat.key)) return [];
+                return cat.items.map((item, itemIdx) => {
+                    const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
+                    return `<th class="${cat.colorClass}${borderClass}">${escapeHtml(item.name)}</th>`;
+                });
+            }).join('');
+
+            // Build body rows
+            const bodyRows = usernames.map(username => {
+                const user = gameData[username] || {};
+                const troop = user.troopType || '-';
+                const dataCells = allCats.flatMap((cat, catIdx) => {
+                    const isCollapsed = collapsedCategories.has(cat.key);
+                    if (isCollapsed) {
+                        const borderClass = catIdx > 0 ? ' cat-border-left' : '';
+                        return [`<td class="cat-collapsed-placeholder ${cat.colorClass}${borderClass}"></td>`];
+                    }
+                    return cat.items.map((item, itemIdx) => {
+                        const state = cat.getCellState(user, item);
+                        const borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
+                        return `<td class="${cat.colorClass}${borderClass}">${stateSymbol(state)}</td>`;
+                    });
+                }).join('');
+                return `
+                    <tr>
+                        <td class="sticky-col col-username">${escapeHtml(username)}</td>
+                        <td class="sticky-col sticky-col-2 col-troop">${escapeHtml(troop)}</td>
+                        ${dataCells}
+                    </tr>
+                `;
+            }).join('');
+
+            main.innerHTML = `
+                <div class="scroll-indicator">
+                    <span style="color: var(--text-secondary); font-size: 0.7rem;">カテゴリ:</span>
+                    ${scrollIndicator}
+                </div>
+                <div class="table-wrapper" id="tableWrapper">
+                    <table class="view-table">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col col-username" rowspan="2">ユーザー</th>
+                                <th class="sticky-col sticky-col-2 col-troop" rowspan="2">兵種</th>
+                                ${catRowCells}
+                            </tr>
+                            <tr>
+                                ${itemRowCells}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${bodyRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // Setup scroll observer for indicator highlighting
+            setupScrollObserver();
+        }
+
+        function setupScrollObserver() {
+            const wrapper = document.getElementById('tableWrapper');
+            if (!wrapper) return;
+
+            wrapper.addEventListener('scroll', () => {
+                const headers = wrapper.querySelectorAll('[data-cat-key]');
+                const wrapperRect = wrapper.getBoundingClientRect();
+                let activeKey = null;
+
+                headers.forEach(th => {
+                    const rect = th.getBoundingClientRect();
+                    if (rect.left <= wrapperRect.left + 250 && rect.right > wrapperRect.left + 220) {
+                        activeKey = th.dataset.catKey;
+                    }
+                });
+
+                document.querySelectorAll('.scroll-indicator-item').forEach(el => {
+                    el.classList.toggle('active', el.dataset.catIndicator === activeKey);
+                });
+            });
+        }
+
+        // Alias for compatibility with existing subscribers
+        const renderPreview = renderTable;
+
+        // Init
+        document.addEventListener('firebaseReady', async () => {
+            await loadAllData();
+            subscribeRealtime();
+        });
+
+        document.getElementById('teamFilter').addEventListener('change', renderPreview);
+
+        // Fallback if firebaseReady already fired
+        if (window.firebaseReady) {
+            loadAllData().then(subscribeRealtime);
+        }
+    </script>
+</body>
+</html>
