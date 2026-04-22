@@ -1282,11 +1282,34 @@
         function getAllCategories() {
             const genCats = buildGeneralCategories();
             const customCats = buildCustomItemCategories();
-            // Insert general categories after SP武将 (index 1)
+
+            // Mapping: custom category key -> base category key it should follow
+            const customFollowsMap = {
+                'custom_weapon': 'weapon',
+                'custom_asura': 'asura',
+                'custom_mask': 'armor',
+                'custom_flower': 'flower',
+                'custom_tactic': 'tactic'
+            };
+
             const result = [...tableCategories];
+            // Insert general categories after SP武将 (index 1)
             result.splice(2, 0, ...genCats);
-            // Add custom item categories at the end
-            result.push(...customCats);
+
+            // Insert custom item categories right after their corresponding base category
+            customCats.forEach(customCat => {
+                const baseKey = customFollowsMap[customCat.key];
+                if (baseKey) {
+                    const baseIdx = result.findIndex(c => c.key === baseKey);
+                    if (baseIdx >= 0) {
+                        result.splice(baseIdx + 1, 0, customCat);
+                        return;
+                    }
+                }
+                // Fallback: append at end
+                result.push(customCat);
+            });
+
             return result;
         }
 
