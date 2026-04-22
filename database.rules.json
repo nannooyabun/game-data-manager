@@ -1,0 +1,26 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "gameData": {
+      ".read": true,
+      ".write": true
+    },
+    "teams": {
+      ".read": true,
+      ".write": true
+    },
+    "customGenerals": {
+      ".read": true,
+      ".write": true
+    },
+    "customItems": {
+      ".read": true,
+      ".write": true
+    },
+    "auth": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

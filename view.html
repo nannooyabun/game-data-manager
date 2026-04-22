@@ -1033,26 +1033,45 @@
             return 'none';
         }
 
-        // Build general categories dynamically
+        // Build general categories dynamically (merge custom generals into matching categories)
         function buildGeneralCategories() {
-            const cats = generalCategories.map((gc, i) => ({
-                key: `general_${i}`,
-                title: `②-2 ${gc.title}`,
-                colorClass: 'cat-general',
-                items: gc.generals.map(name => ({ id: name, name })),
-                getCellState: (user, item) => getGeneralCellState(user, item.id)
-            }));
-            // Add custom generals if any
-            const customGenList = getCustomGeneralsList();
-            if (customGenList.length > 0) {
-                cats.push({
-                    key: 'general_custom',
-                    title: '②-2 カスタム',
+            const customRaw = (customGenerals && typeof customGenerals === 'object' && !Array.isArray(customGenerals))
+                ? customGenerals
+                : { _default: Array.isArray(customGenerals) ? customGenerals : [] };
+
+            const cats = generalCategories.map((gc, i) => {
+                const matchingCustom = Array.isArray(customRaw[gc.title]) ? customRaw[gc.title] : [];
+                const combinedItems = [...gc.generals, ...matchingCustom].map(name => ({ id: name, name }));
+                return {
+                    key: `general_${i}`,
+                    title: `②-2 ${gc.title}`,
                     colorClass: 'cat-general',
-                    items: customGenList.map(name => ({ id: name, name })),
+                    items: combinedItems,
+                    getCellState: (user, item) => getGeneralCellState(user, item.id)
+                };
+            });
+
+            // Collect unmatched custom subcategories
+            const existingTitles = new Set(generalCategories.map(c => c.title));
+            const customSubcats = Object.keys(customRaw).filter(k => !existingTitles.has(k) && Array.isArray(customRaw[k]) && customRaw[k].length > 0);
+            customSubcats.sort((a, b) => {
+                if (a === '_default') return 1;
+                if (b === '_default') return -1;
+                return a.localeCompare(b);
+            });
+
+            customSubcats.forEach((subcat, idx) => {
+                const names = customRaw[subcat] || [];
+                const displayTitle = subcat === '_default' ? '追加武将' : subcat;
+                cats.push({
+                    key: `general_custom_${idx}`,
+                    title: `②-2 ${displayTitle}`,
+                    colorClass: 'cat-general',
+                    items: names.map(name => ({ id: name, name })),
                     getCellState: (user, item) => getGeneralCellState(user, item.id)
                 });
-            }
+            });
+
             return cats;
         }
 
@@ -1710,10 +1729,23 @@
                 items.push({ id, name, type: 'SP武将', category: 'spgeneral' });
             });
 
-            // Regular Generals
+            // Regular Generals (merge custom generals into matching categories)
+            const customRaw = (customGenerals && typeof customGenerals === 'object' && !Array.isArray(customGenerals))
+                ? customGenerals
+                : { _default: Array.isArray(customGenerals) ? customGenerals : [] };
+
             let globalIndex = 0;
             generalCategories.forEach((cat, catIndex) => {
-                cat.generals.forEach((name, i) => {
+                cat.generals.forEach((name) => {
+                    items.push({
+                        id: `general_${globalIndex}`, name, type: '武将', category: 'general',
+                        index: globalIndex, generalName: name, subcategory: cat.title, subcategoryIndex: catIndex
+                    });
+                    globalIndex++;
+                });
+                // Add matching custom generals to this category
+                const matchingCustom = Array.isArray(customRaw[cat.title]) ? customRaw[cat.title] : [];
+                matchingCustom.forEach((name) => {
                     items.push({
                         id: `general_${globalIndex}`, name, type: '武将', category: 'general',
                         index: globalIndex, generalName: name, subcategory: cat.title, subcategoryIndex: catIndex
@@ -1722,17 +1754,24 @@
                 });
             });
 
-            // Custom generals
-            const customGenList = getCustomGeneralsList();
-            if (customGenList.length > 0) {
-                customGenList.forEach((name, i) => {
+            // Unmatched custom subcategories
+            const existingTitles = new Set(generalCategories.map(c => c.title));
+            const customSubcats = Object.keys(customRaw).filter(k => !existingTitles.has(k) && Array.isArray(customRaw[k]) && customRaw[k].length > 0);
+            customSubcats.sort((a, b) => {
+                if (a === '_default') return 1;
+                if (b === '_default') return -1;
+                return a.localeCompare(b);
+            });
+            customSubcats.forEach((subcat, idx) => {
+                const displayTitle = subcat === '_default' ? '追加武将' : subcat;
+                (customRaw[subcat] || []).forEach((name) => {
                     items.push({
                         id: `general_${globalIndex}`, name, type: '武将', category: 'general',
-                        index: globalIndex, generalName: name, subcategory: '追加武将', subcategoryIndex: generalCategories.length
+                        index: globalIndex, generalName: name, subcategory: displayTitle, subcategoryIndex: generalCategories.length + idx
                     });
                     globalIndex++;
                 });
-            }
+            });
 
             // Academy
             academyHeihoItems.forEach(h => {

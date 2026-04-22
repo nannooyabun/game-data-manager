@@ -1885,7 +1885,9 @@
             try {
                 const { database, ref, set } = window.firebaseDB;
                 const newItems = [...currentItems, itemName];
-                await set(ref(database, `customItems/${categoryName}/${subcategoryName}`), newItems);
+                const path = `customItems/${categoryName}/${subcategoryName}`;
+                console.log('Saving to Firebase path:', path, 'data:', newItems);
+                await set(ref(database, path), newItems);
 
                 itemNameInput.value = '';
 
@@ -1903,7 +1905,7 @@
                 showToast(`${displayName}に${itemName}を追加しました`, 'success');
             } catch (error) {
                 console.error('Add item error:', error);
-                showToast('追加に失敗しました', 'error');
+                showToast(`追加に失敗しました: ${error.message || error.code || 'Unknown error'}`, 'error');
             }
         }
 
