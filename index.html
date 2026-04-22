@@ -1151,6 +1151,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Custom SP Generals -->
+                <div id="customSpGeneralsContainer"></div>
             </div>
         </div>
 
@@ -2043,12 +2046,54 @@
 
         // Render custom items for all categories
         function renderAllCustomItems() {
+            renderCustomSpGenerals();
             renderCustomWeapons();
             renderCustomAcademy();
             renderCustomMasks();
             renderCustomFlowers();
             renderCustomTactics();
             renderCustomAsura();
+        }
+
+        // Render custom SP generals
+        function renderCustomSpGenerals() {
+            const container = document.getElementById('customSpGeneralsContainer');
+            if (!container) return;
+
+            const items = getCustomItemsForCategory('SP武将');
+            if (items.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="sp-card">
+                    <h4>${item.name}${item.subcategory && item.subcategory !== '_default' ? ` <small style="color: var(--text-muted);">(${item.subcategory})</small>` : ''}</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>状態</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="${safeId(item.name)}_formed" onchange="updateProgress(); updateFormationCount();">
+                                    <label for="${safeId(item.name)}_formed">編成済</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()">
+                                    <label for="${safeId(item.name)}_owned">所持</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>足跡レベル</label>
+                            <input type="text" id="${safeId(item.name)}_footprint" placeholder="レベルを入力" onchange="updateProgress()">
+                        </div>
+                        <div class="form-group">
+                            <label>副将名</label>
+                            <input type="text" id="${safeId(item.name)}_deputy" placeholder="副将の名前" onchange="updateProgress()">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         // Render custom academy items (極伝兵法) - append into existing academyGrid
@@ -2630,6 +2675,27 @@
             // Custom Items
             data.customItems = {};
 
+            // Custom SP generals
+            const customSpGenerals = getCustomItemsForCategory('SP武将');
+            if (customSpGenerals.length > 0) {
+                data.customItems.spGenerals = {};
+                customSpGenerals.forEach(item => {
+                    const id = safeId(item.name);
+                    const formedEl = document.getElementById(`${id}_formed`);
+                    const ownedEl = document.getElementById(`${id}_owned`);
+                    const footprintEl = document.getElementById(`${id}_footprint`);
+                    const deputyEl = document.getElementById(`${id}_deputy`);
+                    if (formedEl || ownedEl) {
+                        data.customItems.spGenerals[item.name] = {
+                            formed: formedEl?.checked || false,
+                            owned: ownedEl?.checked || false,
+                            footprint: footprintEl?.value || '',
+                            deputy: deputyEl?.value || ''
+                        };
+                    }
+                });
+            }
+
             // Custom weapons
             const customWeapons = getCustomItemsForCategory('兵器');
             if (customWeapons.length > 0) {
@@ -3107,6 +3173,21 @@
 
             // Custom Items
             if (data.customItems) {
+                // Custom SP generals
+                if (data.customItems.spGenerals) {
+                    Object.entries(data.customItems.spGenerals).forEach(([name, spData]) => {
+                        const id = safeId(name);
+                        const formedEl = document.getElementById(`${id}_formed`);
+                        const ownedEl = document.getElementById(`${id}_owned`);
+                        const footprintEl = document.getElementById(`${id}_footprint`);
+                        const deputyEl = document.getElementById(`${id}_deputy`);
+                        if (formedEl) formedEl.checked = spData.formed || false;
+                        if (ownedEl) ownedEl.checked = spData.owned || false;
+                        if (footprintEl) footprintEl.value = spData.footprint || '';
+                        if (deputyEl) deputyEl.value = spData.deputy || '';
+                    });
+                }
+
                 // Custom weapons
                 if (data.customItems.weapons) {
                     Object.entries(data.customItems.weapons).forEach(([name, weaponData]) => {
@@ -3381,6 +3462,13 @@
                 const select = document.getElementById(`${w}Status`);
                 if (select) select.value = action === 'owned' ? 'owned' : '';
             });
+            // Include custom weapons
+            const customWeapons = getCustomItemsForCategory('兵器');
+            customWeapons.forEach(item => {
+                const id = safeId(item.name);
+                const select = document.getElementById(`${id}_status`);
+                if (select) select.value = action === 'owned' ? 'owned' : '';
+            });
             updateProgress();
             updateSummary();
         }
@@ -3433,6 +3521,17 @@
                     if (equipped) equipped.checked = false;
                 }
             });
+            // Include custom academy items
+            const customAcademy = getCustomItemsForCategory('極伝兵法');
+            customAcademy.forEach(item => {
+                const id = safeId(item.name);
+                const owned = document.getElementById(`${id}_owned`);
+                if (owned) owned.checked = action === 'owned';
+                if (action === 'clear') {
+                    const equipped = document.getElementById(`${id}_equipped`);
+                    if (equipped) equipped.checked = false;
+                }
+            });
             updateProgress();
             updateSummary();
         }
@@ -3444,6 +3543,17 @@
                 if (owned) owned.checked = action === 'owned';
                 if (action === 'clear') {
                     const equipped = document.getElementById(`mask_${m}_equipped`);
+                    if (equipped) equipped.checked = false;
+                }
+            });
+            // Include custom masks
+            const customMasks = getCustomItemsForCategory('核心具足');
+            customMasks.forEach(item => {
+                const id = safeId(item.name);
+                const owned = document.getElementById(`${id}_owned`);
+                if (owned) owned.checked = action === 'owned';
+                if (action === 'clear') {
+                    const equipped = document.getElementById(`${id}_equipped`);
                     if (equipped) equipped.checked = false;
                 }
             });
@@ -3460,6 +3570,17 @@
                     if (equipped) equipped.checked = false;
                 }
             });
+            // Include custom flowers
+            const customFlowers = getCustomItemsForCategory('花陣');
+            customFlowers.forEach(item => {
+                const id = safeId(item.name);
+                const owned = document.getElementById(`${id}_owned`);
+                if (owned) owned.checked = action === 'owned';
+                if (action === 'clear') {
+                    const equipped = document.getElementById(`${id}_equipped`);
+                    if (equipped) equipped.checked = false;
+                }
+            });
             updateProgress();
             updateSummary();
         }
@@ -3470,6 +3591,17 @@
                 if (owned) owned.checked = action === 'owned';
                 if (action === 'clear') {
                     const equipped = document.getElementById(`tactic_${t.id}_equipped`);
+                    if (equipped) equipped.checked = false;
+                }
+            });
+            // Include custom tactics
+            const customTactics = getCustomItemsForCategory('戦法');
+            customTactics.forEach(item => {
+                const id = safeId(item.name);
+                const owned = document.getElementById(`${id}_owned`);
+                if (owned) owned.checked = action === 'owned';
+                if (action === 'clear') {
+                    const equipped = document.getElementById(`${id}_equipped`);
                     if (equipped) equipped.checked = false;
                 }
             });
@@ -3508,6 +3640,12 @@
             let count = 0;
             ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
                 if (document.getElementById(`${sp}Formed`)?.checked) count++;
+            });
+            // Count custom SP generals
+            const customSpGenerals = getCustomItemsForCategory('SP武将');
+            customSpGenerals.forEach(item => {
+                const id = safeId(item.name);
+                if (document.getElementById(`${id}_formed`)?.checked) count++;
             });
             const allGenerals = getAllGenerals();
             for (let i = 0; i < allGenerals.length; i++) {

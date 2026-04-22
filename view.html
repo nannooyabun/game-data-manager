@@ -1024,6 +1024,52 @@
         const tacticItems = tactics.map(t => ({ id: t.id, name: t.name }));
         const flowerItems = flowerFormations.map(f => ({ id: f.id, name: f.name }));
 
+        // Helper to get custom items with proper formatting
+        function getCustomWeaponItems() {
+            return getCustomItemsList('兵器').map(name => ({ id: name, name, isCustom: true }));
+        }
+        function getCustomAcademyItems() {
+            return getCustomItemsList('極伝兵法').map(name => ({ id: name, name, isCustom: true }));
+        }
+        function getCustomMaskItems() {
+            return getCustomItemsList('核心具足').map(name => ({ id: name, name, isCustom: true }));
+        }
+        function getCustomFlowerItems() {
+            return getCustomItemsList('花陣').map(name => ({ id: name, name, isCustom: true }));
+        }
+        function getCustomTacticItems() {
+            return getCustomItemsList('戦法').map(name => ({ id: name, name, isCustom: true }));
+        }
+        function getCustomAsuraItemsByLevel() {
+            const catData = customItems['阿修羅'];
+            if (!catData) return { skills30: [], skills60: [], skills90: [] };
+            const result = { skills30: [], skills60: [], skills90: [] };
+            Object.entries(catData).forEach(([subcat, itemList]) => {
+                if (!Array.isArray(itemList)) return;
+                let group = null;
+                if (subcat === '30レベル') group = 'skills30';
+                else if (subcat === '60レベル') group = 'skills60';
+                else if (subcat === '90レベル') group = 'skills90';
+                if (group) {
+                    itemList.forEach((name, idx) => {
+                        result[group].push({ id: `custom_asura_${group}_${name}`, name, group, isCustom: true });
+                    });
+                }
+            });
+            return result;
+        }
+        function getCustomSpGeneralItems() {
+            const catData = customItems['SP武将'];
+            if (!catData) return [];
+            const items = [];
+            Object.entries(catData).forEach(([subcat, itemList]) => {
+                if (Array.isArray(itemList)) {
+                    itemList.forEach(name => items.push({ id: name, name, isCustom: true }));
+                }
+            });
+            return items;
+        }
+
         // Helper for general cell state
         function getGeneralCellState(user, generalName) {
             const g = user.generals && user.generals[generalName];
@@ -1089,245 +1135,173 @@
         }
 
         // Build custom item categories dynamically
-        function buildCustomItemCategories() {
-            const cats = [];
+        // buildCustomItemCategories removed - custom items are now merged into base categories
 
-            // Custom weapons (兵器)
-            const customWeaponsList = getCustomItemsList('兵器');
-            if (customWeaponsList.length > 0) {
-                cats.push({
-                    key: 'custom_weapon',
-                    title: '① 兵器(カスタム)',
+        // Build tableCategories dynamically to include custom items merged in
+        function buildTableCategories() {
+            const customAsura = getCustomAsuraItemsByLevel();
+
+            // Build asura items with custom items inserted at the end of each level group
+            const asuraItemsWithCustom = [
+                ...asuraSkillItems.filter(i => i.group === 'skills30'),
+                ...customAsura.skills30,
+                ...asuraSkillItems.filter(i => i.group === 'skills60'),
+                ...customAsura.skills60,
+                ...asuraSkillItems.filter(i => i.group === 'skills90'),
+                ...customAsura.skills90
+            ];
+
+            return [
+                {
+                    key: 'weapon',
+                    title: '① 兵器',
                     colorClass: 'cat-weapon',
-                    items: customWeaponsList.map(name => ({ id: name, name })),
+                    items: [...weaponItems, ...getCustomWeaponItems()],
                     getCellState: (user, item) => {
-                        const w = user.customItems?.weapons?.[item.id];
+                        if (item.isCustom) {
+                            const w = user.customItems?.weapons?.[item.id];
+                            if (!w) return 'none';
+                            if (w.status === 'equipped') return 'equipped';
+                            if (w.status === 'owned') return 'owned';
+                            return 'none';
+                        }
+                        const w = user.weapons && user.weapons[item.id];
                         if (!w) return 'none';
                         if (w.status === 'equipped') return 'equipped';
                         if (w.status === 'owned') return 'owned';
                         return 'none';
                     }
-                });
-            }
-
-            // Custom academy (極伝兵法)
-            const customAcademyList = getCustomItemsList('極伝兵法');
-            if (customAcademyList.length > 0) {
-                cats.push({
-                    key: 'custom_academy',
-                    title: '③ 極伝兵法(カスタム)',
-                    colorClass: 'cat-academy',
-                    items: customAcademyList.map(name => ({ id: name, name })),
+                },
+                {
+                    key: 'spGeneral',
+                    title: '②-1 SP武将',
+                    colorClass: 'cat-sp',
+                    items: [...spGeneralItems, ...getCustomSpGeneralItems()],
                     getCellState: (user, item) => {
-                        const a = user.customItems?.academy?.[item.id];
-                        if (!a) return 'none';
-                        if (a.equipped) return 'equipped';
-                        if (a.owned) return 'owned';
+                        if (item.isCustom) {
+                            const sp = user.customItems?.spGenerals?.[item.id];
+                            if (!sp) return 'none';
+                            if (sp.formed) return 'equipped';
+                            if (sp.owned) return 'owned';
+                            return 'none';
+                        }
+                        const sp = user.spGenerals && user.spGenerals[item.id];
+                        if (!sp) return 'none';
+                        if (sp.formed) return 'equipped';
+                        if (sp.owned) return 'owned';
                         return 'none';
                     }
-                });
-            }
-
-            // Custom masks (核心具足)
-            const customMasksList = getCustomItemsList('核心具足');
-            if (customMasksList.length > 0) {
-                cats.push({
-                    key: 'custom_mask',
-                    title: '⑤ 核心具足(カスタム)',
-                    colorClass: 'cat-armor',
-                    items: customMasksList.map(name => ({ id: name, name })),
+                },
+                // Generals will be inserted here dynamically
+                {
+                    key: 'academy',
+                    title: '③ 軍学道場',
+                    colorClass: 'cat-academy',
+                    items: [...academyHeihoItems, ...getCustomAcademyItems()],
                     getCellState: (user, item) => {
-                        const m = user.customItems?.masks?.[item.id];
+                        if (item.isCustom) {
+                            const a = user.customItems?.academy?.[item.id];
+                            if (!a) return 'none';
+                            if (a.equipped) return 'equipped';
+                            if (a.owned) return 'owned';
+                            return 'none';
+                        }
+                        const h = user.academy && user.academy.heiho && user.academy.heiho[item.id];
+                        if (!h) return 'none';
+                        if (h.equipped) return 'equipped';
+                        if (h.owned) return 'owned';
+                        return 'none';
+                    }
+                },
+                {
+                    key: 'asura',
+                    title: '④ 阿修羅',
+                    colorClass: 'cat-asura',
+                    items: asuraItemsWithCustom,
+                    getCellState: (user, item) => {
+                        if (item.isCustom) {
+                            const a = user.customItems?.asura?.[item.name];
+                            if (!a) return 'none';
+                            return a.checked ? 'equipped' : 'none';
+                        }
+                        const a = user.asura;
+                        if (!a) return 'none';
+                        const skills = a[item.group];
+                        if (!skills || !skills[item.index]) return 'none';
+                        return 'equipped';
+                    }
+                },
+                {
+                    key: 'armor',
+                    title: '⑤ 核心具足',
+                    colorClass: 'cat-armor',
+                    items: [...armorMaskItems, ...getCustomMaskItems()],
+                    getCellState: (user, item) => {
+                        if (item.isCustom) {
+                            const m = user.customItems?.masks?.[item.id];
+                            if (!m) return 'none';
+                            if (m.equipped) return 'equipped';
+                            if (m.owned) return 'owned';
+                            return 'none';
+                        }
+                        const m = user.armor && user.armor.masks && user.armor.masks[item.id];
                         if (!m) return 'none';
                         if (m.equipped) return 'equipped';
                         if (m.owned) return 'owned';
                         return 'none';
                     }
-                });
-            }
-
-            // Custom flowers (花陣)
-            const customFlowersList = getCustomItemsList('花陣');
-            if (customFlowersList.length > 0) {
-                cats.push({
-                    key: 'custom_flower',
-                    title: '⑥ 花陣(カスタム)',
+                },
+                {
+                    key: 'flower',
+                    title: '⑥ 花陣',
                     colorClass: 'cat-flower',
-                    items: customFlowersList.map(name => ({ id: name, name })),
+                    items: [...flowerItems, ...getCustomFlowerItems()],
                     getCellState: (user, item) => {
-                        const f = user.customItems?.flowers?.[item.id];
+                        if (item.isCustom) {
+                            const f = user.customItems?.flowers?.[item.id];
+                            if (!f) return 'none';
+                            if (f.equipped) return 'equipped';
+                            if (f.owned) return 'owned';
+                            return 'none';
+                        }
+                        const f = user.flowers && user.flowers[item.id];
                         if (!f) return 'none';
                         if (f.equipped) return 'equipped';
                         if (f.owned) return 'owned';
                         return 'none';
                     }
-                });
-            }
-
-            // Custom tactics (戦法)
-            const customTacticsList = getCustomItemsList('戦法');
-            if (customTacticsList.length > 0) {
-                cats.push({
-                    key: 'custom_tactic',
-                    title: '⑧ 戦法(カスタム)',
+                },
+                {
+                    key: 'tactic',
+                    title: '⑧ 戦法',
                     colorClass: 'cat-tactic',
-                    items: customTacticsList.map(name => ({ id: name, name })),
+                    items: [...tacticItems, ...getCustomTacticItems()],
                     getCellState: (user, item) => {
-                        const t = user.customItems?.tactics?.[item.id];
+                        if (item.isCustom) {
+                            const t = user.customItems?.tactics?.[item.id];
+                            if (!t) return 'none';
+                            if (t.equipped) return 'equipped';
+                            if (t.owned) return 'owned';
+                            return 'none';
+                        }
+                        const t = user.tactics && user.tactics[item.id];
                         if (!t) return 'none';
                         if (t.equipped) return 'equipped';
                         if (t.owned) return 'owned';
-                        return 'none';
-                    }
-                });
+                    return 'none';
+                }
             }
-
-            // Custom asura (阿修羅)
-            const customAsuraList = getCustomItemsList('阿修羅');
-            if (customAsuraList.length > 0) {
-                cats.push({
-                    key: 'custom_asura',
-                    title: '④ 阿修羅(カスタム)',
-                    colorClass: 'cat-asura',
-                    items: customAsuraList.map(name => ({ id: name, name })),
-                    getCellState: (user, item) => {
-                        const a = user.customItems?.asura?.[item.id];
-                        if (!a) return 'none';
-                        return a.checked ? 'equipped' : 'none';
-                    }
-                });
-            }
-
-            return cats;
+            ];
         }
 
-        const tableCategories = [
-            {
-                key: 'weapon',
-                title: '① 兵器',
-                colorClass: 'cat-weapon',
-                items: weaponItems,
-                getCellState: (user, item) => {
-                    const w = user.weapons && user.weapons[item.id];
-                    if (!w) return 'none';
-                    if (w.status === 'equipped') return 'equipped';
-                    if (w.status === 'owned') return 'owned';
-                    return 'none';
-                }
-            },
-            {
-                key: 'spGeneral',
-                title: '②-1 SP武将',
-                colorClass: 'cat-sp',
-                items: spGeneralItems,
-                getCellState: (user, item) => {
-                    const sp = user.spGenerals && user.spGenerals[item.id];
-                    if (!sp) return 'none';
-                    if (sp.formed) return 'equipped';
-                    if (sp.owned) return 'owned';
-                    return 'none';
-                }
-            },
-            // Generals will be inserted here dynamically
-            {
-                key: 'academy',
-                title: '③ 軍学道場',
-                colorClass: 'cat-academy',
-                items: academyHeihoItems,
-                getCellState: (user, item) => {
-                    const h = user.academy && user.academy.heiho && user.academy.heiho[item.id];
-                    if (!h) return 'none';
-                    if (h.equipped) return 'equipped';
-                    if (h.owned) return 'owned';
-                    return 'none';
-                }
-            },
-            {
-                key: 'asura',
-                title: '④ 阿修羅',
-                colorClass: 'cat-asura',
-                items: asuraSkillItems,
-                getCellState: (user, item) => {
-                    const a = user.asura;
-                    if (!a) return 'none';
-                    const skills = a[item.group];
-                    if (!skills || !skills[item.index]) return 'none';
-                    return 'equipped';
-                }
-            },
-            {
-                key: 'armor',
-                title: '⑤ 核心具足',
-                colorClass: 'cat-armor',
-                items: armorMaskItems,
-                getCellState: (user, item) => {
-                    const m = user.armor && user.armor.masks && user.armor.masks[item.id];
-                    if (!m) return 'none';
-                    if (m.equipped) return 'equipped';
-                    if (m.owned) return 'owned';
-                    return 'none';
-                }
-            },
-            {
-                key: 'flower',
-                title: '⑥ 花陣',
-                colorClass: 'cat-flower',
-                items: flowerItems,
-                getCellState: (user, item) => {
-                    const f = user.flowers && user.flowers[item.id];
-                    if (!f) return 'none';
-                    if (f.equipped) return 'equipped';
-                    if (f.owned) return 'owned';
-                    return 'none';
-                }
-            },
-            {
-                key: 'tactic',
-                title: '⑧ 戦法',
-                colorClass: 'cat-tactic',
-                items: tacticItems,
-                getCellState: (user, item) => {
-                    const t = user.tactics && user.tactics[item.id];
-                    if (!t) return 'none';
-                    if (t.equipped) return 'equipped';
-                    if (t.owned) return 'owned';
-                    return 'none';
-                }
-            }
-        ];
-
-        // Get full category list including dynamic generals and custom items
+        // Get full category list including dynamic generals (custom items now merged into base categories)
         function getAllCategories() {
             const genCats = buildGeneralCategories();
-            const customCats = buildCustomItemCategories();
-
-            // Mapping: custom category key -> base category key it should follow
-            const customFollowsMap = {
-                'custom_weapon': 'weapon',
-                'custom_academy': 'academy',
-                'custom_asura': 'asura',
-                'custom_mask': 'armor',
-                'custom_flower': 'flower',
-                'custom_tactic': 'tactic'
-            };
+            const tableCategories = buildTableCategories();
 
             const result = [...tableCategories];
             // Insert general categories after SP武将 (index 1)
             result.splice(2, 0, ...genCats);
-
-            // Insert custom item categories right after their corresponding base category
-            customCats.forEach(customCat => {
-                const baseKey = customFollowsMap[customCat.key];
-                if (baseKey) {
-                    const baseIdx = result.findIndex(c => c.key === baseKey);
-                    if (baseIdx >= 0) {
-                        result.splice(baseIdx + 1, 0, customCat);
-                        return;
-                    }
-                }
-                // Fallback: append at end
-                result.push(customCat);
-            });
 
             return result;
         }
@@ -1391,22 +1365,43 @@
             try {
                 let path, updateData, stateText;
 
+                // Check if this is a custom item (merged into base category)
+                const isCustom = itemData?.isCustom === true;
+
                 // Handle different category types
                 if (catKey === 'weapon') {
-                    const current = user.weapons?.[itemId]?.status;
-                    if (!current || current === '') return;
-                    const newStatus = current === 'equipped' ? 'owned' : 'equipped';
-                    path = `gameData/${username}/weapons/${itemId}/status`;
-                    await set(ref(database, path), newStatus);
-                    stateText = newStatus === 'equipped' ? '装備中' : '所持のみ';
+                    if (isCustom) {
+                        const w = user.customItems?.weapons?.[itemId];
+                        if (!w?.status || w.status === '') return;
+                        const newStatus = w.status === 'equipped' ? 'owned' : 'equipped';
+                        path = `gameData/${username}/customItems/weapons/${itemId}/status`;
+                        await set(ref(database, path), newStatus);
+                        stateText = newStatus === 'equipped' ? '装備中' : '所持のみ';
+                    } else {
+                        const current = user.weapons?.[itemId]?.status;
+                        if (!current || current === '') return;
+                        const newStatus = current === 'equipped' ? 'owned' : 'equipped';
+                        path = `gameData/${username}/weapons/${itemId}/status`;
+                        await set(ref(database, path), newStatus);
+                        stateText = newStatus === 'equipped' ? '装備中' : '所持のみ';
+                    }
                 }
                 else if (catKey === 'spGeneral') {
-                    const sp = user.spGenerals?.[itemId];
-                    if (!sp?.owned && !sp?.formed) return;
-                    const newFormed = !sp.formed;
-                    path = `gameData/${username}/spGenerals/${itemId}`;
-                    await update(ref(database, path), { formed: newFormed, owned: true });
-                    stateText = newFormed ? '装備中' : '所持のみ';
+                    if (isCustom) {
+                        const sp = user.customItems?.spGenerals?.[itemId];
+                        if (!sp?.owned && !sp?.formed) return;
+                        const newFormed = !sp.formed;
+                        path = `gameData/${username}/customItems/spGenerals/${itemId}`;
+                        await update(ref(database, path), { formed: newFormed, owned: true });
+                        stateText = newFormed ? '装備中' : '所持のみ';
+                    } else {
+                        const sp = user.spGenerals?.[itemId];
+                        if (!sp?.owned && !sp?.formed) return;
+                        const newFormed = !sp.formed;
+                        path = `gameData/${username}/spGenerals/${itemId}`;
+                        await update(ref(database, path), { formed: newFormed, owned: true });
+                        stateText = newFormed ? '装備中' : '所持のみ';
+                    }
                 }
                 else if (catKey.startsWith('general_')) {
                     const g = user.generals?.[itemId];
@@ -1417,67 +1412,113 @@
                     stateText = newFormed ? '装備中' : '所持のみ';
                 }
                 else if (catKey === 'academy') {
-                    const h = user.academy?.heiho?.[itemId];
-                    if (!h?.owned && !h?.equipped) return;
-                    const newEquipped = !h.equipped;
-                    path = `gameData/${username}/academy/heiho/${itemId}`;
-                    await update(ref(database, path), { equipped: newEquipped, owned: true });
-                    stateText = newEquipped ? '装備中' : '所持のみ';
+                    if (isCustom) {
+                        const a = user.customItems?.academy?.[itemId];
+                        if (!a?.owned && !a?.equipped) return;
+                        const newEquipped = !a.equipped;
+                        path = `gameData/${username}/customItems/academy/${itemId}`;
+                        await update(ref(database, path), { equipped: newEquipped, owned: true });
+                        stateText = newEquipped ? '装備中' : '所持のみ';
+                    } else {
+                        const h = user.academy?.heiho?.[itemId];
+                        if (!h?.owned && !h?.equipped) return;
+                        const newEquipped = !h.equipped;
+                        path = `gameData/${username}/academy/heiho/${itemId}`;
+                        await update(ref(database, path), { equipped: newEquipped, owned: true });
+                        stateText = newEquipped ? '装備中' : '所持のみ';
+                    }
                 }
                 else if (catKey === 'asura') {
-                    // Parse itemId like 'asura30_0' to get group and index
-                    const match = itemId.match(/^asura(\d+)_(\d+)$/);
-                    if (!match) return;
-                    const level = match[1]; // '30', '60', or '90'
-                    const index = parseInt(match[2]);
-                    const groupKey = `skills${level}`;
+                    if (isCustom) {
+                        // Custom asura - use item name as key
+                        const itemName = itemData?.name || itemId;
+                        const a = user.customItems?.asura?.[itemName];
+                        const newChecked = !(a?.checked);
+                        path = `gameData/${username}/customItems/asura/${itemName}/checked`;
+                        await set(ref(database, path), newChecked);
+                        stateText = newChecked ? '選択' : '解除';
+                    } else {
+                        // Parse itemId like 'asura30_0' to get group and index
+                        const match = itemId.match(/^asura(\d+)_(\d+)$/);
+                        if (!match) return;
+                        const level = match[1]; // '30', '60', or '90'
+                        const index = parseInt(match[2]);
+                        const groupKey = `skills${level}`;
 
-                    const a = user.asura;
-                    if (!a) return;
+                        const a = user.asura;
+                        if (!a) return;
 
-                    const skills = a[groupKey] || [];
-                    const currentlySelected = skills[index] === true;
+                        const skills = a[groupKey] || [];
+                        const currentlySelected = skills[index] === true;
 
-                    // Build new skills array: toggle clicked, deselect others in same level
-                    const groupSize = level === '30' ? 3 : 5;
-                    const newSkills = [];
-                    for (let i = 0; i < groupSize; i++) {
-                        if (i === index) {
-                            newSkills[i] = !currentlySelected; // Toggle clicked skill
-                        } else {
-                            newSkills[i] = false; // Deselect others in same level
+                        // Build new skills array: toggle clicked, deselect others in same level
+                        const groupSize = level === '30' ? 3 : 5;
+                        const newSkills = [];
+                        for (let i = 0; i < groupSize; i++) {
+                            if (i === index) {
+                                newSkills[i] = !currentlySelected; // Toggle clicked skill
+                            } else {
+                                newSkills[i] = false; // Deselect others in same level
+                            }
                         }
-                    }
 
-                    path = `gameData/${username}/asura/${groupKey}`;
-                    await set(ref(database, path), newSkills);
-                    stateText = !currentlySelected ? '選択' : '解除';
+                        path = `gameData/${username}/asura/${groupKey}`;
+                        await set(ref(database, path), newSkills);
+                        stateText = !currentlySelected ? '選択' : '解除';
+                    }
                 }
                 else if (catKey === 'armor') {
-                    const m = user.armor?.masks?.[itemId];
-                    if (!m?.owned && !m?.equipped) return;
-                    const newEquipped = !m.equipped;
-                    path = `gameData/${username}/armor/masks/${itemId}`;
-                    await update(ref(database, path), { equipped: newEquipped, owned: true });
-                    stateText = newEquipped ? '装備中' : '所持のみ';
+                    if (isCustom) {
+                        const m = user.customItems?.masks?.[itemId];
+                        if (!m?.owned && !m?.equipped) return;
+                        const newEquipped = !m.equipped;
+                        path = `gameData/${username}/customItems/masks/${itemId}`;
+                        await update(ref(database, path), { equipped: newEquipped, owned: true });
+                        stateText = newEquipped ? '装備中' : '所持のみ';
+                    } else {
+                        const m = user.armor?.masks?.[itemId];
+                        if (!m?.owned && !m?.equipped) return;
+                        const newEquipped = !m.equipped;
+                        path = `gameData/${username}/armor/masks/${itemId}`;
+                        await update(ref(database, path), { equipped: newEquipped, owned: true });
+                        stateText = newEquipped ? '装備中' : '所持のみ';
+                    }
                 }
                 else if (catKey === 'flower') {
-                    const f = user.flowers?.[itemId];
-                    if (!f?.owned && !f?.equipped) return;
-                    const newEquipped = !f.equipped;
-                    path = `gameData/${username}/flowers/${itemId}`;
-                    await update(ref(database, path), { equipped: newEquipped, owned: true });
-                    stateText = newEquipped ? '装備中' : '所持のみ';
+                    if (isCustom) {
+                        const f = user.customItems?.flowers?.[itemId];
+                        if (!f?.owned && !f?.equipped) return;
+                        const newEquipped = !f.equipped;
+                        path = `gameData/${username}/customItems/flowers/${itemId}`;
+                        await update(ref(database, path), { equipped: newEquipped, owned: true });
+                        stateText = newEquipped ? '装備中' : '所持のみ';
+                    } else {
+                        const f = user.flowers?.[itemId];
+                        if (!f?.owned && !f?.equipped) return;
+                        const newEquipped = !f.equipped;
+                        path = `gameData/${username}/flowers/${itemId}`;
+                        await update(ref(database, path), { equipped: newEquipped, owned: true });
+                        stateText = newEquipped ? '装備中' : '所持のみ';
+                    }
                 }
                 else if (catKey === 'tactic') {
-                    const t = user.tactics?.[itemId];
-                    if (!t?.owned && !t?.equipped) return;
-                    const newEquipped = !t.equipped;
-                    path = `gameData/${username}/tactics/${itemId}`;
-                    await update(ref(database, path), { equipped: newEquipped, owned: true });
-                    stateText = newEquipped ? '装備中' : '所持のみ';
+                    if (isCustom) {
+                        const t = user.customItems?.tactics?.[itemId];
+                        if (!t?.owned && !t?.equipped) return;
+                        const newEquipped = !t.equipped;
+                        path = `gameData/${username}/customItems/tactics/${itemId}`;
+                        await update(ref(database, path), { equipped: newEquipped, owned: true });
+                        stateText = newEquipped ? '装備中' : '所持のみ';
+                    } else {
+                        const t = user.tactics?.[itemId];
+                        if (!t?.owned && !t?.equipped) return;
+                        const newEquipped = !t.equipped;
+                        path = `gameData/${username}/tactics/${itemId}`;
+                        await update(ref(database, path), { equipped: newEquipped, owned: true });
+                        stateText = newEquipped ? '装備中' : '所持のみ';
+                    }
                 }
-                // Custom items
+                // Legacy custom item handlers (keeping for backwards compatibility)
                 else if (catKey === 'custom_academy') {
                     const a = user.customItems?.academy?.[itemId];
                     if (!a?.owned && !a?.equipped) return;
@@ -1602,8 +1643,9 @@
                         const isClickable = cat.key === 'asura' || (state === 'equipped' || state === 'owned');
                         const clickClass = isClickable ? ' cell-clickable' : '';
                         const itemIdStr = item.id || item.name || '';
+                        const itemDataStr = JSON.stringify({ isCustom: !!item.isCustom, name: item.name || '' }).replace(/'/g, "\\'");
                         const clickHandler = isClickable
-                            ? ` onclick="toggleCellState('${escapeHtml(username)}', '${cat.key}', '${escapeHtml(itemIdStr)}', null)"`
+                            ? ` onclick="toggleCellState('${escapeHtml(username)}', '${cat.key}', '${escapeHtml(itemIdStr)}', ${itemDataStr})"`
                             : '';
                         return `<td class="${cat.colorClass}${borderClass}${clickClass}"${clickHandler}>${stateSymbol(state)}</td>`;
                     });
