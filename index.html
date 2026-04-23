@@ -2074,6 +2074,200 @@
         }
 
         // Save user data
+        // ========== Multi-team Sync Helpers ==========
+        // Categories that have exclusive equip: one team only for 編成済み
+        const EXCLUSIVE_EQUIP_CATEGORIES = new Set(['weapons', 'customWeapons', 'spGenerals', 'customSpGenerals', 'generals']);
+
+        // Syncable categories: [{ key, pattern, pathGet, label }]
+        // pattern: 'weapon' | 'formed_owned' | 'equipped_owned'
+        const SYNCABLE_CATEGORIES = [
+            { key: 'weapons',         pattern: 'weapon',         getContainer: d => d?.weapons,                         ensurePath: d => { if (!d.weapons) d.weapons = {}; return d.weapons; },                                                    label: '兵器' },
+            { key: 'customWeapons',   pattern: 'weapon',         getContainer: d => d?.customItems?.weapons,            ensurePath: d => { if (!d.customItems) d.customItems = {}; if (!d.customItems.weapons) d.customItems.weapons = {}; return d.customItems.weapons; },                label: '兵器(カスタム)' },
+            { key: 'spGenerals',      pattern: 'formed_owned',   getContainer: d => d?.spGenerals,                      ensurePath: d => { if (!d.spGenerals) d.spGenerals = {}; return d.spGenerals; },                                            label: 'SP武将' },
+            { key: 'customSpGenerals',pattern: 'formed_owned',   getContainer: d => d?.customItems?.spGenerals,         ensurePath: d => { if (!d.customItems) d.customItems = {}; if (!d.customItems.spGenerals) d.customItems.spGenerals = {}; return d.customItems.spGenerals; },    label: 'SP武将(カスタム)' },
+            { key: 'generals',        pattern: 'formed_owned',   getContainer: d => d?.generals,                        ensurePath: d => { if (!d.generals) d.generals = {}; return d.generals; },                                                  label: '武将' },
+            { key: 'academy',         pattern: 'equipped_owned', getContainer: d => d?.academy?.heiho,                  ensurePath: d => { if (!d.academy) d.academy = {}; if (!d.academy.heiho) d.academy.heiho = {}; return d.academy.heiho; },                                      label: '軍学道場' },
+            { key: 'customAcademy',   pattern: 'equipped_owned', getContainer: d => d?.customItems?.academy,            ensurePath: d => { if (!d.customItems) d.customItems = {}; if (!d.customItems.academy) d.customItems.academy = {}; return d.customItems.academy; },            label: '極伝兵法(カスタム)' },
+            { key: 'masks',           pattern: 'equipped_owned', getContainer: d => d?.armor?.masks,                    ensurePath: d => { if (!d.armor) d.armor = {}; if (!d.armor.masks) d.armor.masks = {}; return d.armor.masks; },                                                label: '核心具足' },
+            { key: 'customMasks',     pattern: 'equipped_owned', getContainer: d => d?.customItems?.masks,              ensurePath: d => { if (!d.customItems) d.customItems = {}; if (!d.customItems.masks) d.customItems.masks = {}; return d.customItems.masks; },                  label: '核心具足(カスタム)' },
+            { key: 'flowers',         pattern: 'equipped_owned', getContainer: d => d?.flowers,                         ensurePath: d => { if (!d.flowers) d.flowers = {}; return d.flowers; },                                                    label: '花陣' },
+            { key: 'customFlowers',   pattern: 'equipped_owned', getContainer: d => d?.customItems?.flowers,            ensurePath: d => { if (!d.customItems) d.customItems = {}; if (!d.customItems.flowers) d.customItems.flowers = {}; return d.customItems.flowers; },            label: '花陣(カスタム)' },
+            { key: 'tactics',         pattern: 'equipped_owned', getContainer: d => d?.tactics,                         ensurePath: d => { if (!d.tactics) d.tactics = {}; return d.tactics; },                                                    label: '戦法' },
+            { key: 'customTactics',   pattern: 'equipped_owned', getContainer: d => d?.customItems?.tactics,            ensurePath: d => { if (!d.customItems) d.customItems = {}; if (!d.customItems.tactics) d.customItems.tactics = {}; return d.customItems.tactics; },            label: '戦法(カスタム)' }
+        ];
+
+        function getStateFromEntry(entry, pattern) {
+            if (!entry) return 'none';
+            if (pattern === 'weapon') {
+                return entry.status === 'equipped' ? 'equipped' : (entry.status === 'owned' ? 'owned' : 'none');
+            }
+            if (pattern === 'formed_owned') {
+                if (entry.formed) return 'equipped';
+                if (entry.owned) return 'owned';
+                return 'none';
+            }
+            if (entry.equipped) return 'equipped';
+            if (entry.owned) return 'owned';
+            return 'none';
+        }
+
+        function buildEntryForState(pattern, state, existingEntry) {
+            const base = existingEntry ? { ...existingEntry } : {};
+            if (pattern === 'weapon') {
+                base.status = state === 'none' ? '' : state;
+                return base;
+            }
+            if (pattern === 'formed_owned') {
+                base.owned = state !== 'none';
+                base.formed = state === 'equipped';
+                return base;
+            }
+            base.owned = state !== 'none';
+            base.equipped = state === 'equipped';
+            return base;
+        }
+
+        // Label helper for state
+        function stateLabel(state) {
+            if (state === 'equipped') return '編成済み';
+            if (state === 'owned') return '所持済み';
+            return '未所持';
+        }
+
+        // Build sync plan: returns { plan, hasChanges }
+        // plan[teamName] = [{ category, itemId, itemName, fromState, toState }]
+        function buildSyncPlan(username, targetTeam, oldTargetData, newTargetData) {
+            const userData = cachedGameData[username];
+            const plan = {};
+
+            if (!userData) return { plan, hasChanges: false };
+
+            // Get all other teams
+            const allTeams = isOldFormatUserData(userData) ? ['1軍'] : Object.keys(userData);
+            const otherTeams = allTeams.filter(t => t !== targetTeam);
+
+            // Collect all item changes in target team
+            SYNCABLE_CATEGORIES.forEach(cat => {
+                const oldContainer = cat.getContainer(oldTargetData) || {};
+                const newContainer = cat.getContainer(newTargetData) || {};
+                const allKeys = new Set([...Object.keys(oldContainer), ...Object.keys(newContainer)]);
+
+                allKeys.forEach(key => {
+                    const oldState = getStateFromEntry(oldContainer[key], cat.pattern);
+                    const newState = getStateFromEntry(newContainer[key], cat.pattern);
+
+                    if (oldState === newState) return;
+
+                    // Determine sync action to apply to other teams
+                    otherTeams.forEach(otherTeam => {
+                        const otherData = getUserTeamData(userData, otherTeam);
+                        if (!otherData) return;
+                        const otherContainer = cat.getContainer(otherData) || {};
+                        const otherState = getStateFromEntry(otherContainer[key], cat.pattern);
+                        let syncToState = null;
+
+                        // Sync rules:
+                        // 1. none → owned/equipped: other 'none' teams become 'owned'
+                        if (oldState === 'none' && (newState === 'owned' || newState === 'equipped')) {
+                            if (otherState === 'none') syncToState = 'owned';
+                        }
+                        // 2. owned/equipped → none: other teams become 'none'
+                        else if ((oldState === 'owned' || oldState === 'equipped') && newState === 'none') {
+                            if (otherState !== 'none') syncToState = 'none';
+                        }
+                        // 3. owned → equipped (exclusive only): other 'equipped' teams become 'owned'
+                        else if (oldState === 'owned' && newState === 'equipped' && EXCLUSIVE_EQUIP_CATEGORIES.has(cat.key)) {
+                            if (otherState === 'equipped') syncToState = 'owned';
+                        }
+
+                        if (syncToState !== null) {
+                            if (!plan[otherTeam]) plan[otherTeam] = [];
+                            plan[otherTeam].push({
+                                category: cat.key,
+                                categoryLabel: cat.label,
+                                pattern: cat.pattern,
+                                itemId: key,
+                                itemName: key,
+                                fromState: otherState,
+                                toState: syncToState,
+                                getContainer: cat.getContainer,
+                                ensurePath: cat.ensurePath
+                            });
+                        }
+                    });
+                });
+            });
+
+            const hasChanges = Object.keys(plan).length > 0;
+            return { plan, hasChanges };
+        }
+
+        // Format sync plan for dialog display
+        function formatSyncPlan(username, plan) {
+            let msg = `【${username}】以下のデータが他軍団に同期されます：\n\n`;
+            Object.entries(plan).forEach(([team, changes]) => {
+                msg += `■ ${team} への変更：\n`;
+                // Group by category
+                const byCategory = {};
+                changes.forEach(c => {
+                    if (!byCategory[c.categoryLabel]) byCategory[c.categoryLabel] = [];
+                    byCategory[c.categoryLabel].push(c);
+                });
+                Object.entries(byCategory).forEach(([catLabel, items]) => {
+                    msg += `  [${catLabel}]\n`;
+                    items.forEach(c => {
+                        msg += `    ・${c.itemName}: ${stateLabel(c.fromState)} → ${stateLabel(c.toState)}\n`;
+                    });
+                });
+                msg += '\n';
+            });
+            msg += '[OK] 同期して保存する  [キャンセル] 保存を中止';
+            return msg;
+        }
+
+        // Apply sync plan to Firebase (after main team save)
+        async function applySyncPlan(username, plan) {
+            const { database, ref, set, get } = window.firebaseDB;
+            const userData = cachedGameData[username];
+            if (!userData) return;
+
+            const isOld = isOldFormatUserData(userData);
+
+            for (const [teamName, changes] of Object.entries(plan)) {
+                // Get current team data (fresh clone)
+                let teamData;
+                if (isOld && teamName === '1軍') {
+                    // For old format, we need to migrate first. This case should already be handled by saveUserData
+                    teamData = JSON.parse(JSON.stringify(userData));
+                    // Remove any nested team keys just in case
+                } else {
+                    teamData = JSON.parse(JSON.stringify(userData[teamName] || {}));
+                }
+
+                // Apply changes
+                changes.forEach(c => {
+                    const container = c.ensurePath(teamData);
+                    container[c.itemId] = buildEntryForState(c.pattern, c.toState, container[c.itemId]);
+                });
+
+                // Write back
+                if (isOld) {
+                    // After saveUserData's migration, data is now at gameData/username/1軍
+                    await set(ref(database, `gameData/${username}/${teamName}`), teamData);
+                } else {
+                    await set(ref(database, `gameData/${username}/${teamName}`), teamData);
+                }
+
+                // Update cache
+                if (!cachedGameData[username] || isOldFormatUserData(cachedGameData[username])) {
+                    // Already migrated by saveUserData
+                }
+                if (cachedGameData[username]) {
+                    cachedGameData[username][teamName] = teamData;
+                }
+            }
+        }
+
         async function saveUserData(username, teamName, data) {
             if (!window.firebaseReady) {
                 showToast('Firebase接続中...', 'error');
@@ -2081,10 +2275,27 @@
             }
             if (!teamName) teamName = '1軍';
             try {
-                const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, `gameData/${username}/${teamName}`), data);
-                if (!cachedGameData[username]) cachedGameData[username] = {};
-                cachedGameData[username][teamName] = data;
+                const { database, ref, set, get } = window.firebaseDB;
+
+                // Read current state to handle old-format migration
+                const userRef = ref(database, `gameData/${username}`);
+                const snapshot = await get(userRef);
+                const existing = snapshot.exists() ? snapshot.val() : null;
+
+                if (existing && isOldFormatUserData(existing)) {
+                    // Migrate: old data becomes 1軍, then add new team
+                    const migrated = { '1軍': existing };
+                    migrated[teamName] = data;
+                    await set(userRef, migrated);
+                    cachedGameData[username] = migrated;
+                } else {
+                    // New-format save (just the single team path)
+                    await set(ref(database, `gameData/${username}/${teamName}`), data);
+                    if (!cachedGameData[username] || isOldFormatUserData(cachedGameData[username])) {
+                        cachedGameData[username] = {};
+                    }
+                    cachedGameData[username][teamName] = data;
+                }
                 return true;
             } catch (error) {
                 console.error('Error saving data:', error);
@@ -2152,9 +2363,19 @@
         }
 
         // ========== Load Data Modal ==========
-        function openLoadDataModal() {
+        async function openLoadDataModal() {
             const modal = document.getElementById('loadDataModal');
             if (!modal) return;
+            // Refresh cache first
+            if (window.firebaseReady) {
+                try {
+                    const { database, ref, get } = window.firebaseDB;
+                    const snapshot = await get(ref(database, 'gameData'));
+                    cachedGameData = snapshot.exists() ? snapshot.val() : {};
+                } catch (e) {
+                    console.error('Failed to refresh gameData:', e);
+                }
+            }
             modal.style.display = 'flex';
             document.getElementById('loadSearchInput').value = '';
             renderLoadUserList('');
@@ -2174,21 +2395,25 @@
             const listEl = document.getElementById('loadUserList');
             if (!listEl) return;
 
-            const q = query.toLowerCase().trim();
-            const users = Object.keys(cachedGameData || {}).filter(u => {
-                return !q || u.toLowerCase().includes(q);
-            }).sort();
+            const q = (query || '').toLowerCase().trim();
+            const allUsers = Object.keys(cachedGameData || {});
+            const users = allUsers.filter(u => !q || u.toLowerCase().includes(q)).sort();
 
+            if (allUsers.length === 0) {
+                listEl.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 1rem;">保存されたデータがありません</div>';
+                return;
+            }
             if (users.length === 0) {
                 listEl.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 1rem;">該当するユーザーがありません</div>';
                 return;
             }
 
-            listEl.innerHTML = users.map(username => {
+            // Build list with data attributes (event delegation avoids escaping issues)
+            listEl.innerHTML = users.map((username, uIdx) => {
                 const userData = cachedGameData[username] || {};
                 const teams = getUserTeams(userData);
-                const teamButtons = teams.map(team => {
-                    return `<button class="team-btn" onclick="loadUserTeamData('${escapeHtmlAttr(username)}', '${escapeHtmlAttr(team)}')">${escapeHtmlText(team)}</button>`;
+                const teamButtons = teams.map((team, tIdx) => {
+                    return `<button class="team-btn" data-user-idx="${uIdx}" data-team-idx="${tIdx}">${escapeHtmlText(team)}</button>`;
                 }).join('');
                 return `
                     <div class="load-user-item">
@@ -2197,6 +2422,24 @@
                     </div>
                 `;
             }).join('');
+
+            // Store for event handler
+            listEl._loadUserList = users.map(username => ({
+                username,
+                teams: getUserTeams(cachedGameData[username])
+            }));
+
+            // Attach single click delegator
+            listEl.onclick = (e) => {
+                const btn = e.target.closest('.team-btn');
+                if (!btn) return;
+                const uIdx = parseInt(btn.dataset.userIdx);
+                const tIdx = parseInt(btn.dataset.teamIdx);
+                const entry = listEl._loadUserList?.[uIdx];
+                if (!entry) return;
+                const team = entry.teams[tIdx];
+                loadUserTeamData(entry.username, team);
+            };
         }
 
         // Simple HTML escaping helpers (for modal)
@@ -2656,10 +2899,32 @@
 
             // Load game data
             cachedGameData = await getGameData();
-            loadSavedData();
 
-            // Check for unsaved draft and restore if user confirms
-            checkAndRestoreDraft();
+            // Check URL params for edit mode (from manage.html)
+            const urlParams = new URLSearchParams(window.location.search);
+            const editUser = urlParams.get('edit');
+            const editTeam = urlParams.get('team');
+            let loadedFromUrl = false;
+            if (editUser) {
+                const userData = cachedGameData[editUser];
+                if (userData) {
+                    const teamName = editTeam || '1軍';
+                    const teamData = getUserTeamData(userData, teamName);
+                    if (teamData) {
+                        teamData.username = editUser;
+                        teamData.team = teamName;
+                        loadDataToForm(teamData);
+                        loadedFromUrl = true;
+                        showToast(`${editUser}の${teamName}データを読み込みました`, 'success');
+                    }
+                }
+            }
+
+            if (!loadedFromUrl) {
+                loadSavedData();
+                // Check for unsaved draft and restore if user confirms
+                checkAndRestoreDraft();
+            }
 
             updateProgress();
             updateSummary();
@@ -2671,7 +2936,9 @@
             // Setup auto-save for form inputs
             setupAutoSave();
 
-            showToast('データを同期しました', 'success');
+            if (!loadedFromUrl) {
+                showToast('データを同期しました', 'success');
+            }
         }
 
         // Wait for Firebase and DOM to be ready
@@ -3166,11 +3433,14 @@
             // Duplicate check: same username + same team name already exists
             const existing = cachedGameData[data.username];
             let exists = false;
+            let oldTargetData = null;
             if (existing) {
                 if (isOldFormatUserData(existing)) {
                     exists = (teamName === '1軍');
+                    if (exists) oldTargetData = existing;
                 } else {
                     exists = teamName in existing;
+                    if (exists) oldTargetData = existing[teamName];
                 }
             }
 
@@ -3182,10 +3452,40 @@
                 }
             }
 
+            // Build multi-team sync plan (for any existing other teams)
+            let syncPlan = null;
+            const userEntry = cachedGameData[data.username];
+            const hasOtherTeams = userEntry && Object.keys(userEntry).length > 0;
+            if (hasOtherTeams) {
+                // Treat no old target data as empty (all items 'none')
+                const oldForCompare = oldTargetData || {};
+                const { plan, hasChanges } = buildSyncPlan(data.username, teamName, oldForCompare, data);
+                if (hasChanges) {
+                    const msg = formatSyncPlan(data.username, plan);
+                    const confirmed = confirm(msg);
+                    if (!confirmed) {
+                        showToast('保存を中止しました', 'error');
+                        return;
+                    }
+                    syncPlan = plan;
+                }
+            }
+
             const success = await saveUserData(data.username, teamName, data);
 
             if (success) {
-                showToast(`${data.username}の${teamName}データを保存しました`, 'success');
+                if (syncPlan) {
+                    try {
+                        await applySyncPlan(data.username, syncPlan);
+                        const teamCount = Object.keys(syncPlan).length;
+                        showToast(`${data.username}の${teamName}を保存し、${teamCount}軍団に同期しました`, 'success');
+                    } catch (err) {
+                        console.error('Sync error:', err);
+                        showToast('同期エラー: ' + err.message, 'error');
+                    }
+                } else {
+                    showToast(`${data.username}の${teamName}データを保存しました`, 'success');
+                }
             }
         }
 
