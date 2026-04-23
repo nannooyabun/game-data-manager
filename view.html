@@ -1073,13 +1073,9 @@
         // Flatten generals (for all generals list)
         const allDefaultGenerals = generalCategories.flatMap(cat => cat.generals);
 
-        // Get effective general categories for view.html
+        // Get effective general categories for view.html (from config, master data, or defaults)
         function getEffectiveViewCategories() {
             const customGenList = getCustomGeneralsList();
-
-            // Include generals from: default list + custom generals + master data
-            const masterGenerals = generalMasterData?.generals ? Object.keys(generalMasterData.generals) : [];
-            const allGenerals = new Set([...allDefaultGenerals, ...customGenList, ...masterGenerals]);
 
             // Helper: check if general should be hidden (empty category in master data)
             function isHiddenGeneral(genName) {
@@ -1090,8 +1086,57 @@
             }
 
             if (!categoriesViewConfig || !categoriesViewConfig.categories) {
-                // Use default categories + custom generals
-                const result = generalCategories.map(cat => ({
+                // No saved config - build from master data or defaults
+                const result = [];
+                const assignedGenerals = new Set();
+
+                // If master data exists (CSV was imported), use master data categories only
+                if (generalMasterData?.categories && Object.keys(generalMasterData.categories).length > 0) {
+                    // Build categories from master data
+                    for (const catName of Object.keys(generalMasterData.categories)) {
+                        result.push({
+                            title: catName,
+                            generals: []
+                        });
+                    }
+
+                    // Assign generals to their categories based on master data
+                    if (generalMasterData?.generals) {
+                        for (const [genName, genData] of Object.entries(generalMasterData.generals)) {
+                            if (genData.category && !isHiddenGeneral(genName)) {
+                                const cat = result.find(c => c.title === genData.category);
+                                if (cat && !cat.generals.includes(genName)) {
+                                    cat.generals.push(genName);
+                                    assignedGenerals.add(genName);
+                                }
+                            }
+                        }
+                    }
+
+                    // Filter out empty categories
+                    const filteredResult = result.filter(cat => cat.generals.length > 0);
+
+                    // Add custom generals by their subcategory
+                    if (customGenerals && typeof customGenerals === 'object') {
+                        for (const [subcat, gens] of Object.entries(customGenerals)) {
+                            if (!Array.isArray(gens) || gens.length === 0) continue;
+                            const catTitle = subcat === '_default' ? '追加武将' : subcat;
+                            const filteredGens = gens.filter(g => !isHiddenGeneral(g));
+                            if (filteredGens.length === 0) continue;
+                            let existingCat = filteredResult.find(c => c.title === catTitle);
+                            if (existingCat) {
+                                existingCat.generals.push(...filteredGens);
+                            } else {
+                                filteredResult.push({ title: catTitle, generals: [...filteredGens] });
+                            }
+                        }
+                    }
+
+                    return filteredResult;
+                }
+
+                // No master data - use default categories
+                const defaultResult = generalCategories.map(cat => ({
                     title: cat.title,
                     generals: [...cat.generals].filter(g => !isHiddenGeneral(g))
                 })).filter(cat => cat.generals.length > 0);
@@ -1103,15 +1148,15 @@
                         const catTitle = subcat === '_default' ? '追加武将' : subcat;
                         const filteredGens = gens.filter(g => !isHiddenGeneral(g));
                         if (filteredGens.length === 0) continue;
-                        let existingCat = result.find(c => c.title === catTitle);
+                        let existingCat = defaultResult.find(c => c.title === catTitle);
                         if (existingCat) {
                             existingCat.generals.push(...filteredGens);
                         } else {
-                            result.push({ title: catTitle, generals: [...filteredGens] });
+                            defaultResult.push({ title: catTitle, generals: [...filteredGens] });
                         }
                     }
                 }
-                return result;
+                return defaultResult;
             }
 
             // Use stored config - include all generals from config (they exist because they were imported)
