@@ -1090,25 +1090,33 @@
                 const result = [];
                 const assignedGenerals = new Set();
 
-                // If master data exists (CSV was imported), use master data categories only
-                if (generalMasterData?.categories && Object.keys(generalMasterData.categories).length > 0) {
-                    // Build categories from master data
-                    for (const catName of Object.keys(generalMasterData.categories)) {
+                // Check if master data exists (CSV was imported)
+                const hasMasterData = generalMasterData?.generals && Object.keys(generalMasterData.generals).length > 0;
+
+                if (hasMasterData) {
+                    // Build categories from master data generals
+                    const categorySet = new Set();
+                    for (const [genName, genData] of Object.entries(generalMasterData.generals)) {
+                        if (genData.category) {
+                            categorySet.add(genData.category);
+                        }
+                    }
+
+                    // Create category objects
+                    for (const catName of categorySet) {
                         result.push({
                             title: catName,
                             generals: []
                         });
                     }
 
-                    // Assign generals to their categories based on master data
-                    if (generalMasterData?.generals) {
-                        for (const [genName, genData] of Object.entries(generalMasterData.generals)) {
-                            if (genData.category && !isHiddenGeneral(genName)) {
-                                const cat = result.find(c => c.title === genData.category);
-                                if (cat && !cat.generals.includes(genName)) {
-                                    cat.generals.push(genName);
-                                    assignedGenerals.add(genName);
-                                }
+                    // Assign generals to their categories
+                    for (const [genName, genData] of Object.entries(generalMasterData.generals)) {
+                        if (genData.category && !isHiddenGeneral(genName)) {
+                            const cat = result.find(c => c.title === genData.category);
+                            if (cat && !cat.generals.includes(genName)) {
+                                cat.generals.push(genName);
+                                assignedGenerals.add(genName);
                             }
                         }
                     }
