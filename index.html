@@ -258,6 +258,108 @@
             color: var(--text-muted);
         }
 
+        /* Team Tag Field (A-1/A-2/A-3) */
+        .team-tag-field {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem;
+            position: relative;
+        }
+        .team-tag-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin-bottom: 0.4rem;
+            min-height: 1.2rem;
+        }
+        .team-tag-chips:empty::before {
+            content: 'チーム未所属';
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+        .team-tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--status-complete);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 0.2rem 0.5rem 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.82rem;
+        }
+        .team-tag-chip button {
+            background: none;
+            border: none;
+            color: var(--accent-green);
+            cursor: pointer;
+            font-size: 0.95rem;
+            line-height: 1;
+            padding: 0 0.1rem;
+        }
+        .team-tag-chip button:hover {
+            color: var(--accent-red);
+        }
+        .team-tag-input-row {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+        .team-tag-search {
+            flex: 1;
+            padding: 0.4rem 0.6rem !important;
+            background: var(--bg-secondary) !important;
+            font-size: 0.85rem !important;
+        }
+        .team-tag-new-btn {
+            padding: 0.4rem 0.8rem;
+            background: var(--accent-gold-dim);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
+        .team-tag-new-btn:hover {
+            background: var(--accent-gold);
+        }
+        .team-tag-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 2px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        .team-tag-dropdown-item {
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .team-tag-dropdown-item:last-child {
+            border-bottom: none;
+        }
+        .team-tag-dropdown-item:hover {
+            background: var(--bg-input);
+            color: var(--accent-gold);
+        }
+        .team-tag-dropdown-empty {
+            padding: 0.4rem 0.8rem;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            text-align: center;
+        }
+
         /* Checkbox & Radio Styles */
         .checkbox-group {
             display: flex;
@@ -1201,6 +1303,19 @@
                     </div>
                 </div>
                 <div class="form-row">
+                    <div class="form-group" style="flex: 1 1 100%;">
+                        <label>所属チーム（任意・複数可）</label>
+                        <div id="teamTagField" class="team-tag-field">
+                            <div id="teamTagChips" class="team-tag-chips"></div>
+                            <div class="team-tag-input-row">
+                                <input type="text" id="teamTagSearch" class="team-tag-search" placeholder="🔍 チーム名で検索..." oninput="onTeamTagSearchInput()" onfocus="onTeamTagSearchInput()" onblur="setTimeout(closeTeamTagDropdown, 150)">
+                                <button type="button" class="team-tag-new-btn" onclick="createNewTeamFromTag()">+ 新規作成</button>
+                            </div>
+                            <div id="teamTagDropdown" class="team-tag-dropdown" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>集結数上限</label>
                         <input type="number" id="rallyLimit" placeholder="集結数上限" min="0" onchange="updateProgress()">
@@ -2014,6 +2129,7 @@
         let cachedCustomGenerals = [];
         let cachedCustomGeneralsRaw = {};  // Keep raw object structure { subcategory: [names] }
         let cachedCustomItems = {};
+        let cachedTeams = {};  // teams keyed by team.id (for manage-screen team membership)
 
         // ========== Firebase Database Functions ==========
         
@@ -2269,13 +2385,76 @@
                 }
             });
 
-            const hasChanges = Object.keys(plan).length > 0 || (sharedBasicChanges.length > 0 && otherTeams.length > 0);
-            return { plan, sharedBasicChanges, otherTeams, hasChanges };
+            // Detect team-membership differences between current 軍団 and user's other 軍団
+            const teamMembershipInfo = buildTeamMembershipInfo(username, targetTeam, otherTeams);
+
+            const hasChanges = Object.keys(plan).length > 0
+                || (sharedBasicChanges.length > 0 && otherTeams.length > 0)
+                || teamMembershipInfo.hasChanges
+                || teamMembershipInfo.hasDifference;
+            return { plan, sharedBasicChanges, otherTeams, teamMembershipInfo, hasChanges };
+        }
+
+        // Build team-membership info: new vs old for current 軍団, plus comparison with other 軍団
+        function buildTeamMembershipInfo(username, targetTeam, otherTeams) {
+            const teamIdToName = (id) => cachedTeams[id]?.name || id;
+
+            // Current (pending) selection for target 軍団
+            const newIds = [...pendingTeamMembership];
+            // Old team memberships for target 軍団 (from cachedTeams)
+            const oldIds = getTeamsForUserArmy(username, targetTeam);
+            const newSet = new Set(newIds);
+            const oldSet = new Set(oldIds);
+            const added = newIds.filter(id => !oldSet.has(id)).map(teamIdToName);
+            const removed = oldIds.filter(id => !newSet.has(id)).map(teamIdToName);
+            const hasChanges = added.length > 0 || removed.length > 0;
+
+            // Compare with other 軍団
+            const otherArmies = [];
+            otherTeams.forEach(armyName => {
+                const ids = getTeamsForUserArmy(username, armyName);
+                const names = ids.map(teamIdToName).sort();
+                const newSortedNames = newIds.map(teamIdToName).sort();
+                const differs = JSON.stringify(names) !== JSON.stringify(newSortedNames);
+                otherArmies.push({ army: armyName, teamNames: names, differs });
+            });
+            const hasDifference = otherArmies.some(a => a.differs);
+
+            return {
+                newNames: newIds.map(teamIdToName),
+                oldNames: oldIds.map(teamIdToName),
+                added, removed,
+                otherArmies,
+                hasChanges,
+                hasDifference
+            };
         }
 
         // Format sync plan for dialog display
-        function formatSyncPlan(username, plan, sharedBasicChanges, otherTeams) {
+        function formatSyncPlan(username, plan, sharedBasicChanges, otherTeams, teamMembershipInfo) {
             let msg = `【${username}】以下の変更が他の軍団データに反映されます：\n\n`;
+
+            // Team membership section (informational)
+            if (teamMembershipInfo && (teamMembershipInfo.hasChanges || teamMembershipInfo.hasDifference)) {
+                msg += `■ 所属チーム（現在の軍団）：\n`;
+                msg += `  現在: ${teamMembershipInfo.newNames.length > 0 ? teamMembershipInfo.newNames.join(', ') : '(所属なし)'}\n`;
+                if (teamMembershipInfo.hasChanges) {
+                    if (teamMembershipInfo.added.length > 0) {
+                        msg += `  + 追加: ${teamMembershipInfo.added.join(', ')}\n`;
+                    }
+                    if (teamMembershipInfo.removed.length > 0) {
+                        msg += `  - 削除: ${teamMembershipInfo.removed.join(', ')}\n`;
+                    }
+                }
+                if (teamMembershipInfo.hasDifference) {
+                    msg += `  ※ 他軍団との違い:\n`;
+                    teamMembershipInfo.otherArmies.filter(a => a.differs).forEach(a => {
+                        const names = a.teamNames.length > 0 ? a.teamNames.join(', ') : '(所属なし)';
+                        msg += `    ・${a.army}: ${names}\n`;
+                    });
+                }
+                msg += '\n';
+            }
 
             // Shared basic field changes (apply to all other teams)
             if (sharedBasicChanges && sharedBasicChanges.length > 0 && otherTeams && otherTeams.length > 0) {
@@ -2305,6 +2484,7 @@
             msg += '番号を入力してください：\n';
             msg += `1 = ${username}の他軍団にも変更を反映する\n`;
             msg += '2 = 反映させずこの軍団のみ保存する\n';
+            msg += '（所属チームの変更は選択に関わらず適用されます）\n';
             msg += 'それ以外 = 保存を中止';
             return msg;
         }
@@ -2704,6 +2884,196 @@
                     renderAllCustomItems();
                 }
             });
+
+            // Listen for team changes (for team tagging UI)
+            onValue(ref(database, 'teams'), (snapshot) => {
+                cachedTeams = snapshot.exists() ? snapshot.val() : {};
+                renderTeamTagField();
+            });
+        }
+
+        // ========== Team Tag Field (A-1/A-2/A-3) ==========
+        // Currently-selected team IDs (in-memory, not yet synced to Firebase)
+        let pendingTeamMembership = [];  // array of team IDs
+
+        function parseMemberEntry(entry) {
+            if (typeof entry !== 'string' || !entry) return { username: '', team: null };
+            const idx = entry.indexOf('/');
+            if (idx < 0) return { username: entry, team: null };
+            return { username: entry.slice(0, idx), team: entry.slice(idx + 1) };
+        }
+
+        function formatMemberEntry(username, team) {
+            return team ? `${username}/${team}` : username;
+        }
+
+        // Return list of team IDs that include the given (username, teamName) tuple
+        function getTeamsForUserArmy(username, teamName) {
+            if (!username || !teamName) return [];
+            const result = [];
+            Object.values(cachedTeams).forEach(t => {
+                const members = t.members || [];
+                const found = members.some(e => {
+                    const p = parseMemberEntry(e);
+                    return p.username === username && (p.team === null || p.team === teamName);
+                });
+                if (found) result.push(t.id);
+            });
+            return result;
+        }
+
+        // Render the chips + dropdown for currently-selected teams
+        function renderTeamTagField() {
+            const chipsEl = document.getElementById('teamTagChips');
+            if (!chipsEl) return;
+            chipsEl.innerHTML = pendingTeamMembership.map(teamId => {
+                const team = cachedTeams[teamId];
+                if (!team) return '';
+                return `<span class="team-tag-chip">${escapeHtmlTag(team.name)}<button type="button" onclick="removeTeamTag('${teamId}')">✕</button></span>`;
+            }).join('');
+            // Refresh dropdown too (filters change when membership changes)
+            renderTeamTagDropdown();
+        }
+
+        function escapeHtmlTag(s) {
+            return String(s || '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
+        function onTeamTagSearchInput() {
+            renderTeamTagDropdown();
+        }
+
+        function renderTeamTagDropdown() {
+            const input = document.getElementById('teamTagSearch');
+            const dropdown = document.getElementById('teamTagDropdown');
+            if (!input || !dropdown) return;
+            // Only show dropdown if input has focus
+            if (document.activeElement !== input) return;
+
+            const q = (input.value || '').toLowerCase().trim();
+            const teamList = Object.values(cachedTeams);
+            const available = teamList.filter(t => {
+                if (pendingTeamMembership.includes(t.id)) return false;
+                if (q && !(t.name || '').toLowerCase().includes(q)) return false;
+                return true;
+            }).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+            dropdown.style.display = 'block';
+            if (available.length === 0) {
+                dropdown.innerHTML = `<div class="team-tag-dropdown-empty">${q ? '該当するチームがありません' : 'チームがありません'}</div>`;
+            } else {
+                dropdown.innerHTML = available.map(t => {
+                    const memberCount = (t.members || []).length;
+                    return `<div class="team-tag-dropdown-item" onmousedown="addTeamTag('${t.id}')">${escapeHtmlTag(t.name)} <span style="color: var(--text-muted); font-size: 0.78rem;">(${memberCount}件)</span></div>`;
+                }).join('');
+            }
+        }
+
+        function closeTeamTagDropdown() {
+            const dropdown = document.getElementById('teamTagDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+
+        function addTeamTag(teamId) {
+            if (!pendingTeamMembership.includes(teamId)) {
+                pendingTeamMembership.push(teamId);
+            }
+            const input = document.getElementById('teamTagSearch');
+            if (input) input.value = '';
+            renderTeamTagField();
+            // Keep focus on input
+            setTimeout(() => input?.focus(), 0);
+        }
+
+        function removeTeamTag(teamId) {
+            pendingTeamMembership = pendingTeamMembership.filter(id => id !== teamId);
+            renderTeamTagField();
+        }
+
+        async function createNewTeamFromTag() {
+            const name = prompt('新しいチーム名を入力してください:', '');
+            if (!name || !name.trim()) return;
+            const trimmed = name.trim();
+            // Check if team with same name already exists
+            const existing = Object.values(cachedTeams).find(t => t.name === trimmed);
+            if (existing) {
+                if (!pendingTeamMembership.includes(existing.id)) {
+                    pendingTeamMembership.push(existing.id);
+                    renderTeamTagField();
+                    showToast(`既存のチーム「${trimmed}」を追加しました`, 'success');
+                }
+                return;
+            }
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                const teamId = 'team_' + Date.now();
+                const teamData = {
+                    id: teamId,
+                    name: trimmed,
+                    members: [],
+                    createdAt: new Date().toISOString()
+                };
+                await set(ref(database, `teams/${teamId}`), teamData);
+                // Cache will update via onValue, but we can add optimistically
+                cachedTeams[teamId] = teamData;
+                pendingTeamMembership.push(teamId);
+                renderTeamTagField();
+                showToast(`チーム「${trimmed}」を作成しました`, 'success');
+            } catch (err) {
+                console.error('Team create error:', err);
+                showToast('チームの作成に失敗しました', 'error');
+            }
+        }
+
+        // Apply team membership changes to Firebase for the given (username, teamName)
+        // oldTeamIds: teams that previously included this entry
+        // newTeamIds: teams that should include this entry after save
+        async function applyTeamMembershipChanges(username, teamName, oldTeamIds, newTeamIds) {
+            const { database, ref, set } = window.firebaseDB;
+            const oldSet = new Set(oldTeamIds);
+            const newSet = new Set(newTeamIds);
+            const toAdd = [...newSet].filter(id => !oldSet.has(id));
+            const toRemove = [...oldSet].filter(id => !newSet.has(id));
+            const entry = formatMemberEntry(username, teamName);
+
+            for (const teamId of toAdd) {
+                const team = cachedTeams[teamId];
+                if (!team) continue;
+                let members = Array.isArray(team.members) ? [...team.members] : [];
+                // Skip if already covered by a plain 'username' entry
+                const coveredByPlain = members.includes(username);
+                const hasSpec = members.includes(entry);
+                if (!coveredByPlain && !hasSpec) {
+                    members.push(entry);
+                    await set(ref(database, `teams/${teamId}/members`), members);
+                    cachedTeams[teamId].members = members;
+                }
+            }
+
+            for (const teamId of toRemove) {
+                const team = cachedTeams[teamId];
+                if (!team) continue;
+                let members = Array.isArray(team.members) ? [...team.members] : [];
+                const hasSpec = members.includes(entry);
+                const hasPlain = members.includes(username);
+                if (hasSpec) {
+                    members = members.filter(e => e !== entry);
+                } else if (hasPlain) {
+                    // Expand plain to specific for other 軍団
+                    const userData = cachedGameData[username];
+                    const userTeams = userData ? (isOldFormatUserData(userData) ? ['1軍'] : Object.keys(userData)) : [teamName];
+                    const others = userTeams.filter(t => t !== teamName);
+                    members = members.filter(e => e !== username);
+                    others.forEach(t => {
+                        const newEntry = formatMemberEntry(username, t);
+                        if (!members.includes(newEntry)) members.push(newEntry);
+                    });
+                }
+                await set(ref(database, `teams/${teamId}/members`), members);
+                cachedTeams[teamId].members = members;
+            }
         }
 
 
@@ -3001,6 +3371,16 @@
 
             // Load game data
             cachedGameData = await getGameData();
+
+            // Load teams (for team tag field)
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const teamsSnap = await get(ref(database, 'teams'));
+                cachedTeams = teamsSnap.exists() ? teamsSnap.val() : {};
+                renderTeamTagField();
+            } catch (e) {
+                console.error('Failed to load teams:', e);
+            }
 
             // Check URL params for edit mode (from manage.html)
             const urlParams = new URLSearchParams(window.location.search);
@@ -3773,15 +4153,23 @@
             let syncPlan = null;
             let syncSharedBasic = null;
             let syncOtherTeams = null;
+            // Capture the team memberships that existed BEFORE save (so we can diff after)
+            const oldTeamMembershipIds = getTeamsForUserArmy(data.username, teamName);
             const userEntry = cachedGameData[data.username];
             const hasOtherTeams = userEntry && Object.keys(userEntry).length > 0 &&
                 (isOldFormatUserData(userEntry) ? '1軍' !== teamName : Object.keys(userEntry).some(t => t !== teamName));
+
+            // Also consider team membership changes alone (even without other 軍団)
+            const newTeamIdsSorted = [...pendingTeamMembership].sort();
+            const oldTeamIdsSorted = [...oldTeamMembershipIds].sort();
+            const teamMembershipChanged = JSON.stringify(newTeamIdsSorted) !== JSON.stringify(oldTeamIdsSorted);
+
             if (hasOtherTeams) {
                 // Treat no old target data as empty (all items 'none')
                 const oldForCompare = oldTargetData || {};
-                const { plan, sharedBasicChanges, otherTeams, hasChanges } = buildSyncPlan(data.username, teamName, oldForCompare, data);
+                const { plan, sharedBasicChanges, otherTeams, teamMembershipInfo, hasChanges } = buildSyncPlan(data.username, teamName, oldForCompare, data);
                 if (hasChanges) {
-                    const msg = formatSyncPlan(data.username, plan, sharedBasicChanges, otherTeams);
+                    const msg = formatSyncPlan(data.username, plan, sharedBasicChanges, otherTeams, teamMembershipInfo);
                     const choice = prompt(msg, '1');
                     if (choice === '1') {
                         syncPlan = plan;
@@ -3800,6 +4188,16 @@
             const success = await saveUserData(data.username, teamName, data);
 
             if (success) {
+                // Apply team membership changes (always, regardless of sync choice)
+                if (teamMembershipChanged) {
+                    try {
+                        await applyTeamMembershipChanges(data.username, teamName, oldTeamMembershipIds, pendingTeamMembership);
+                    } catch (err) {
+                        console.error('Team membership update error:', err);
+                        showToast('チーム所属の更新に失敗しました: ' + err.message, 'error');
+                    }
+                }
+
                 if (syncPlan !== null) {
                     try {
                         await applySyncPlan(data.username, syncPlan, syncSharedBasic, syncOtherTeams);
@@ -3881,6 +4279,10 @@
             // Basic info
             document.getElementById('username').value = '';
             document.getElementById('troopType').value = '';
+
+            // Clear team tag field
+            pendingTeamMembership = [];
+            renderTeamTagField();
 
             // Weapons
             ['akoni', 'inseki', 'hanya'].forEach(w => {
@@ -4034,6 +4436,12 @@
 
             // Team (default 1軍 if missing)
             setCurrentTeam(data.team || '1軍');
+
+            // Load team memberships for this (username, army) combination
+            if (data.username) {
+                pendingTeamMembership = getTeamsForUserArmy(data.username, data.team || '1軍');
+                renderTeamTagField();
+            }
 
             // Additional basic fields
             const setVal = (id, val) => {
