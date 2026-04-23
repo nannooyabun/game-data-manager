@@ -1176,6 +1176,9 @@
                             <option value="horse">馬</option>
                             <option value="infantry">歩</option>
                             <option value="bow">弓</option>
+                            <option value="horse_infantry">馬歩</option>
+                            <option value="horse_bow">馬弓</option>
+                            <option value="infantry_bow">歩弓</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -3716,7 +3719,7 @@
             }
 
             if (exists) {
-                const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓' };
+                const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓', 'horse_infantry': '馬歩', 'horse_bow': '馬弓', 'infantry_bow': '歩弓' };
                 const oldTroop = troopMap[oldTargetData?.troopType] || oldTargetData?.troopType || '未設定';
                 const newTroop = troopMap[data.troopType] || data.troopType || '未設定';
 

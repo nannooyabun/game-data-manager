@@ -1877,7 +1877,7 @@
             // Build body rows
             const bodyRows = entries.map(entry => {
                 const { username, team, data: user } = entry;
-                const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓' };
+                const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓', 'horse_infantry': '馬歩', 'horse_bow': '馬弓', 'infantry_bow': '歩弓' };
                 const troop = troopMap[user.troopType] || user.troopType || '-';
                 const dataCells = allCats.flatMap((cat, catIdx) => {
                     const isCollapsed = collapsedCategories.has(cat.key);
