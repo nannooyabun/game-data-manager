@@ -828,6 +828,7 @@
                         <thead>
                             <tr>
                                 <th>ユーザー名</th>
+                                <th>軍団</th>
                                 <th>兵種</th>
                                 <th>更新日時</th>
                                 <th>完成度</th>
@@ -835,7 +836,7 @@
                             </tr>
                         </thead>
                         <tbody id="dataTableBody">
-                            <tr><td colspan="5" class="empty-state">データを読み込んでいます...</td></tr>
+                            <tr><td colspan="6" class="empty-state">データを読み込んでいます...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1154,22 +1155,66 @@
             });
         }
 
+        // Detect if user data is in old format (no team layer)
+        function isOldFormatUserData(userData) {
+            if (!userData || typeof userData !== 'object') return false;
+            return 'weapons' in userData || 'generals' in userData || 'troopType' in userData
+                || 'username' in userData || 'timestamp' in userData;
+        }
+
+        function getUserTeams(userData) {
+            if (!userData) return [];
+            if (isOldFormatUserData(userData)) return ['1軍'];
+            return Object.keys(userData);
+        }
+
+        function getUserTeamData(userData, teamName) {
+            if (!userData) return null;
+            if (isOldFormatUserData(userData)) {
+                return teamName === '1軍' ? userData : null;
+            }
+            return userData[teamName] || null;
+        }
+
         // Refresh data table
         function refreshDataTable() {
             const tbody = document.getElementById('dataTableBody');
 
             if (!gameData || Object.keys(gameData).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">保存されたデータがありません</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">保存されたデータがありません</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = Object.entries(gameData).map(([name, data]) => {
+            const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓' };
+
+            // Flatten: each (user, team) becomes a row
+            const rows = [];
+            Object.entries(gameData).forEach(([name, userData]) => {
+                const teams = getUserTeams(userData);
+                teams.forEach(team => {
+                    const teamData = getUserTeamData(userData, team);
+                    if (teamData) rows.push({ name, team, data: teamData });
+                });
+            });
+
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">保存されたデータがありません</td></tr>';
+                return;
+            }
+
+            rows.sort((a, b) => {
+                if (a.name !== b.name) return a.name.localeCompare(b.name);
+                return a.team.localeCompare(b.team);
+            });
+
+            tbody.innerHTML = rows.map(({ name, team, data }) => {
                 const completion = calculateCompletion(data);
                 const date = data.timestamp ? new Date(data.timestamp).toLocaleString('ja-JP') : '-';
-                const troop = data.troopType || '-';
+                const troop = troopMap[data.troopType] || data.troopType || '-';
                 return `
                     <tr>
                         <td>${escapeHtml(name)}</td>
+                        <td>${escapeHtml(team)}</td>
                         <td>${escapeHtml(troop)}</td>
                         <td>${date}</td>
                         <td>
@@ -1179,8 +1224,8 @@
                             <span>${completion}%</span>
                         </td>
                         <td class="actions">
-                            <button class="btn-edit" onclick="editUser('${escapeHtml(name)}')">編集</button>
-                            <button class="btn-delete" onclick="confirmDeleteUser('${escapeHtml(name)}')">削除</button>
+                            <button class="btn-edit" onclick="editUser('${escapeHtml(name)}', '${escapeHtml(team)}')">編集</button>
+                            <button class="btn-delete" onclick="confirmDeleteUser('${escapeHtml(name)}', '${escapeHtml(team)}')">削除</button>
                         </td>
                     </tr>
                 `;
@@ -1221,23 +1266,42 @@
         }
 
         // Edit user - redirect to index.html with username
-        function editUser(username) {
-            window.location.href = `index.html?edit=${encodeURIComponent(username)}`;
+        function editUser(username, teamName) {
+            const params = new URLSearchParams();
+            params.set('edit', username);
+            if (teamName) params.set('team', teamName);
+            window.location.href = `index.html?${params.toString()}`;
         }
 
         // Confirm delete user
-        function confirmDeleteUser(username) {
-            if (confirm(`${username}のデータを削除しますか？`)) {
-                deleteUser(username);
+        function confirmDeleteUser(username, teamName) {
+            const label = teamName ? `${username}の${teamName}` : username;
+            if (confirm(`${label}のデータを削除しますか？`)) {
+                deleteUser(username, teamName);
             }
         }
 
         // Delete user
-        async function deleteUser(username) {
+        async function deleteUser(username, teamName) {
             try {
                 const { database, ref, remove } = window.firebaseDB;
-                await remove(ref(database, `gameData/${username}`));
-                showToast(`${username}のデータを削除しました`, 'success');
+                const userData = gameData[username];
+                if (!userData) return;
+
+                if (isOldFormatUserData(userData)) {
+                    // Old format: only 1軍 exists, delete whole user
+                    await remove(ref(database, `gameData/${username}`));
+                } else {
+                    const teams = Object.keys(userData);
+                    if (teamName && teams.length > 1) {
+                        // Delete just this team
+                        await remove(ref(database, `gameData/${username}/${teamName}`));
+                    } else {
+                        // Last team or no team specified: delete whole user
+                        await remove(ref(database, `gameData/${username}`));
+                    }
+                }
+                showToast(`${teamName ? `${username}の${teamName}` : username}のデータを削除しました`, 'success');
             } catch (error) {
                 console.error('Delete error:', error);
                 showToast('削除に失敗しました', 'error');
