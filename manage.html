@@ -1069,6 +1069,25 @@
             color: var(--accent-gold);
         }
 
+        .gen-cat-general-tag .gen-order-btns {
+            display: inline-flex;
+            gap: 1px;
+        }
+
+        .gen-cat-general-tag .order-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.55rem;
+            padding: 0 1px;
+            line-height: 1;
+        }
+
+        .gen-cat-general-tag .order-btn:hover {
+            color: var(--accent-gold);
+        }
+
         .gen-cat-card-body.drag-over {
             background: rgba(138, 112, 32, 0.15);
             border: 2px dashed var(--accent-gold);
@@ -1615,14 +1634,14 @@
             });
 
             // General category configs
-            onValue(ref(database, 'generalCategoriesIndex'), (snap) => {
+            onValue(ref(database, 'settings/generalCategoriesIndex'), (snap) => {
                 generalCategoriesIndex = snap.exists() ? snap.val() : null;
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderGenCatList('index');
                 }
             });
 
-            onValue(ref(database, 'generalCategoriesView'), (snap) => {
+            onValue(ref(database, 'settings/generalCategoriesView'), (snap) => {
                 generalCategoriesView = snap.exists() ? snap.val() : null;
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderGenCatList('view');
@@ -2360,7 +2379,7 @@
 
             const { database, ref, set } = window.firebaseDB;
             const config = configType === 'index' ? generalCategoriesIndex : generalCategoriesView;
-            const path = configType === 'index' ? 'generalCategoriesIndex' : 'generalCategoriesView';
+            const path = configType === 'index' ? 'settings/generalCategoriesIndex' : 'settings/generalCategoriesView';
 
             try {
                 await set(ref(database, path), config);
@@ -2433,10 +2452,14 @@
                             ondrop="onGeneralDrop(event, '${configType}', '${cat.id}')">
                             ${cat.generals.length === 0 ?
                                 '<span style="color: var(--text-muted); font-size: 0.8rem;">（武将なし - ドラッグでここに追加）</span>' :
-                                cat.generals.map(gen => `
+                                cat.generals.map((gen, genIdx) => `
                                     <div class="gen-cat-general-tag" draggable="true"
                                         ondragstart="onGeneralDragStart(event, '${configType}', '${cat.id}', '${escapeHtml(gen)}')"
                                         ondragend="onGeneralDragEnd(event)">
+                                        <span class="gen-order-btns">
+                                            ${genIdx > 0 ? `<button class="order-btn" onclick="event.stopPropagation(); moveGeneralOrder('${configType}', '${cat.id}', ${genIdx}, -1)">◀</button>` : ''}
+                                            ${genIdx < cat.generals.length - 1 ? `<button class="order-btn" onclick="event.stopPropagation(); moveGeneralOrder('${configType}', '${cat.id}', ${genIdx}, 1)">▶</button>` : ''}
+                                        </span>
                                         <span>${escapeHtml(gen)}</span>
                                         <button class="move-btn" onclick="showMoveModal('${configType}', '${cat.id}', '${escapeHtml(gen)}')">⇄</button>
                                     </div>
@@ -2560,7 +2583,7 @@
 
             if (!window.firebaseReady) return;
             const { database, ref, set } = window.firebaseDB;
-            const path = configType === 'index' ? 'generalCategoriesIndex' : 'generalCategoriesView';
+            const path = configType === 'index' ? 'settings/generalCategoriesIndex' : 'settings/generalCategoriesView';
 
             try {
                 await set(ref(database, path), null);
@@ -2635,6 +2658,29 @@
             renderGenCatList(configType);
         }
 
+        // Reorder general within a category
+        async function moveGeneralOrder(configType, catId, currentIndex, direction) {
+            const categories = getMergedCategories(configType);
+            const cat = categories.find(c => c.id === catId);
+            if (!cat || !cat.generals) return;
+
+            const newIndex = currentIndex + direction;
+            if (newIndex < 0 || newIndex >= cat.generals.length) return;
+
+            // Swap
+            [cat.generals[currentIndex], cat.generals[newIndex]] = [cat.generals[newIndex], cat.generals[currentIndex]];
+
+            const config = categoriesToConfig(categories);
+            if (configType === 'index') {
+                generalCategoriesIndex = config;
+            } else {
+                generalCategoriesView = config;
+            }
+
+            await saveCategoryConfig(configType);
+            renderGenCatList(configType);
+        }
+
         // Move modal for mobile/touch
         function showMoveModal(configType, fromCatId, generalName) {
             const categories = getMergedCategories(configType);
@@ -2673,8 +2719,8 @@
             try {
                 // Initial load
                 const [indexSnap, viewSnap] = await Promise.all([
-                    get(ref(database, 'generalCategoriesIndex')),
-                    get(ref(database, 'generalCategoriesView'))
+                    get(ref(database, 'settings/generalCategoriesIndex')),
+                    get(ref(database, 'settings/generalCategoriesView'))
                 ]);
 
                 generalCategoriesIndex = indexSnap.exists() ? indexSnap.val() : null;
@@ -2684,12 +2730,12 @@
                 renderGenCatList('view');
 
                 // Realtime updates
-                onValue(ref(database, 'generalCategoriesIndex'), (snap) => {
+                onValue(ref(database, 'settings/generalCategoriesIndex'), (snap) => {
                     generalCategoriesIndex = snap.exists() ? snap.val() : null;
                     renderGenCatList('index');
                 });
 
-                onValue(ref(database, 'generalCategoriesView'), (snap) => {
+                onValue(ref(database, 'settings/generalCategoriesView'), (snap) => {
                     generalCategoriesView = snap.exists() ? snap.val() : null;
                     renderGenCatList('view');
                 });
@@ -3277,10 +3323,10 @@
 
                         // Import general category configs
                         if (data.generalCategoriesIndex) {
-                            await set(ref(database, 'generalCategoriesIndex'), data.generalCategoriesIndex);
+                            await set(ref(database, 'settings/generalCategoriesIndex'), data.generalCategoriesIndex);
                         }
                         if (data.generalCategoriesView) {
-                            await set(ref(database, 'generalCategoriesView'), data.generalCategoriesView);
+                            await set(ref(database, 'settings/generalCategoriesView'), data.generalCategoriesView);
                         }
 
                         showToast('データをインポートしました', 'success');
