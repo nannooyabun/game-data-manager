@@ -1630,9 +1630,8 @@
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderCustomGenerals();
                     updateGeneralSubcategorySelect();
-                    // Also refresh category lists since they depend on custom generals
-                    renderGenCatList('index');
-                    renderGenCatList('view');
+                    // Also refresh category list since it depends on custom generals
+                    renderGenCatList('unified');
                 }
             });
 
@@ -1644,6 +1643,7 @@
                 generalCategoriesView = generalCategories;
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderGenCatList('unified');
+                    updateGeneralSubcategorySelect();  // Update dropdown when categories change
                 }
             });
 
@@ -2322,52 +2322,52 @@
 
         // ========== General Category Management ==========
 
-        // Get merged categories (default + custom + master data generals)
+        // Get merged categories (from config, master data, or defaults)
         function getMergedCategories(configType) {
             // Use unified config for all types
             const config = generalCategories;
 
-            // Get all generals (default + custom + master data)
+            // Get all custom generals
             const allCustomGenerals = customGenerals ? Object.values(customGenerals).flat() : [];
-            const masterGenerals = generalMasterData?.generals ? Object.keys(generalMasterData.generals) : [];
-            const allGenerals = new Set([...ALL_DEFAULT_GENERALS, ...allCustomGenerals, ...masterGenerals]);
 
             if (!config || !config.categories) {
-                // Build categories from default + master data
-                const categories = DEFAULT_GENERAL_CATEGORIES.map(cat => ({
-                    id: cat.title,
-                    title: cat.title,
-                    generals: [...cat.generals]
-                }));
+                // No saved config - build from master data or defaults
+                const categories = [];
+                const assignedGenerals = new Set();
 
-                // Track which generals are assigned to default categories
-                const assignedGenerals = new Set(ALL_DEFAULT_GENERALS);
-
-                // Add categories from master data
-                if (generalMasterData?.categories) {
+                // If master data exists (CSV was imported), use master data categories only
+                if (generalMasterData?.categories && Object.keys(generalMasterData.categories).length > 0) {
+                    // Build categories from master data
                     for (const catName of Object.keys(generalMasterData.categories)) {
-                        // Check if this category already exists
-                        if (!categories.find(c => c.title === catName)) {
-                            categories.push({
-                                id: 'master_' + catName,
-                                title: catName,
-                                generals: []
-                            });
-                        }
+                        categories.push({
+                            id: 'master_' + catName,
+                            title: catName,
+                            generals: []
+                        });
                     }
-                }
 
-                // Assign master data generals to their categories
-                if (generalMasterData?.generals) {
-                    for (const [genName, genData] of Object.entries(generalMasterData.generals)) {
-                        if (genData.category) {
-                            const cat = categories.find(c => c.title === genData.category);
-                            if (cat && !cat.generals.includes(genName)) {
-                                cat.generals.push(genName);
-                                assignedGenerals.add(genName);
+                    // Assign generals to their categories based on master data
+                    if (generalMasterData?.generals) {
+                        for (const [genName, genData] of Object.entries(generalMasterData.generals)) {
+                            if (genData.category) {
+                                const cat = categories.find(c => c.title === genData.category);
+                                if (cat && !cat.generals.includes(genName)) {
+                                    cat.generals.push(genName);
+                                    assignedGenerals.add(genName);
+                                }
                             }
                         }
                     }
+                } else {
+                    // No master data - use default categories
+                    DEFAULT_GENERAL_CATEGORIES.forEach(cat => {
+                        categories.push({
+                            id: cat.title,
+                            title: cat.title,
+                            generals: [...cat.generals]
+                        });
+                    });
+                    ALL_DEFAULT_GENERALS.forEach(g => assignedGenerals.add(g));
                 }
 
                 // Add unassigned generals (custom generals without category)
@@ -3682,6 +3682,7 @@
 
                     // Refresh UI
                     renderGenCatList('unified');
+                    updateGeneralSubcategorySelect();
 
                 } catch (error) {
                     console.error('CSV import error:', error);
