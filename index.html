@@ -587,6 +587,109 @@
             font-size: 0.8rem;
         }
 
+        /* ========== Unified Tap-Toggle UI (applies to all item cards) ========== */
+        /* Tri-state pattern: none → owned (青) → formed/equipped (緑) → none */
+        /* Apply to: .equipment-card, .sp-card, .flower-item, .tactic-card, .skill-item */
+        .equipment-card.tap-card,
+        .sp-card.tap-card,
+        .flower-item.tap-card,
+        .tactic-card.tap-card,
+        .skill-item.tap-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid var(--border-color);
+        }
+        .equipment-card.tap-card:hover,
+        .sp-card.tap-card:hover,
+        .flower-item.tap-card:hover,
+        .tactic-card.tap-card:hover,
+        .skill-item.tap-card:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        /* Owned state (青) */
+        .tap-card.state-owned {
+            border-color: var(--accent-blue) !important;
+            background: rgba(60, 140, 184, 0.12) !important;
+        }
+        .tap-card.state-owned .name,
+        .tap-card.state-owned > h4,
+        .tap-card.state-owned > label {
+            color: var(--accent-blue);
+        }
+
+        /* Formed/Equipped state (緑) */
+        .tap-card.state-formed {
+            border-color: var(--accent-green) !important;
+            background: rgba(60, 184, 120, 0.12) !important;
+        }
+        .tap-card.state-formed .name,
+        .tap-card.state-formed > h4,
+        .tap-card.state-formed > label {
+            color: var(--accent-green);
+        }
+
+        /* State badge (small label showing current state) */
+        .tap-state-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            margin-left: 0.4rem;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+        .tap-card.state-owned .tap-state-badge {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+        .tap-card.state-formed .tap-state-badge {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            border-color: var(--accent-green);
+        }
+
+        /* Tappable name area - stops click propagation issues with inputs */
+        .tap-card .tap-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0;
+        }
+
+        /* Inputs inside tap-cards should not trigger tap */
+        .tap-card input[type="number"],
+        .tap-card input[type="text"],
+        .tap-card select {
+            cursor: auto;
+        }
+
+        /* Equipment card with tap UI: 2-column layout (no status column) */
+        .equipment-card.tap-card .equipment-row {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        /* Asura skill-item highlight when checked (click anywhere on row) */
+        .skill-item.asura-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid var(--border-color);
+        }
+        .skill-item.asura-item:hover {
+            border-color: var(--accent-gold-dim);
+        }
+        .skill-item.asura-item.checked {
+            border-color: var(--accent-green);
+            background: rgba(60, 184, 120, 0.12);
+        }
+        .skill-item.asura-item.checked label {
+            color: var(--accent-green);
+        }
+
         /* Submit Button */
         .submit-section {
             text-align: center;
@@ -1180,17 +1283,18 @@
                     <button class="bulk-btn" onclick="bulkSelectWeapons('clear')">クリア</button>
                 </div>
 
-                <div class="equipment-card">
-                    <h4>赤鬼</h4>
+                <p style="color: var(--accent-gold); font-size: 0.8rem; margin-bottom: 0.8rem;">
+                    💡 兵器名をタップで状態切替: 1回目=所持 / 2回目=装備中 / 3回目=未所持
+                </p>
+
+                <div class="equipment-card tap-card" data-state="0" data-formed-label="装備中">
+                    <h4 class="tap-header" onclick="toggleTapState(this.closest('.tap-card'))">赤鬼<span class="tap-state-badge">未所持</span></h4>
                     <div class="equipment-row">
-                        <div class="form-group">
-                            <label>状態</label>
-                            <select id="akoniStatus" onchange="updateProgress()">
-                                <option value="">未所持</option>
-                                <option value="owned">所持</option>
-                                <option value="equipped">装備中</option>
-                            </select>
-                        </div>
+                        <select id="akoniStatus" data-role="status" onchange="updateProgress()" style="display:none;">
+                            <option value="">未所持</option>
+                            <option value="owned">所持</option>
+                            <option value="equipped">装備中</option>
+                        </select>
                         <div class="form-group">
                             <label>昇級レベル</label>
                             <input type="number" id="akoniUpgrade" min="0" placeholder="0" onchange="updateProgress()">
@@ -1202,17 +1306,14 @@
                     </div>
                 </div>
 
-                <div class="equipment-card">
-                    <h4>隕石</h4>
+                <div class="equipment-card tap-card" data-state="0" data-formed-label="装備中">
+                    <h4 class="tap-header" onclick="toggleTapState(this.closest('.tap-card'))">隕石<span class="tap-state-badge">未所持</span></h4>
                     <div class="equipment-row">
-                        <div class="form-group">
-                            <label>状態</label>
-                            <select id="insekiStatus" onchange="updateProgress()">
-                                <option value="">未所持</option>
-                                <option value="owned">所持</option>
-                                <option value="equipped">装備中</option>
-                            </select>
-                        </div>
+                        <select id="insekiStatus" data-role="status" onchange="updateProgress()" style="display:none;">
+                            <option value="">未所持</option>
+                            <option value="owned">所持</option>
+                            <option value="equipped">装備中</option>
+                        </select>
                         <div class="form-group">
                             <label>昇級レベル</label>
                             <input type="number" id="insekiUpgrade" min="0" placeholder="0" onchange="updateProgress()">
@@ -1224,17 +1325,14 @@
                     </div>
                 </div>
 
-                <div class="equipment-card">
-                    <h4>般若</h4>
+                <div class="equipment-card tap-card" data-state="0" data-formed-label="装備中">
+                    <h4 class="tap-header" onclick="toggleTapState(this.closest('.tap-card'))">般若<span class="tap-state-badge">未所持</span></h4>
                     <div class="equipment-row">
-                        <div class="form-group">
-                            <label>状態</label>
-                            <select id="hanyaStatus" onchange="updateProgress()">
-                                <option value="">未所持</option>
-                                <option value="owned">所持</option>
-                                <option value="equipped">装備中</option>
-                            </select>
-                        </div>
+                        <select id="hanyaStatus" data-role="status" onchange="updateProgress()" style="display:none;">
+                            <option value="">未所持</option>
+                            <option value="owned">所持</option>
+                            <option value="equipped">装備中</option>
+                        </select>
                         <div class="form-group">
                             <label>昇級レベル</label>
                             <input type="number" id="hanyaUpgrade" min="0" placeholder="0" onchange="updateProgress()">
@@ -1268,22 +1366,15 @@
                     <span class="count" id="totalFormationCount">0<span>人</span></span>
                 </div>
 
-                <div class="sp-card">
-                    <h4>SP織田信長</h4>
+                <p style="color: var(--accent-gold); font-size: 0.8rem; margin-bottom: 0.8rem;">
+                    💡 SP武将名をタップで状態切替: 1回目=所持 / 2回目=編成済 / 3回目=未所持
+                </p>
+
+                <div class="sp-card tap-card" data-state="0">
+                    <h4 class="tap-header" onclick="toggleTapState(this.closest('.tap-card')); updateFormationCount();">SP織田信長<span class="tap-state-badge">未所持</span></h4>
+                    <input type="checkbox" id="nobunagaFormed" data-role="formed" style="display:none;" onchange="updateProgress(); updateFormationCount();">
+                    <input type="checkbox" id="nobunagaOwned" data-role="owned" style="display:none;" onchange="updateProgress()">
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>状態</label>
-                            <div class="checkbox-group">
-                                <div class="checkbox-item">
-                                    <input type="checkbox" id="nobunagaFormed" onchange="updateProgress()">
-                                    <label for="nobunagaFormed">編成済</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="checkbox" id="nobunagaOwned" onchange="updateProgress()">
-                                    <label for="nobunagaOwned">所持</label>
-                                </div>
-                            </div>
-                        </div>
                         <div class="form-group">
                             <label>足跡レベル</label>
                             <input type="text" id="nobunagaFootprint" placeholder="レベルを入力" onchange="updateProgress()">
@@ -1295,22 +1386,11 @@
                     </div>
                 </div>
 
-                <div class="sp-card">
-                    <h4>SP豊臣秀吉</h4>
+                <div class="sp-card tap-card" data-state="0">
+                    <h4 class="tap-header" onclick="toggleTapState(this.closest('.tap-card')); updateFormationCount();">SP豊臣秀吉<span class="tap-state-badge">未所持</span></h4>
+                    <input type="checkbox" id="hideyoshiFormed" data-role="formed" style="display:none;" onchange="updateProgress(); updateFormationCount();">
+                    <input type="checkbox" id="hideyoshiOwned" data-role="owned" style="display:none;" onchange="updateProgress()">
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>状態</label>
-                            <div class="checkbox-group">
-                                <div class="checkbox-item">
-                                    <input type="checkbox" id="hideyoshiFormed" onchange="updateProgress()">
-                                    <label for="hideyoshiFormed">編成済</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="checkbox" id="hideyoshiOwned" onchange="updateProgress()">
-                                    <label for="hideyoshiOwned">所持</label>
-                                </div>
-                            </div>
-                        </div>
                         <div class="form-group">
                             <label>足跡レベル</label>
                             <input type="text" id="hideyoshiFootprint" placeholder="レベルを入力" onchange="updateProgress()">
@@ -1322,22 +1402,11 @@
                     </div>
                 </div>
 
-                <div class="sp-card">
-                    <h4>SP徳川家康</h4>
+                <div class="sp-card tap-card" data-state="0">
+                    <h4 class="tap-header" onclick="toggleTapState(this.closest('.tap-card')); updateFormationCount();">SP徳川家康<span class="tap-state-badge">未所持</span></h4>
+                    <input type="checkbox" id="ieyasuFormed" data-role="formed" style="display:none;" onchange="updateProgress(); updateFormationCount();">
+                    <input type="checkbox" id="ieyasuOwned" data-role="owned" style="display:none;" onchange="updateProgress()">
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>状態</label>
-                            <div class="checkbox-group">
-                                <div class="checkbox-item">
-                                    <input type="checkbox" id="ieyasuFormed" onchange="updateProgress()">
-                                    <label for="ieyasuFormed">編成済</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="checkbox" id="ieyasuOwned" onchange="updateProgress()">
-                                    <label for="ieyasuOwned">所持</label>
-                                </div>
-                            </div>
-                        </div>
                         <div class="form-group">
                             <label>足跡レベル</label>
                             <input type="text" id="ieyasuFootprint" placeholder="レベルを入力" onchange="updateProgress()">
@@ -1434,103 +1503,16 @@
 
                 <div class="equipment-card">
                     <h4>極伝兵法</h4>
+                    <p style="color: var(--accent-gold); font-size: 0.8rem; margin-bottom: 0.8rem;">
+                        💡 名前をタップで状態切替: 1回目=所持 / 2回目=装備 / 3回目=未所持
+                    </p>
                     <!-- Bulk Select -->
                     <div class="bulk-select-bar" style="margin-bottom: 0.8rem;">
                         <button class="bulk-btn" onclick="bulkSelectAcademy('owned')">全て所持ON</button>
                         <button class="bulk-btn" onclick="bulkSelectAcademy('clear')">クリア</button>
                     </div>
                     <div class="flower-grid" id="academyGrid">
-                        <div class="flower-item">
-                            <div class="name">紅葉</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenMomiji_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenMomiji_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">盤石</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenBanseki_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenBanseki_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">獅子の洞入り</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenShishi_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenShishi_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">天狗抄</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenTengu_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenTengu_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">攻撃</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenAttack_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenAttack_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">防御</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenDefense_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenDefense_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">連撃</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenCombo_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenCombo_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">抵抗</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenResist_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenResist_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">楯突</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenShield_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenShield_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">貫通</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenPierce_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenPierce_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">回避</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenEvade_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenEvade_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">命中</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenAccuracy_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenAccuracy_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div class="name">障壁</div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="gokudenBarrier_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="gokudenBarrier_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
+                        <!-- Will be populated by JS (initAcademyGrid) -->
                     </div>
                 </div>
             </div>
@@ -1665,61 +1647,11 @@
                         <button class="bulk-btn" onclick="bulkSelectMasks('owned')">全て所持ON</button>
                         <button class="bulk-btn" onclick="bulkSelectMasks('clear')">クリア</button>
                     </div>
+                    <p style="color: var(--accent-gold); font-size: 0.8rem; margin-bottom: 0.8rem;">
+                        💡 名前をタップで状態切替: 1回目=所持 / 2回目=装備 / 3回目=未所持
+                    </p>
                     <div class="flower-grid" id="masksGrid">
-                        <div class="flower-item">
-                            <div>
-                                <div class="name">玄狐神使</div>
-                            </div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="mask_genko_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="mask_genko_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div>
-                                <div class="name">金麒麟</div>
-                            </div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="mask_kirin_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="mask_kirin_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div>
-                                <div class="name">霊棘</div>
-                            </div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="mask_reikyo_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="mask_reikyo_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div>
-                                <div class="name">金猿</div>
-                            </div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="mask_kinen_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="mask_kinen_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div>
-                                <div class="name">般若</div>
-                            </div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="mask_hanya_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="mask_hanya_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
-                        <div class="flower-item">
-                            <div>
-                                <div class="name">鬼王</div>
-                            </div>
-                            <div class="checkboxes">
-                                <label><input type="checkbox" id="mask_kiou_equipped" onchange="updateProgress()"> 装備</label>
-                                <label><input type="checkbox" id="mask_kiou_owned" onchange="updateProgress()"> 所持</label>
-                            </div>
-                        </div>
+                        <!-- Will be populated by JS (initMasksGrid) -->
                     </div>
                 </div>
 
@@ -2259,7 +2191,7 @@
 
         // Format sync plan for dialog display
         function formatSyncPlan(username, plan) {
-            let msg = `【${username}】以下のデータが他軍団に同期されます：\n\n`;
+            let msg = `【${username}】以下の所持状況が他の軍団データに反映されます：\n\n`;
             Object.entries(plan).forEach(([team, changes]) => {
                 msg += `■ ${team} への変更：\n`;
                 // Group by category
@@ -2276,7 +2208,10 @@
                 });
                 msg += '\n';
             });
-            msg += '[OK] 同期して保存する  [キャンセル] 保存を中止';
+            msg += '番号を入力してください：\n';
+            msg += `1 = ${username}の他軍団にも所持状況を反映する\n`;
+            msg += '2 = 所持状況は反映させず保存する\n';
+            msg += 'それ以外 = 保存を中止';
             return msg;
         }
 
@@ -2722,22 +2657,11 @@
             }
 
             container.innerHTML = items.map(item => `
-                <div class="sp-card">
-                    <h4>${item.name}${item.subcategory && item.subcategory !== '_default' ? ` <small style="color: var(--text-muted);">(${item.subcategory})</small>` : ''}</h4>
+                <div class="sp-card tap-card" data-state="0">
+                    <h4 class="tap-header" onclick="toggleTapState(this.closest('.tap-card')); updateFormationCount();">${item.name}${item.subcategory && item.subcategory !== '_default' ? ` <small style="color: var(--text-muted);">(${item.subcategory})</small>` : ''}<span class="tap-state-badge">未所持</span></h4>
+                    <input type="checkbox" id="${safeId(item.name)}_formed" data-role="formed" style="display:none;" onchange="updateProgress(); updateFormationCount();">
+                    <input type="checkbox" id="${safeId(item.name)}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>状態</label>
-                            <div class="checkbox-group">
-                                <div class="checkbox-item">
-                                    <input type="checkbox" id="${safeId(item.name)}_formed" onchange="updateProgress(); updateFormationCount();">
-                                    <label for="${safeId(item.name)}_formed">編成済</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()">
-                                    <label for="${safeId(item.name)}_owned">所持</label>
-                                </div>
-                            </div>
-                        </div>
                         <div class="form-group">
                             <label>足跡レベル</label>
                             <input type="text" id="${safeId(item.name)}_footprint" placeholder="レベルを入力" onchange="updateProgress()">
@@ -2749,6 +2673,7 @@
                     </div>
                 </div>
             `).join('');
+            refreshAllTapCardStates();
         }
 
         // Render custom academy items (極伝兵法) - append into existing academyGrid
@@ -2762,15 +2687,16 @@
             if (items.length === 0) return;
 
             const html = items.map(item => `
-                <div class="flower-item" data-custom="1">
-                    <div class="name">${item.name}${item.subcategory ? ` <small style="color: var(--text-muted); font-size: 0.7rem;">(${item.subcategory})</small>` : ''}</div>
-                    <div class="checkboxes">
-                        <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
-                        <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
+                <div class="flower-item tap-card" data-custom="1" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+                    <div class="tap-header" style="flex:1; display:block;">
+                        <div class="name">${item.name}${item.subcategory ? ` <small style="color: var(--text-muted); font-size: 0.7rem;">(${item.subcategory})</small>` : ''}<span class="tap-state-badge">未所持</span></div>
                     </div>
+                    <input type="checkbox" id="${safeId(item.name)}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                    <input type="checkbox" id="${safeId(item.name)}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                 </div>
             `).join('');
             grid.insertAdjacentHTML('beforeend', html);
+            refreshAllTapCardStates();
         }
 
         // Render custom weapons
@@ -2785,17 +2711,14 @@
             }
 
             container.innerHTML = items.map(item => `
-                <div class="equipment-card">
-                    <h4>${item.name}${item.subcategory ? ` <small style="color: var(--text-muted);">(${item.subcategory})</small>` : ''}</h4>
+                <div class="equipment-card tap-card" data-state="0" data-formed-label="装備中">
+                    <h4 class="tap-header" onclick="toggleTapState(this.closest('.tap-card'))">${item.name}${item.subcategory ? ` <small style="color: var(--text-muted);">(${item.subcategory})</small>` : ''}<span class="tap-state-badge">未所持</span></h4>
                     <div class="equipment-row">
-                        <div class="form-group">
-                            <label>状態</label>
-                            <select id="${safeId(item.name)}_status" onchange="updateProgress()">
-                                <option value="">未所持</option>
-                                <option value="owned">所持</option>
-                                <option value="equipped">装備中</option>
-                            </select>
-                        </div>
+                        <select id="${safeId(item.name)}_status" data-role="status" onchange="updateProgress()" style="display:none;">
+                            <option value="">未所持</option>
+                            <option value="owned">所持</option>
+                            <option value="equipped">装備中</option>
+                        </select>
                         <div class="form-group">
                             <label>昇級レベル</label>
                             <input type="number" id="${safeId(item.name)}_upgrade" min="0" placeholder="0" onchange="updateProgress()">
@@ -2807,6 +2730,7 @@
                     </div>
                 </div>
             `).join('');
+            refreshAllTapCardStates();
         }
 
         // Render custom masks (核心具足) - append into existing masksGrid
@@ -2823,18 +2747,17 @@
             if (items.length === 0) return;
 
             const html = items.map(item => `
-                <div class="flower-item" data-custom="1">
-                    <div>
-                        <div class="name">${item.name}</div>
+                <div class="flower-item tap-card" data-custom="1" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name')||event.target.closest('.effect'))toggleTapState(this)">
+                    <div class="tap-header" style="flex:1; display:block;">
+                        <div class="name">${item.name}<span class="tap-state-badge">未所持</span></div>
                         ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
                     </div>
-                    <div class="checkboxes">
-                        <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
-                        <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
-                    </div>
+                    <input type="checkbox" id="${safeId(item.name)}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                    <input type="checkbox" id="${safeId(item.name)}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                 </div>
             `).join('');
             grid.insertAdjacentHTML('beforeend', html);
+            refreshAllTapCardStates();
         }
 
         // Render custom flowers (花陣) - append into existing flowerGrid
@@ -2851,18 +2774,17 @@
             if (items.length === 0) return;
 
             const html = items.map(item => `
-                <div class="flower-item" data-custom="1">
-                    <div>
-                        <div class="name">${item.name}</div>
+                <div class="flower-item tap-card" data-custom="1" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name')||event.target.closest('.effect'))toggleTapState(this)">
+                    <div class="tap-header" style="flex:1; display:block;">
+                        <div class="name">${item.name}<span class="tap-state-badge">未所持</span></div>
                         ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
                     </div>
-                    <div class="checkboxes">
-                        <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
-                        <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
-                    </div>
+                    <input type="checkbox" id="${safeId(item.name)}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                    <input type="checkbox" id="${safeId(item.name)}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                 </div>
             `).join('');
             grid.insertAdjacentHTML('beforeend', html);
+            refreshAllTapCardStates();
         }
 
         // Render custom tactics (戦法)
@@ -2881,20 +2803,19 @@
                     <h4>カスタム戦法</h4>
                     <div class="flower-grid">
                         ${items.map(item => `
-                            <div class="flower-item">
-                                <div>
-                                    <div class="name">${item.name}</div>
+                            <div class="flower-item tap-card" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name')||event.target.closest('.effect'))toggleTapState(this)">
+                                <div class="tap-header" style="flex:1; display:block;">
+                                    <div class="name">${item.name}<span class="tap-state-badge">未所持</span></div>
                                     ${item.subcategory ? `<div class="effect" style="font-size: 0.7rem;">${item.subcategory}</div>` : ''}
                                 </div>
-                                <div class="checkboxes">
-                                    <label><input type="checkbox" id="${safeId(item.name)}_equipped" onchange="updateProgress()"> 装備</label>
-                                    <label><input type="checkbox" id="${safeId(item.name)}_owned" onchange="updateProgress()"> 所持</label>
-                                </div>
+                                <input type="checkbox" id="${safeId(item.name)}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                                <input type="checkbox" id="${safeId(item.name)}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                             </div>
                         `).join('')}
                     </div>
                 </div>
             `;
+            refreshAllTapCardStates();
         }
 
         // Render custom asura skills (阿修羅) - inject into matching level skill grid
@@ -2969,7 +2890,10 @@
 
         async function initializeGameApp() {
             initFlowerGrid();
+            initAcademyGrid();
+            initMasksGrid();
             initTacticSection();
+            initAsuraTapTargets();
 
             // Load custom generals first
             cachedCustomGenerals = await getCustomGenerals();
@@ -3033,6 +2957,9 @@
             // Setup auto-save for form inputs
             setupAutoSave();
 
+            // Refresh all tap-card states from hidden checkbox/select inputs
+            refreshAllTapCardStates();
+
             if (!loadedFromUrl) {
                 showToast('データを同期しました', 'success');
             }
@@ -3050,31 +2977,89 @@
         // Initialize flower grid
         function initFlowerGrid() {
             const grid = document.getElementById('flowerGrid');
+            if (!grid) return;
             grid.innerHTML = flowerFormations.map(f => `
-                <div class="flower-item">
-                    <div>
-                        <div class="name">${f.name}</div>
+                <div class="flower-item tap-card" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name')||event.target.closest('.effect'))toggleTapState(this)">
+                    <div class="tap-header" style="flex: 1; display: block;">
+                        <div class="name">${f.name}<span class="tap-state-badge">未所持</span></div>
                         <div class="effect">${f.effect}</div>
                     </div>
-                    <div class="checkboxes">
-                        <label><input type="checkbox" id="flower_${f.id}_equipped" onchange="updateProgress()"> 装備</label>
-                        <label><input type="checkbox" id="flower_${f.id}_owned" onchange="updateProgress()"> 所持</label>
+                    <input type="checkbox" id="flower_${f.id}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                    <input type="checkbox" id="flower_${f.id}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
+                </div>
+            `).join('');
+        }
+
+        // Academy heiho (極伝兵法) - tap-card style
+        const academyHeihoItems = [
+            { id: 'Momiji', name: '紅葉' },
+            { id: 'Banseki', name: '盤石' },
+            { id: 'Shishi', name: '獅子の洞入り' },
+            { id: 'Tengu', name: '天狗抄' },
+            { id: 'Attack', name: '攻撃' },
+            { id: 'Defense', name: '防御' },
+            { id: 'Combo', name: '連撃' },
+            { id: 'Resist', name: '抵抗' },
+            { id: 'Shield', name: '楯突' },
+            { id: 'Pierce', name: '貫通' },
+            { id: 'Evade', name: '回避' },
+            { id: 'Accuracy', name: '命中' },
+            { id: 'Barrier', name: '障壁' }
+        ];
+
+        function initAcademyGrid() {
+            const grid = document.getElementById('academyGrid');
+            if (!grid) return;
+            grid.innerHTML = academyHeihoItems.map(h => `
+                <div class="flower-item tap-card" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+                    <div class="tap-header" style="flex: 1; display: block;">
+                        <div class="name">${h.name}<span class="tap-state-badge">未所持</span></div>
                     </div>
+                    <input type="checkbox" id="gokuden${h.id}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                    <input type="checkbox" id="gokuden${h.id}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
+                </div>
+            `).join('');
+        }
+
+        // Masks (核心具足) - tap-card style
+        const masksItems = [
+            { id: 'genko', name: '玄狐神使' },
+            { id: 'kirin', name: '金麒麟' },
+            { id: 'reikyo', name: '霊棘' },
+            { id: 'kinen', name: '金猿' },
+            { id: 'hanya', name: '般若' },
+            { id: 'kiou', name: '鬼王' }
+        ];
+
+        function initMasksGrid() {
+            const grid = document.getElementById('masksGrid');
+            if (!grid) return;
+            grid.innerHTML = masksItems.map(m => `
+                <div class="flower-item tap-card" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+                    <div class="tap-header" style="flex: 1; display: block;">
+                        <div class="name">${m.name}<span class="tap-state-badge">未所持</span></div>
+                    </div>
+                    <input type="checkbox" id="mask_${m.id}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                    <input type="checkbox" id="mask_${m.id}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                 </div>
             `).join('');
         }
 
         function initTacticSection() {
             const content = document.getElementById('tacticContent');
+            if (!content) return;
             const bulkSelectHtml = `
                 <div class="bulk-select-bar">
                     <button class="bulk-btn" onclick="bulkSelectTactics('owned')">全て所持ON</button>
                     <button class="bulk-btn" onclick="bulkSelectTactics('clear')">クリア</button>
                 </div>
+                <p style="color: var(--accent-gold); font-size: 0.8rem; margin-bottom: 0.8rem;">
+                    💡 戦法名をタップで状態切替: 1回目=所持 / 2回目=装備 / 3回目=未所持
+                </p>
             `;
             const tacticsHtml = tactics.map(t => `
-                <div class="tactic-card">
-                    <div class="name">${t.name}</div>
+                <div class="tactic-card tap-card" data-state="0" data-formed-label="装備">
+                    <div class="tap-header name" onclick="toggleTapState(this.closest('.tap-card'))">${t.name}<span class="tap-state-badge">未所持</span></div>
                     <div class="form-group">
                         <label>レベル</label>
                         <input type="number" id="tactic_${t.id}_level" value="80" min="1" onchange="updateProgress()">
@@ -3088,17 +3073,11 @@
                             <option value="3">3</option>
                         </select>
                     </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="tactic_${t.id}_equipped" onchange="updateProgress()">
-                        <label>装備</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="tactic_${t.id}_owned" onchange="updateProgress()">
-                        <label>所持</label>
-                    </div>
+                    <input type="checkbox" id="tactic_${t.id}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                    <input type="checkbox" id="tactic_${t.id}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                 </div>
             `).join('');
-            content.innerHTML = bulkSelectHtml + tacticsHtml;
+            content.innerHTML = bulkSelectHtml + tacticsHtml + `<div id="customTacticsContainer"></div>`;
         }
 
         // Initialize general grid with categories
@@ -3221,6 +3200,100 @@
         // Legacy function for compatibility
         function toggleGeneralFormed(index) {
             toggleGeneralState(index);
+        }
+
+        // ========== Generic Tap-Toggle (tri-state cycle) ==========
+        // Cycles through: none → owned → formed → none
+        // Updates hidden inputs and CSS classes, syncs with legacy checkbox inputs.
+        function toggleTapState(card) {
+            if (!card) return;
+            let state = parseInt(card.dataset.state || '0');
+            state = (state + 1) % 3;
+            setTapState(card, state);
+            updateProgress();
+        }
+
+        function setTapState(card, state) {
+            if (!card) return;
+            card.dataset.state = String(state);
+            card.classList.remove('state-owned', 'state-formed');
+            if (state === 1) card.classList.add('state-owned');
+            else if (state === 2) card.classList.add('state-formed');
+
+            // Sync to legacy checkbox/select inputs if present
+            const ownedCb = card.querySelector('input[type="checkbox"][data-role="owned"]');
+            const formedCb = card.querySelector('input[type="checkbox"][data-role="formed"]');
+            const equippedCb = card.querySelector('input[type="checkbox"][data-role="equipped"]');
+            const statusSelect = card.querySelector('select[data-role="status"]');
+
+            if (ownedCb) ownedCb.checked = state >= 1;
+            if (formedCb) formedCb.checked = state === 2;
+            if (equippedCb) equippedCb.checked = state === 2;
+            if (statusSelect) {
+                statusSelect.value = state === 0 ? '' : (state === 1 ? 'owned' : 'equipped');
+            }
+
+            // Update state badge text
+            const badge = card.querySelector('.tap-state-badge');
+            if (badge) {
+                badge.textContent = state === 0 ? '未所持' : (state === 1 ? '所持' : (card.dataset.formedLabel || '編成'));
+            }
+        }
+
+        // Asura item toggle (radio-like: checked/unchecked with highlight)
+        function updateAsuraItemHighlight(el) {
+            const checkbox = el.querySelector('input[type="checkbox"]');
+            if (!checkbox) return;
+            el.classList.toggle('checked', checkbox.checked);
+        }
+
+        // Refresh all asura item highlights (call after bulk state changes)
+        function refreshAllAsuraHighlights() {
+            document.querySelectorAll('.skill-item.asura-item').forEach(updateAsuraItemHighlight);
+        }
+
+        // Initialize asura skill items: add .asura-item class and click handler
+        function initAsuraTapTargets() {
+            document.querySelectorAll('#asuraSection .skill-item').forEach(el => {
+                el.classList.add('asura-item');
+                // Only attach handler once
+                if (el.dataset.tapInit === '1') return;
+                el.dataset.tapInit = '1';
+                el.addEventListener('click', (e) => {
+                    // Ignore clicks on the checkbox itself (native behavior) and label (which toggles checkbox)
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
+                    const cb = el.querySelector('input[type="checkbox"]');
+                    if (!cb) return;
+                    cb.checked = !cb.checked;
+                    cb.dispatchEvent(new Event('change'));
+                    updateAsuraItemHighlight(el);
+                });
+                // After change event (from any source), update highlight
+                const cb = el.querySelector('input[type="checkbox"]');
+                if (cb) {
+                    cb.addEventListener('change', () => updateAsuraItemHighlight(el));
+                }
+            });
+            refreshAllAsuraHighlights();
+        }
+
+        // Refresh all tap-card states from existing checkbox/select inputs (for load)
+        function refreshAllTapCardStates() {
+            document.querySelectorAll('.tap-card').forEach(card => {
+                let state = 0;
+                const ownedCb = card.querySelector('input[type="checkbox"][data-role="owned"]');
+                const formedCb = card.querySelector('input[type="checkbox"][data-role="formed"]');
+                const equippedCb = card.querySelector('input[type="checkbox"][data-role="equipped"]');
+                const statusSelect = card.querySelector('select[data-role="status"]');
+                if (statusSelect) {
+                    const v = statusSelect.value;
+                    state = v === 'equipped' ? 2 : (v === 'owned' ? 1 : 0);
+                } else if (formedCb && formedCb.checked) state = 2;
+                else if (equippedCb && equippedCb.checked) state = 2;
+                else if (ownedCb && ownedCb.checked) state = 1;
+                setTapState(card, state);
+            });
+            refreshAllAsuraHighlights();
         }
 
         // Toggle section collapse
@@ -3601,12 +3674,16 @@
                 const { plan, hasChanges } = buildSyncPlan(data.username, teamName, oldForCompare, data);
                 if (hasChanges) {
                     const msg = formatSyncPlan(data.username, plan);
-                    const confirmed = confirm(msg);
-                    if (!confirmed) {
+                    const choice = prompt(msg, '1');
+                    if (choice === '1') {
+                        syncPlan = plan;
+                    } else if (choice === '2') {
+                        // Save without syncing
+                        syncPlan = null;
+                    } else {
                         showToast('保存を中止しました', 'error');
                         return;
                     }
-                    syncPlan = plan;
                 }
             }
 
@@ -3780,6 +3857,7 @@
             updateProgress();
             updateSummary();
             updateFormationCount();
+            refreshAllTapCardStates();
         }
 
         // Check and restore draft on page load
@@ -4096,6 +4174,7 @@
             updateProgress();
             updateSummary();
             updateFormationCount();
+            refreshAllTapCardStates();
         }
 
         // Clear form
@@ -4137,6 +4216,7 @@
             updateProgress();
             updateSummary();
             updateFormationCount();
+            refreshAllTapCardStates();
         }
 
 
@@ -4309,6 +4389,7 @@
             });
             updateProgress();
             updateSummary();
+            refreshAllTapCardStates();
         }
 
         function bulkSelectGenerals(category, action) {
@@ -4372,6 +4453,7 @@
             });
             updateProgress();
             updateSummary();
+            refreshAllTapCardStates();
         }
 
         function bulkSelectMasks(action) {
@@ -4397,6 +4479,7 @@
             });
             updateProgress();
             updateSummary();
+            refreshAllTapCardStates();
         }
 
         function bulkSelectFlowers(action) {
@@ -4421,6 +4504,7 @@
             });
             updateProgress();
             updateSummary();
+            refreshAllTapCardStates();
         }
 
         function bulkSelectTactics(action) {
@@ -4445,6 +4529,7 @@
             });
             updateProgress();
             updateSummary();
+            refreshAllTapCardStates();
         }
 
         // ========== Floating Navigation ==========
