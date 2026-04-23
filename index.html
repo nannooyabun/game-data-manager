@@ -2276,7 +2276,10 @@
                 });
                 msg += '\n';
             });
-            msg += '[OK] 同期して保存する  [キャンセル] 保存を中止';
+            msg += '番号を入力してください：\n';
+            msg += '1 = 同期して保存する\n';
+            msg += '2 = 同期せずに保存する（この軍団のみ）\n';
+            msg += 'それ以外 = 保存を中止';
             return msg;
         }
 
@@ -3601,12 +3604,16 @@
                 const { plan, hasChanges } = buildSyncPlan(data.username, teamName, oldForCompare, data);
                 if (hasChanges) {
                     const msg = formatSyncPlan(data.username, plan);
-                    const confirmed = confirm(msg);
-                    if (!confirmed) {
+                    const choice = prompt(msg, '1');
+                    if (choice === '1') {
+                        syncPlan = plan;
+                    } else if (choice === '2') {
+                        // Save without syncing
+                        syncPlan = null;
+                    } else {
                         showToast('保存を中止しました', 'error');
                         return;
                     }
-                    syncPlan = plan;
                 }
             }
 
