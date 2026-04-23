@@ -3011,14 +3011,16 @@
             const grid = document.getElementById('academyGrid');
             if (!grid) return;
             grid.innerHTML = academyHeihoItems.map(h => `
-                <div class="flower-item tap-card" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+                <div class="flower-item tap-card" data-state="1" data-two-state="1" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
                     <div class="tap-header" style="flex: 1; display: block;">
-                        <div class="name">${h.name}<span class="tap-state-badge">未所持</span></div>
+                        <div class="name">${h.name}<span class="tap-state-badge">所持</span></div>
                     </div>
                     <input type="checkbox" id="gokuden${h.id}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
-                    <input type="checkbox" id="gokuden${h.id}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
+                    <input type="checkbox" id="gokuden${h.id}_owned" data-role="owned" style="display:none;" checked onchange="updateProgress()">
                 </div>
             `).join('');
+            // Apply initial state classes
+            grid.querySelectorAll('.tap-card').forEach(card => setTapState(card, 1));
         }
 
         // Masks (核心具足) - tap-card style
@@ -3058,8 +3060,8 @@
                 </p>
             `;
             const tacticsHtml = tactics.map(t => `
-                <div class="tactic-card tap-card" data-state="0" data-formed-label="装備">
-                    <div class="tap-header name" onclick="toggleTapState(this.closest('.tap-card'))">${t.name}<span class="tap-state-badge">未所持</span></div>
+                <div class="tactic-card tap-card" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+                    <div class="tap-header name">${t.name}<span class="tap-state-badge">未所持</span></div>
                     <div class="form-group">
                         <label>レベル</label>
                         <input type="number" id="tactic_${t.id}_level" value="80" min="1" onchange="updateProgress()">
@@ -3208,7 +3210,12 @@
         function toggleTapState(card) {
             if (!card) return;
             let state = parseInt(card.dataset.state || '0');
-            state = (state + 1) % 3;
+            // Check for 2-state mode (only cycles between 1 and 2)
+            if (card.dataset.twoState === '1') {
+                state = state === 1 ? 2 : 1;
+            } else {
+                state = (state + 1) % 3;
+            }
             setTapState(card, state);
             updateProgress();
         }
@@ -3291,6 +3298,8 @@
                 } else if (formedCb && formedCb.checked) state = 2;
                 else if (equippedCb && equippedCb.checked) state = 2;
                 else if (ownedCb && ownedCb.checked) state = 1;
+                // For 2-state cards, minimum state is 1 (never show 未所持)
+                if (card.dataset.twoState === '1' && state === 0) state = 1;
                 setTapState(card, state);
             });
             refreshAllAsuraHighlights();
@@ -4237,6 +4246,8 @@
             grid.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                 if (cb.id !== selfId) cb.checked = false;
             });
+            // Refresh highlights for all asura items after unchecking
+            refreshAllAsuraHighlights();
         }
 
         function onCustomAsuraChange(gridId, selfId) {
