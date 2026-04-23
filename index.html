@@ -2259,7 +2259,7 @@
 
         // Format sync plan for dialog display
         function formatSyncPlan(username, plan) {
-            let msg = `【${username}】以下のデータが他軍団に同期されます：\n\n`;
+            let msg = `【${username}】以下の所持状況が他の軍団データに反映されます：\n\n`;
             Object.entries(plan).forEach(([team, changes]) => {
                 msg += `■ ${team} への変更：\n`;
                 // Group by category
@@ -2277,8 +2277,8 @@
                 msg += '\n';
             });
             msg += '番号を入力してください：\n';
-            msg += '1 = 同期して保存する\n';
-            msg += '2 = 同期せずに保存する（この軍団のみ）\n';
+            msg += `1 = ${username}の他軍団にも所持状況を反映する\n`;
+            msg += '2 = 所持状況は反映させず保存する\n';
             msg += 'それ以外 = 保存を中止';
             return msg;
         }
