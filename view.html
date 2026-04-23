@@ -190,6 +190,11 @@
             z-index: 2;
         }
 
+        .sticky-col-3 {
+            left: 220px;
+            z-index: 2;
+        }
+
         /* Top-left corner cells (both sticky) */
         .view-table thead tr th.sticky-col {
             z-index: 4;
@@ -222,6 +227,7 @@
 
         /* First user column width */
         .col-username { min-width: 140px; }
+        .col-team { min-width: 80px; }
         .col-troop { min-width: 80px; }
 
         /* Category border enhancement - thicker border at category boundaries */
@@ -972,6 +978,46 @@
             return (team.members || []).filter(u => gameData[u]).sort();
         }
 
+        // Detect if user data is in old format (no team layer)
+        function isOldFormatUserData(userData) {
+            if (!userData || typeof userData !== 'object') return false;
+            return 'weapons' in userData || 'generals' in userData || 'troopType' in userData
+                || 'username' in userData || 'timestamp' in userData;
+        }
+
+        // Get list of team names for a user
+        function getUserTeams(userData) {
+            if (!userData) return [];
+            if (isOldFormatUserData(userData)) return ['1軍'];
+            return Object.keys(userData);
+        }
+
+        // Get team-specific data
+        function getUserTeamData(userData, teamName) {
+            if (!userData) return null;
+            if (isOldFormatUserData(userData)) {
+                return teamName === '1軍' ? userData : null;
+            }
+            return userData[teamName] || null;
+        }
+
+        // Get visible entries as [{username, team, data}]
+        function getVisibleEntries() {
+            const usernames = getVisibleUsernames();
+            const entries = [];
+            usernames.forEach(username => {
+                const userData = gameData[username];
+                const teamNames = getUserTeams(userData);
+                teamNames.forEach(team => {
+                    const teamData = getUserTeamData(userData, team);
+                    if (teamData) {
+                        entries.push({ username, team, data: teamData });
+                    }
+                });
+            });
+            return entries;
+        }
+
         // Category definitions for table columns
         // Each category: { key, title, colorClass, items: [{ id, name }], getCellState(userData, itemId) }
         const weaponItems = [
@@ -1348,13 +1394,15 @@
         }
 
         // Toggle cell state between equipped ⇄ owned
-        async function toggleCellState(username, catKey, itemId, itemData) {
+        async function toggleCellState(username, teamName, catKey, itemId, isCustomFlag, itemName) {
             if (!window.firebaseReady) {
                 showToast('Firebase未接続', 'error');
                 return;
             }
 
-            const user = gameData[username];
+            const userRaw = gameData[username];
+            if (!userRaw) return;
+            const user = getUserTeamData(userRaw, teamName);
             if (!user) return;
 
             const { database, ref, set, update } = window.firebaseDB;
@@ -1362,11 +1410,18 @@
             // Save scroll position before update
             saveScrollPosition();
 
+            // Determine base path based on data format
+            const isOldFormat = isOldFormatUserData(userRaw);
+            const basePath = isOldFormat
+                ? `gameData/${username}`
+                : `gameData/${username}/${teamName}`;
+
             try {
                 let path, updateData, stateText;
 
                 // Check if this is a custom item (merged into base category)
-                const isCustom = itemData?.isCustom === true;
+                const isCustom = isCustomFlag === '1' || isCustomFlag === true;
+                const itemData = { isCustom, name: itemName || itemId };
 
                 // Handle different category types
                 if (catKey === 'weapon') {
@@ -1374,14 +1429,14 @@
                         const w = user.customItems?.weapons?.[itemId];
                         if (!w?.status || w.status === '') return;
                         const newStatus = w.status === 'equipped' ? 'owned' : 'equipped';
-                        path = `gameData/${username}/customItems/weapons/${itemId}/status`;
+                        path = `${basePath}/customItems/weapons/${itemId}/status`;
                         await set(ref(database, path), newStatus);
                         stateText = newStatus === 'equipped' ? '装備中' : '所持のみ';
                     } else {
                         const current = user.weapons?.[itemId]?.status;
                         if (!current || current === '') return;
                         const newStatus = current === 'equipped' ? 'owned' : 'equipped';
-                        path = `gameData/${username}/weapons/${itemId}/status`;
+                        path = `${basePath}/weapons/${itemId}/status`;
                         await set(ref(database, path), newStatus);
                         stateText = newStatus === 'equipped' ? '装備中' : '所持のみ';
                     }
@@ -1391,14 +1446,14 @@
                         const sp = user.customItems?.spGenerals?.[itemId];
                         if (!sp?.owned && !sp?.formed) return;
                         const newFormed = !sp.formed;
-                        path = `gameData/${username}/customItems/spGenerals/${itemId}`;
+                        path = `${basePath}/customItems/spGenerals/${itemId}`;
                         await update(ref(database, path), { formed: newFormed, owned: true });
                         stateText = newFormed ? '装備中' : '所持のみ';
                     } else {
                         const sp = user.spGenerals?.[itemId];
                         if (!sp?.owned && !sp?.formed) return;
                         const newFormed = !sp.formed;
-                        path = `gameData/${username}/spGenerals/${itemId}`;
+                        path = `${basePath}/spGenerals/${itemId}`;
                         await update(ref(database, path), { formed: newFormed, owned: true });
                         stateText = newFormed ? '装備中' : '所持のみ';
                     }
@@ -1407,7 +1462,7 @@
                     const g = user.generals?.[itemId];
                     if (!g?.owned && !g?.formed) return;
                     const newFormed = !g.formed;
-                    path = `gameData/${username}/generals/${itemId}`;
+                    path = `${basePath}/generals/${itemId}`;
                     await update(ref(database, path), { formed: newFormed, owned: true });
                     stateText = newFormed ? '装備中' : '所持のみ';
                 }
@@ -1416,14 +1471,14 @@
                         const a = user.customItems?.academy?.[itemId];
                         if (!a?.owned && !a?.equipped) return;
                         const newEquipped = !a.equipped;
-                        path = `gameData/${username}/customItems/academy/${itemId}`;
+                        path = `${basePath}/customItems/academy/${itemId}`;
                         await update(ref(database, path), { equipped: newEquipped, owned: true });
                         stateText = newEquipped ? '装備中' : '所持のみ';
                     } else {
                         const h = user.academy?.heiho?.[itemId];
                         if (!h?.owned && !h?.equipped) return;
                         const newEquipped = !h.equipped;
-                        path = `gameData/${username}/academy/heiho/${itemId}`;
+                        path = `${basePath}/academy/heiho/${itemId}`;
                         await update(ref(database, path), { equipped: newEquipped, owned: true });
                         stateText = newEquipped ? '装備中' : '所持のみ';
                     }
@@ -1434,7 +1489,7 @@
                         const itemName = itemData?.name || itemId;
                         const a = user.customItems?.asura?.[itemName];
                         const newChecked = !(a?.checked);
-                        path = `gameData/${username}/customItems/asura/${itemName}/checked`;
+                        path = `${basePath}/customItems/asura/${itemName}/checked`;
                         await set(ref(database, path), newChecked);
                         stateText = newChecked ? '選択' : '解除';
                     } else {
@@ -1462,7 +1517,7 @@
                             }
                         }
 
-                        path = `gameData/${username}/asura/${groupKey}`;
+                        path = `${basePath}/asura/${groupKey}`;
                         await set(ref(database, path), newSkills);
                         stateText = !currentlySelected ? '選択' : '解除';
                     }
@@ -1472,14 +1527,14 @@
                         const m = user.customItems?.masks?.[itemId];
                         if (!m?.owned && !m?.equipped) return;
                         const newEquipped = !m.equipped;
-                        path = `gameData/${username}/customItems/masks/${itemId}`;
+                        path = `${basePath}/customItems/masks/${itemId}`;
                         await update(ref(database, path), { equipped: newEquipped, owned: true });
                         stateText = newEquipped ? '装備中' : '所持のみ';
                     } else {
                         const m = user.armor?.masks?.[itemId];
                         if (!m?.owned && !m?.equipped) return;
                         const newEquipped = !m.equipped;
-                        path = `gameData/${username}/armor/masks/${itemId}`;
+                        path = `${basePath}/armor/masks/${itemId}`;
                         await update(ref(database, path), { equipped: newEquipped, owned: true });
                         stateText = newEquipped ? '装備中' : '所持のみ';
                     }
@@ -1489,14 +1544,14 @@
                         const f = user.customItems?.flowers?.[itemId];
                         if (!f?.owned && !f?.equipped) return;
                         const newEquipped = !f.equipped;
-                        path = `gameData/${username}/customItems/flowers/${itemId}`;
+                        path = `${basePath}/customItems/flowers/${itemId}`;
                         await update(ref(database, path), { equipped: newEquipped, owned: true });
                         stateText = newEquipped ? '装備中' : '所持のみ';
                     } else {
                         const f = user.flowers?.[itemId];
                         if (!f?.owned && !f?.equipped) return;
                         const newEquipped = !f.equipped;
-                        path = `gameData/${username}/flowers/${itemId}`;
+                        path = `${basePath}/flowers/${itemId}`;
                         await update(ref(database, path), { equipped: newEquipped, owned: true });
                         stateText = newEquipped ? '装備中' : '所持のみ';
                     }
@@ -1506,14 +1561,14 @@
                         const t = user.customItems?.tactics?.[itemId];
                         if (!t?.owned && !t?.equipped) return;
                         const newEquipped = !t.equipped;
-                        path = `gameData/${username}/customItems/tactics/${itemId}`;
+                        path = `${basePath}/customItems/tactics/${itemId}`;
                         await update(ref(database, path), { equipped: newEquipped, owned: true });
                         stateText = newEquipped ? '装備中' : '所持のみ';
                     } else {
                         const t = user.tactics?.[itemId];
                         if (!t?.owned && !t?.equipped) return;
                         const newEquipped = !t.equipped;
-                        path = `gameData/${username}/tactics/${itemId}`;
+                        path = `${basePath}/tactics/${itemId}`;
                         await update(ref(database, path), { equipped: newEquipped, owned: true });
                         stateText = newEquipped ? '装備中' : '所持のみ';
                     }
@@ -1523,7 +1578,7 @@
                     const a = user.customItems?.academy?.[itemId];
                     if (!a?.owned && !a?.equipped) return;
                     const newEquipped = !a.equipped;
-                    path = `gameData/${username}/customItems/academy/${itemId}`;
+                    path = `${basePath}/customItems/academy/${itemId}`;
                     await update(ref(database, path), { equipped: newEquipped, owned: true });
                     stateText = newEquipped ? '装備中' : '所持のみ';
                 }
@@ -1531,7 +1586,7 @@
                     const w = user.customItems?.weapons?.[itemId];
                     if (!w?.status || w.status === '') return;
                     const newStatus = w.status === 'equipped' ? 'owned' : 'equipped';
-                    path = `gameData/${username}/customItems/weapons/${itemId}/status`;
+                    path = `${basePath}/customItems/weapons/${itemId}/status`;
                     await set(ref(database, path), newStatus);
                     stateText = newStatus === 'equipped' ? '装備中' : '所持のみ';
                 }
@@ -1539,7 +1594,7 @@
                     const m = user.customItems?.masks?.[itemId];
                     if (!m?.owned && !m?.equipped) return;
                     const newEquipped = !m.equipped;
-                    path = `gameData/${username}/customItems/masks/${itemId}`;
+                    path = `${basePath}/customItems/masks/${itemId}`;
                     await update(ref(database, path), { equipped: newEquipped, owned: true });
                     stateText = newEquipped ? '装備中' : '所持のみ';
                 }
@@ -1547,7 +1602,7 @@
                     const f = user.customItems?.flowers?.[itemId];
                     if (!f?.owned && !f?.equipped) return;
                     const newEquipped = !f.equipped;
-                    path = `gameData/${username}/customItems/flowers/${itemId}`;
+                    path = `${basePath}/customItems/flowers/${itemId}`;
                     await update(ref(database, path), { equipped: newEquipped, owned: true });
                     stateText = newEquipped ? '装備中' : '所持のみ';
                 }
@@ -1555,14 +1610,14 @@
                     const t = user.customItems?.tactics?.[itemId];
                     if (!t?.owned && !t?.equipped) return;
                     const newEquipped = !t.equipped;
-                    path = `gameData/${username}/customItems/tactics/${itemId}`;
+                    path = `${basePath}/customItems/tactics/${itemId}`;
                     await update(ref(database, path), { equipped: newEquipped, owned: true });
                     stateText = newEquipped ? '装備中' : '所持のみ';
                 }
                 else if (catKey === 'custom_asura') {
                     const a = user.customItems?.asura?.[itemId];
                     const newChecked = !(a?.checked);
-                    path = `gameData/${username}/customItems/asura/${itemId}/checked`;
+                    path = `${basePath}/customItems/asura/${itemId}/checked`;
                     await set(ref(database, path), newChecked);
                     stateText = newChecked ? '選択' : '解除';
                 }
@@ -1581,8 +1636,8 @@
 
         function renderTable() {
             const main = document.getElementById('mainContent');
-            const usernames = getVisibleUsernames();
-            if (usernames.length === 0) {
+            const entries = getVisibleEntries();
+            if (entries.length === 0) {
                 main.innerHTML = '<div class="loading">表示対象のユーザーがいません</div>';
                 return;
             }
@@ -1622,9 +1677,10 @@
             }).join('');
 
             // Build body rows
-            const bodyRows = usernames.map(username => {
-                const user = gameData[username] || {};
-                const troop = user.troopType || '-';
+            const bodyRows = entries.map(entry => {
+                const { username, team, data: user } = entry;
+                const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓' };
+                const troop = troopMap[user.troopType] || user.troopType || '-';
                 const dataCells = allCats.flatMap((cat, catIdx) => {
                     const isCollapsed = collapsedCategories.has(cat.key);
                     if (isCollapsed) {
@@ -1643,9 +1699,10 @@
                         const isClickable = cat.key === 'asura' || (state === 'equipped' || state === 'owned');
                         const clickClass = isClickable ? ' cell-clickable' : '';
                         const itemIdStr = item.id || item.name || '';
-                        const itemDataStr = JSON.stringify({ isCustom: !!item.isCustom, name: item.name || '' }).replace(/'/g, "\\'");
+                        const itemNameStr = item.name || '';
+                        const isCustomStr = item.isCustom ? '1' : '0';
                         const clickHandler = isClickable
-                            ? ` onclick="toggleCellState('${escapeHtml(username)}', '${cat.key}', '${escapeHtml(itemIdStr)}', ${itemDataStr})"`
+                            ? ` onclick="toggleCellState('${escapeHtml(username)}', '${escapeHtml(team)}', '${cat.key}', '${escapeHtml(itemIdStr)}', '${isCustomStr}', '${escapeHtml(itemNameStr)}')"`
                             : '';
                         return `<td class="${cat.colorClass}${borderClass}${clickClass}"${clickHandler}>${stateSymbol(state)}</td>`;
                     });
@@ -1653,7 +1710,8 @@
                 return `
                     <tr>
                         <td class="sticky-col col-username">${escapeHtml(username)}</td>
-                        <td class="sticky-col sticky-col-2 col-troop">${escapeHtml(troop)}</td>
+                        <td class="sticky-col sticky-col-2 col-team">${escapeHtml(team)}</td>
+                        <td class="sticky-col sticky-col-3 col-troop">${escapeHtml(troop)}</td>
                         ${dataCells}
                     </tr>
                 `;
@@ -1669,7 +1727,8 @@
                         <thead>
                             <tr>
                                 <th class="sticky-col col-username" rowspan="2">ユーザー</th>
-                                <th class="sticky-col sticky-col-2 col-troop" rowspan="2">兵種</th>
+                                <th class="sticky-col sticky-col-2 col-team" rowspan="2">軍団</th>
+                                <th class="sticky-col sticky-col-3 col-troop" rowspan="2">兵種</th>
                                 ${catRowCells}
                             </tr>
                             <tr>
@@ -2026,7 +2085,14 @@
                 return;
             }
 
-            const usersData = selectedUsers.map(name => ({ name, data: gameData[name] }));
+            // For comparison, use the primary team (1軍 if available, else first team)
+            const usersData = selectedUsers.map(name => {
+                const raw = gameData[name];
+                const teams = getUserTeams(raw);
+                const primaryTeam = teams.includes('1軍') ? '1軍' : teams[0];
+                const data = getUserTeamData(raw, primaryTeam);
+                return { name: primaryTeam ? `${name} (${primaryTeam})` : name, data };
+            });
             const equippableItems = getEquippableItems();
 
             const equipped = [];
