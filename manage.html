@@ -1388,6 +1388,24 @@
                 </div>
             </div>
 
+            <!-- General Master Data Section -->
+            <div class="section-card" id="generalMasterDataSection">
+                <h3>📊 武将マスターデータ管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    CSVファイルから武将のカテゴリ、集結上限人数、補足事項をインポートできます。<br>
+                    既存のユーザーデータ（所持・編成状況）には影響しません。
+                </p>
+                <div class="action-row" style="gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="action-btn primary" onclick="exportGeneralMasterCSV()">📤 CSVエクスポート</button>
+                    <button class="action-btn success" onclick="importGeneralMasterCSV()">📥 CSVインポート</button>
+                    <button class="action-btn secondary" onclick="viewGeneralMasterData()" style="background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color);">👁 現在のデータを確認</button>
+                </div>
+                <div id="generalMasterPreview" style="margin-top: 1rem; display: none;">
+                    <h4 style="color: var(--accent-gold); margin-bottom: 0.5rem; font-size: 0.95rem;">現在のマスターデータ</h4>
+                    <div id="generalMasterPreviewContent" style="max-height: 300px; overflow-y: auto; background: var(--bg-input); border-radius: 6px; padding: 0.8rem; font-size: 0.85rem;"></div>
+                </div>
+            </div>
+
             <!-- Data Export/Import Section -->
             <div class="section-card">
                 <h3>💾 データエクスポート/インポート</h3>
@@ -1654,6 +1672,11 @@
                     renderCustomItems();
                     updateCategorySelect();
                 }
+            });
+
+            // General master data
+            onValue(ref(database, 'settings/generalMasterData'), (snap) => {
+                generalMasterData = snap.exists() ? snap.val() : null;
             });
         }
 
@@ -3338,6 +3361,367 @@
                 reader.readAsText(file);
             };
             input.click();
+        }
+
+        // ========== General Master Data CSV Import/Export ==========
+
+        let generalMasterData = null;  // { generals: { name: { rallyLimit, notes, category, categoryNotes }}, categories: { name: { notes }}}
+
+        // Load general master data from Firebase
+        async function loadGeneralMasterData() {
+            if (!window.firebaseReady) return;
+            const { database, ref, get } = window.firebaseDB;
+            try {
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                generalMasterData = snap.exists() ? snap.val() : null;
+            } catch (error) {
+                console.error('Failed to load general master data:', error);
+            }
+        }
+
+        // Subscribe to general master data changes
+        function subscribeGeneralMasterData() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+            onValue(ref(database, 'settings/generalMasterData'), (snap) => {
+                generalMasterData = snap.exists() ? snap.val() : null;
+            });
+        }
+
+        // Export general master data to CSV
+        function exportGeneralMasterCSV() {
+            const categories = getMergedCategories('index');
+            const masterData = generalMasterData || { generals: {}, categories: {} };
+
+            // Build CSV rows
+            const rows = [['index用No.', '武将名', '武将-上限人数', '武将-補足事項', '小カテゴリ名', '小カテゴリ-補足事項']];
+
+            let idx = 1;
+            for (const cat of categories) {
+                if (cat.id === '_unassigned') continue;  // Skip unassigned
+
+                const categoryNotes = masterData.categories?.[cat.title]?.notes || '';
+
+                for (const genName of cat.generals) {
+                    const genData = masterData.generals?.[genName] || {};
+                    rows.push([
+                        idx,
+                        genName,
+                        genData.rallyLimit || '',
+                        genData.notes || '',
+                        cat.title,
+                        categoryNotes
+                    ]);
+                    idx++;
+                }
+            }
+
+            // Add unassigned generals (empty category = 編成対象外)
+            const unassigned = categories.find(c => c.id === '_unassigned');
+            if (unassigned && unassigned.generals.length > 0) {
+                for (const genName of unassigned.generals) {
+                    const genData = masterData.generals?.[genName] || {};
+                    rows.push([
+                        idx,
+                        genName,
+                        genData.rallyLimit || '',
+                        genData.notes || '',
+                        '',  // Empty category = hidden
+                        ''
+                    ]);
+                    idx++;
+                }
+            }
+
+            // Convert to CSV string with BOM for Excel compatibility
+            const csvContent = '﻿' + rows.map(row =>
+                row.map(cell => {
+                    const str = String(cell);
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return '"' + str.replace(/"/g, '""') + '"';
+                    }
+                    return str;
+                }).join(',')
+            ).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `busyo_master_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('CSVをエクスポートしました', 'success');
+        }
+
+        // Parse CSV content (handles quoted fields and different encodings)
+        function parseCSV(text) {
+            const rows = [];
+            let currentRow = [];
+            let currentField = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (inQuotes) {
+                    if (char === '"') {
+                        if (nextChar === '"') {
+                            currentField += '"';
+                            i++;
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        currentField += char;
+                    }
+                } else {
+                    if (char === '"') {
+                        inQuotes = true;
+                    } else if (char === ',') {
+                        currentRow.push(currentField.trim());
+                        currentField = '';
+                    } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+                        currentRow.push(currentField.trim());
+                        if (currentRow.length > 0 && currentRow.some(f => f !== '')) {
+                            rows.push(currentRow);
+                        }
+                        currentRow = [];
+                        currentField = '';
+                        if (char === '\r') i++;
+                    } else if (char !== '\r') {
+                        currentField += char;
+                    }
+                }
+            }
+
+            // Handle last field/row
+            if (currentField || currentRow.length > 0) {
+                currentRow.push(currentField.trim());
+                if (currentRow.some(f => f !== '')) {
+                    rows.push(currentRow);
+                }
+            }
+
+            return rows;
+        }
+
+        // Detect and decode text encoding (UTF-8 with BOM, UTF-8, or try Shift-JIS indicators)
+        function decodeCSVText(arrayBuffer) {
+            const bytes = new Uint8Array(arrayBuffer);
+
+            // Check for UTF-8 BOM
+            if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+                return new TextDecoder('utf-8').decode(bytes.slice(3));
+            }
+
+            // Try UTF-8 first
+            try {
+                const utf8Text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+                // If it decodes successfully and looks like Japanese text, use it
+                if (/[぀-ゟ゠-ヿ一-龯]/.test(utf8Text)) {
+                    return utf8Text;
+                }
+            } catch (e) {
+                // UTF-8 decoding failed, try Shift-JIS
+            }
+
+            // Try Shift-JIS (using TextDecoder if available)
+            try {
+                return new TextDecoder('shift-jis').decode(bytes);
+            } catch (e) {
+                // Fallback to UTF-8 without fatal option
+                return new TextDecoder('utf-8').decode(bytes);
+            }
+        }
+
+        // Import general master data from CSV
+        function importGeneralMasterCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const text = decodeCSVText(arrayBuffer);
+                    const rows = parseCSV(text);
+
+                    if (rows.length < 2) {
+                        showToast('CSVファイルにデータがありません', 'error');
+                        return;
+                    }
+
+                    // Parse header to find column indices
+                    const header = rows[0].map(h => h.toLowerCase().replace(/[\s\-_]/g, ''));
+                    const nameCol = header.findIndex(h => h.includes('武将名') || h === '武将名');
+                    const rallyCol = header.findIndex(h => h.includes('上限人数') || h.includes('上限'));
+                    const notesCol = header.findIndex(h => h.includes('武将') && h.includes('補足'));
+                    const catCol = header.findIndex(h => h.includes('カテゴリ名') || h.includes('小カテゴリ'));
+                    const catNotesCol = header.findIndex(h => h.includes('カテゴリ') && h.includes('補足') && !h.includes('武将'));
+
+                    // Fallback to fixed positions if headers not found
+                    const col = {
+                        name: nameCol >= 0 ? nameCol : 1,
+                        rally: rallyCol >= 0 ? rallyCol : 2,
+                        notes: notesCol >= 0 ? notesCol : 3,
+                        category: catCol >= 0 ? catCol : 4,
+                        catNotes: catNotesCol >= 0 ? catNotesCol : 5
+                    };
+
+                    // Parse data rows
+                    const generals = {};
+                    const categories = {};
+                    const categoryOrder = [];
+                    const categoryGenerals = {};  // categoryName -> [generalNames]
+
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        const name = row[col.name] || '';
+                        if (!name) continue;
+
+                        const category = row[col.category] || '';
+                        const rallyLimit = row[col.rally] || '';
+                        const notes = row[col.notes] || '';
+                        const catNotes = row[col.catNotes] || '';
+
+                        generals[name] = {
+                            rallyLimit: rallyLimit,
+                            notes: notes,
+                            category: category
+                        };
+
+                        if (category) {
+                            if (!categoryGenerals[category]) {
+                                categoryGenerals[category] = [];
+                                categoryOrder.push(category);
+                            }
+                            categoryGenerals[category].push(name);
+
+                            if (catNotes && !categories[category]) {
+                                categories[category] = { notes: catNotes };
+                            }
+                        }
+                    }
+
+                    // Show preview and confirm
+                    const totalGenerals = Object.keys(generals).length;
+                    const totalCategories = categoryOrder.length;
+                    const hiddenCount = Object.values(generals).filter(g => !g.category).length;
+
+                    const confirmMsg = `以下の内容でインポートしますか？\n\n` +
+                        `・武将数: ${totalGenerals}人\n` +
+                        `・カテゴリ数: ${totalCategories}件\n` +
+                        `・編成対象外（空カテゴリ）: ${hiddenCount}人\n\n` +
+                        `※ 既存のユーザーデータ（所持・編成状況）には影響しません。\n` +
+                        `※ カテゴリ設定は上書きされます。`;
+
+                    if (!confirm(confirmMsg)) return;
+
+                    // Save to Firebase
+                    const { database, ref, set } = window.firebaseDB;
+
+                    // Save general master data
+                    await set(ref(database, 'settings/generalMasterData'), {
+                        generals: generals,
+                        categories: categories,
+                        updatedAt: new Date().toISOString()
+                    });
+
+                    // Update category config for both index and view
+                    const newCategoryConfig = {
+                        order: categoryOrder.map((_, i) => `cat_${i}`),
+                        categories: {}
+                    };
+
+                    categoryOrder.forEach((catName, i) => {
+                        newCategoryConfig.categories[`cat_${i}`] = {
+                            title: catName,
+                            generals: categoryGenerals[catName]
+                        };
+                    });
+
+                    // Add unassigned category for hidden generals
+                    const hiddenGenerals = Object.entries(generals)
+                        .filter(([_, g]) => !g.category)
+                        .map(([name, _]) => name);
+
+                    if (hiddenGenerals.length > 0) {
+                        newCategoryConfig.order.push('_unassigned');
+                        newCategoryConfig.categories['_unassigned'] = {
+                            title: '未分類',
+                            generals: hiddenGenerals
+                        };
+                    }
+
+                    await set(ref(database, 'settings/generalCategoriesIndex'), newCategoryConfig);
+                    await set(ref(database, 'settings/generalCategoriesView'), newCategoryConfig);
+
+                    showToast(`${totalGenerals}人の武将データをインポートしました`, 'success');
+
+                    // Refresh UI
+                    renderGenCatList('index');
+                    renderGenCatList('view');
+
+                } catch (error) {
+                    console.error('CSV import error:', error);
+                    showToast('CSVのインポートに失敗しました: ' + error.message, 'error');
+                }
+            };
+            input.click();
+        }
+
+        // View current general master data
+        async function viewGeneralMasterData() {
+            const preview = document.getElementById('generalMasterPreview');
+            const content = document.getElementById('generalMasterPreviewContent');
+
+            if (preview.style.display === 'block') {
+                preview.style.display = 'none';
+                return;
+            }
+
+            await loadGeneralMasterData();
+
+            if (!generalMasterData || !generalMasterData.generals) {
+                content.innerHTML = '<span style="color: var(--text-muted);">マスターデータが設定されていません。CSVをインポートしてください。</span>';
+            } else {
+                const generals = generalMasterData.generals;
+                const categories = generalMasterData.categories || {};
+
+                // Group by category
+                const byCategory = {};
+                for (const [name, data] of Object.entries(generals)) {
+                    const cat = data.category || '(編成対象外)';
+                    if (!byCategory[cat]) byCategory[cat] = [];
+                    byCategory[cat].push({ name, ...data });
+                }
+
+                let html = `<p style="color: var(--text-secondary); margin-bottom: 0.5rem;">最終更新: ${generalMasterData.updatedAt || '不明'}</p>`;
+
+                for (const [catName, gens] of Object.entries(byCategory)) {
+                    const catNotes = categories[catName]?.notes || '';
+                    html += `<div style="margin-bottom: 1rem;">`;
+                    html += `<div style="color: var(--accent-gold); font-weight: 500; margin-bottom: 0.3rem;">${escapeHtml(catName)} (${gens.length}人)</div>`;
+                    if (catNotes) {
+                        html += `<div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 0.3rem; padding-left: 0.5rem;">📝 ${escapeHtml(catNotes)}</div>`;
+                    }
+                    html += `<div style="display: flex; flex-wrap: wrap; gap: 0.3rem; padding-left: 0.5rem;">`;
+                    for (const gen of gens) {
+                        const rallyInfo = gen.rallyLimit ? `[${gen.rallyLimit}]` : '';
+                        const notesIcon = gen.notes ? '📝' : '';
+                        html += `<span style="background: var(--bg-secondary); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem;" title="${escapeHtml(gen.notes || '')}">${escapeHtml(gen.name)} ${rallyInfo} ${notesIcon}</span>`;
+                    }
+                    html += `</div></div>`;
+                }
+
+                content.innerHTML = html;
+            }
+
+            preview.style.display = 'block';
         }
 
         // Escape HTML

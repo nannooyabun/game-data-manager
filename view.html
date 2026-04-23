@@ -153,6 +153,48 @@
             letter-spacing: 0.05em;
         }
 
+        /* Category notes icon */
+        .cat-notes {
+            display: inline-block;
+            margin-left: 0.3rem;
+            font-size: 0.7rem;
+            cursor: help;
+        }
+
+        /* Rally limit display in item header */
+        .item-rally {
+            font-size: 0.65rem;
+            font-weight: 400;
+            color: rgba(255,255,255,0.6);
+            margin-top: 2px;
+            line-height: 1;
+        }
+
+        /* Tooltip for general notes (on hover) */
+        .view-table thead th[title]:not([title=""]):hover::after {
+            content: attr(title);
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 15, 0.98);
+            color: #e8e4dc;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--accent-gold-dim);
+            white-space: pre-wrap;
+            max-width: 250px;
+            z-index: 9999;
+            font-size: 0.8rem;
+            font-weight: normal;
+            text-align: left;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+        }
+
+        .view-table thead th[title]:not([title=""]) {
+            position: relative;
+        }
+
         /* Category color classes (applied to both header and body cells) */
         .view-table thead .cat-basic   { background: #2f3040 !important; color: #b0b8d0; }
         .view-table thead .cat-weapon  { background: #3a2a20 !important; color: #e8a878; }
@@ -1040,6 +1082,7 @@
         let customItems = {};
         let collapsedCategories = new Set();
         let categoriesViewConfig = null;  // Custom category config for view.html
+        let generalMasterData = null;  // General master data with rally limits, notes, categories
 
         // Flatten generals (for all generals list)
         const allDefaultGenerals = generalCategories.flatMap(cat => cat.generals);
@@ -1049,23 +1092,33 @@
             const customGenList = getCustomGeneralsList();
             const allGenerals = new Set([...allDefaultGenerals, ...customGenList]);
 
+            // Helper: check if general should be hidden (empty category in master data)
+            function isHiddenGeneral(genName) {
+                if (!generalMasterData?.generals) return false;
+                const genData = generalMasterData.generals[genName];
+                if (!genData) return false;
+                return genData.category === '' || genData.category === undefined;
+            }
+
             if (!categoriesViewConfig || !categoriesViewConfig.categories) {
                 // Use default categories + custom generals
                 const result = generalCategories.map(cat => ({
                     title: cat.title,
-                    generals: [...cat.generals]
-                }));
+                    generals: [...cat.generals].filter(g => !isHiddenGeneral(g))
+                })).filter(cat => cat.generals.length > 0);
 
                 // Add custom generals by their subcategory
                 if (customGenerals && typeof customGenerals === 'object') {
                     for (const [subcat, gens] of Object.entries(customGenerals)) {
                         if (!Array.isArray(gens) || gens.length === 0) continue;
                         const catTitle = subcat === '_default' ? '追加武将' : subcat;
+                        const filteredGens = gens.filter(g => !isHiddenGeneral(g));
+                        if (filteredGens.length === 0) continue;
                         let existingCat = result.find(c => c.title === catTitle);
                         if (existingCat) {
-                            existingCat.generals.push(...gens);
+                            existingCat.generals.push(...filteredGens);
                         } else {
-                            result.push({ title: catTitle, generals: [...gens] });
+                            result.push({ title: catTitle, generals: [...filteredGens] });
                         }
                     }
                 }
@@ -1075,33 +1128,23 @@
             // Use stored config
             const order = categoriesViewConfig.order || Object.keys(categoriesViewConfig.categories);
             const result = [];
-            const assignedGenerals = new Set();
 
             for (const catId of order) {
+                // Skip '_unassigned' category (hidden generals)
+                if (catId === '_unassigned') continue;
+
                 const cat = categoriesViewConfig.categories[catId];
                 if (!cat) continue;
 
-                // Filter to only include generals that still exist
-                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g));
-                validGenerals.forEach(g => assignedGenerals.add(g));
+                // Filter to only include generals that still exist and are not hidden
+                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g) && !isHiddenGeneral(g));
 
-                if (validGenerals.length > 0 || catId !== '_unassigned') {
+                if (validGenerals.length > 0) {
                     result.push({
                         id: catId,
                         title: cat.title,
                         generals: validGenerals
                     });
-                }
-            }
-
-            // Add any unassigned generals
-            const unassignedGenerals = [...allGenerals].filter(g => !assignedGenerals.has(g));
-            if (unassignedGenerals.length > 0) {
-                let unassignedCat = result.find(c => c.id === '_unassigned');
-                if (unassignedCat) {
-                    unassignedCat.generals.push(...unassignedGenerals);
-                } else {
-                    result.push({ id: '_unassigned', title: '未分類', generals: unassignedGenerals });
                 }
             }
 
@@ -1151,12 +1194,13 @@
             const { database, ref, get } = window.firebaseDB;
             try {
                 setStatus('データ取得中...');
-                const [gameSnap, teamSnap, genSnap, itemSnap, catSnap] = await Promise.all([
+                const [gameSnap, teamSnap, genSnap, itemSnap, catSnap, masterSnap] = await Promise.all([
                     get(ref(database, 'gameData')),
                     get(ref(database, 'teams')),
                     get(ref(database, 'customGenerals')),
                     get(ref(database, 'customItems')),
-                    get(ref(database, 'settings/generalCategoriesView'))
+                    get(ref(database, 'settings/generalCategoriesView')),
+                    get(ref(database, 'settings/generalMasterData'))
                 ]);
                 gameData = gameSnap.exists() ? gameSnap.val() : {};
                 teams = teamSnap.exists() ? teamSnap.val() : {};
@@ -1164,6 +1208,7 @@
                 customGenerals = Array.isArray(genData) ? { '_default': genData } : genData;
                 customItems = itemSnap.exists() ? itemSnap.val() : {};
                 categoriesViewConfig = catSnap.exists() ? catSnap.val() : null;
+                generalMasterData = masterSnap.exists() ? masterSnap.val() : null;
 
                 const userCount = Object.keys(gameData).length;
                 const teamCount = Object.keys(teams).length;
@@ -1205,6 +1250,10 @@
             });
             onValue(ref(database, 'settings/generalCategoriesView'), (snap) => {
                 categoriesViewConfig = snap.exists() ? snap.val() : null;
+                renderPreview();
+            });
+            onValue(ref(database, 'settings/generalMasterData'), (snap) => {
+                generalMasterData = snap.exists() ? snap.val() : null;
                 renderPreview();
             });
         }
@@ -1477,17 +1526,43 @@
             return typeof g === 'number' ? g : null;
         }
 
+        // Get general master info (rally limit, notes)
+        function getGeneralMasterInfo(generalName) {
+            if (!generalMasterData?.generals) return { rallyLimit: '', notes: '' };
+            const data = generalMasterData.generals[generalName];
+            return {
+                rallyLimit: data?.rallyLimit || '',
+                notes: data?.notes || ''
+            };
+        }
+
+        // Get category notes from master data
+        function getCategoryNotes(categoryTitle) {
+            if (!generalMasterData?.categories) return '';
+            return generalMasterData.categories[categoryTitle]?.notes || '';
+        }
+
         // Build general categories dynamically using effective view config
         function buildGeneralCategories() {
             const effectiveCategories = getEffectiveViewCategories();
 
             return effectiveCategories.map((cat, i) => {
                 if (cat.generals.length === 0) return null;  // Skip empty categories
+                const categoryNotes = getCategoryNotes(cat.title);
                 return {
                     key: `general_${i}`,
                     title: `②-2 ${cat.title}`,
+                    categoryNotes: categoryNotes,
                     colorClass: 'cat-general',
-                    items: cat.generals.map(name => ({ id: name, name })),
+                    items: cat.generals.map(name => {
+                        const masterInfo = getGeneralMasterInfo(name);
+                        return {
+                            id: name,
+                            name: name,
+                            rallyLimit: masterInfo.rallyLimit,
+                            notes: masterInfo.notes
+                        };
+                    }),
                     getCellState: (user, item) => getGeneralCellState(user, item.id),
                     getCellValue: (user, item) => getGeneralCellValue(user, item.id)
                 };
@@ -2142,11 +2217,13 @@
                 const borderClass = catIdx > 0 ? ' cat-border-left' : '';
                 const isCollapsed = collapsedCategories.has(cat.key);
                 const toggleIcon = isCollapsed ? '▶' : '▼';
+                const catNotes = cat.categoryNotes || '';
+                const catNotesHtml = catNotes ? `<div class="cat-notes" title="${escapeHtml(catNotes)}">📝</div>` : '';
 
                 if (isCollapsed) {
                     return `<th class="cat-header cat-collapsed-placeholder ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" rowspan="2">${escapeHtml(cat.title.substring(0, 6))}…</th>`;
                 }
-                return `<th class="cat-header ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" colspan="${cat.items.length}">${escapeHtml(cat.title)}<span class="cat-toggle">${toggleIcon}</span></th>`;
+                return `<th class="cat-header ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" colspan="${cat.items.length}" title="${escapeHtml(catNotes)}">${escapeHtml(cat.title)}${catNotesHtml}<span class="cat-toggle">${toggleIcon}</span></th>`;
             }).join('');
 
             // Build item header row (skip collapsed categories)
@@ -2158,7 +2235,12 @@
                     if (item.id === 'asura60_0' || item.id === 'asura90_0') {
                         borderClass += ' asura-level-border';
                     }
-                    return `<th class="${cat.colorClass}${borderClass}">${escapeHtml(item.name)}</th>`;
+                    // Add rally limit for generals
+                    const rallyLimit = item.rallyLimit || '';
+                    const itemNotes = item.notes || '';
+                    const rallyHtml = rallyLimit ? `<div class="item-rally">${escapeHtml(rallyLimit)}</div>` : '';
+                    const notesAttr = itemNotes ? ` title="${escapeHtml(itemNotes)}"` : '';
+                    return `<th class="${cat.colorClass}${borderClass}"${notesAttr}>${escapeHtml(item.name)}${rallyHtml}</th>`;
                 });
             }).join('');
 
