@@ -484,6 +484,169 @@
             display: flex;
         }
 
+        /* ========== Team edit mode (B-1 ~ B-6) ========== */
+        .team-view-summary {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+        .team-view-summary .summary-stats {
+            color: var(--text-secondary);
+            margin-bottom: 0.3rem;
+        }
+        .team-view-summary .summary-members {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .team-member-chip {
+            background: var(--status-complete);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            white-space: nowrap;
+        }
+        .team-member-chip .team-badge {
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            margin-left: 0.2rem;
+        }
+        .team-edit-toolbar {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+            align-items: center;
+        }
+        @media (max-width: 600px) {
+            .team-edit-toolbar {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .team-edit-toolbar input,
+        .team-edit-toolbar select {
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+        .team-edit-members {
+            max-height: 380px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.4rem;
+            background: var(--bg-secondary);
+        }
+        .team-edit-user {
+            padding: 0.4rem 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .team-edit-user:last-child {
+            border-bottom: none;
+        }
+        .team-edit-user-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .team-edit-user-name {
+            font-weight: 500;
+            min-width: 100px;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .team-edit-user-name .troop-badge {
+            font-size: 0.7rem;
+            padding: 0.1rem 0.35rem;
+            background: var(--bg-card);
+            border-radius: 3px;
+            color: var(--text-secondary);
+        }
+        .team-edit-all-chk {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.82rem;
+            color: var(--accent-gold);
+            cursor: pointer;
+        }
+        .team-edit-army-chks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .team-edit-army-chk {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            background: var(--bg-card);
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            border: 1px solid var(--border-color);
+            font-size: 0.78rem;
+            cursor: pointer;
+        }
+        .team-edit-army-chk.all-checked {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .team-edit-army-chk.active {
+            background: var(--status-complete);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+        .team-edit-load-more {
+            width: 100%;
+            margin-top: 0.4rem;
+            padding: 0.4rem;
+            border: 1px dashed var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .team-edit-load-more:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+        .team-edit-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 0.6rem;
+        }
+        .team-edit-btn {
+            padding: 0.4rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .team-edit-btn.save {
+            background: var(--accent-green);
+            color: white;
+        }
+        .team-edit-btn.cancel {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .team-edit-btn.edit {
+            background: var(--accent-blue);
+            color: white;
+        }
+
         /* Custom generals */
         .custom-general-form {
             display: flex;
@@ -1185,7 +1348,7 @@
                 return;
             }
 
-            const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓' };
+            const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓', 'horse_infantry': '馬歩', 'horse_bow': '馬弓', 'infantry_bow': '歩弓', 'horse_infantry_bow': '馬歩弓' };
 
             // Flatten: each (user, team) becomes a row
             const rows = [];
@@ -1356,16 +1519,255 @@
             }
         }
 
-        // Delete team
+        // ========== Member Entry Helpers ==========
+        // Entry format: 'username' (all teams) or 'username/軍団名' (specific team)
+        function parseMemberEntry(entry) {
+            if (typeof entry !== 'string' || !entry) return { username: '', team: null };
+            const idx = entry.indexOf('/');
+            if (idx < 0) return { username: entry, team: null };
+            return { username: entry.slice(0, idx), team: entry.slice(idx + 1) };
+        }
+
+        function formatMemberEntry(username, team) {
+            return team ? `${username}/${team}` : username;
+        }
+
+        // Get entries for a given user
+        function getUserEntries(members, username) {
+            if (!Array.isArray(members)) return [];
+            return members.filter(e => parseMemberEntry(e).username === username);
+        }
+
+        // Does the user have "all teams" selected (plain username entry)
+        function hasAllTeams(members, username) {
+            if (!Array.isArray(members)) return false;
+            return members.some(e => {
+                const p = parseMemberEntry(e);
+                return p.username === username && p.team === null;
+            });
+        }
+
+        // Is specific user/team combination selected
+        function hasSpecificTeam(members, username, team) {
+            if (!Array.isArray(members)) return false;
+            return members.some(e => {
+                const p = parseMemberEntry(e);
+                return p.username === username && p.team === team;
+            });
+        }
+
+        // Get troop label for a user's specific team
+        function getUserTroopLabel(username, teamName) {
+            const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓', 'horse_infantry': '馬歩', 'horse_bow': '馬弓', 'infantry_bow': '歩弓', 'horse_infantry_bow': '馬歩弓' };
+            const userData = gameData[username];
+            if (!userData) return '';
+            const teamData = getUserTeamData(userData, teamName);
+            if (!teamData) return '';
+            return troopMap[teamData.troopType] || teamData.troopType || '';
+        }
+
+        // Get a user's overall "representative" troop (first team's)
+        function getUserPrimaryTroop(username) {
+            const userData = gameData[username];
+            if (!userData) return '';
+            const userTeams = getUserTeams(userData);
+            if (userTeams.length === 0) return '';
+            return getUserTroopLabel(username, userTeams[0]);
+        }
+
+        // Check if user's troop includes a specific basic type
+        function userHasTroopType(username, basicType) {
+            const userData = gameData[username];
+            if (!userData) return false;
+            const userTeams = getUserTeams(userData);
+            for (const t of userTeams) {
+                const td = getUserTeamData(userData, t);
+                const troopType = td?.troopType || '';
+                if (basicType === 'horse' && troopType.includes('horse')) return true;
+                if (basicType === 'infantry' && troopType.includes('infantry')) return true;
+                if (basicType === 'bow' && troopType.includes('bow')) return true;
+            }
+            return false;
+        }
+
+        // ========== Edit State ==========
+        // Per-team edit state: {members, search, filterTroop, filterMembership, sort, displayLimit}
+        const teamEditState = {};
+        const DEFAULT_DISPLAY_LIMIT = 30;
+
+        function startEditTeam(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+            teamEditState[teamId] = {
+                members: Array.isArray(team.members) ? [...team.members] : [],
+                search: '',
+                filterTroop: '',
+                filterMembership: '',
+                sort: 'name_asc',
+                displayLimit: DEFAULT_DISPLAY_LIMIT
+            };
+            renderTeamList();
+        }
+
+        function cancelEditTeam(teamId) {
+            delete teamEditState[teamId];
+            renderTeamList();
+        }
+
+        async function saveEditTeam(teamId) {
+            const state = teamEditState[teamId];
+            if (!state) return;
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, `teams/${teamId}/members`), state.members);
+                delete teamEditState[teamId];
+                showToast('メンバーを更新しました', 'success');
+            } catch (error) {
+                console.error('Save edit team error:', error);
+                showToast('保存に失敗しました', 'error');
+            }
+        }
+
+        // Toggle "all teams" checkbox for a user in edit mode
+        function toggleAllTeams(teamId, username, checked) {
+            const state = teamEditState[teamId];
+            if (!state) return;
+            // Remove any existing entries for this user
+            state.members = state.members.filter(e => parseMemberEntry(e).username !== username);
+            if (checked) {
+                state.members.push(username);
+            }
+            renderTeamList();
+        }
+
+        // Toggle a specific 軍団 for a user in edit mode
+        function toggleSpecificTeam(teamId, username, teamName, checked) {
+            const state = teamEditState[teamId];
+            if (!state) return;
+            // Remove plain username entry (can't coexist with specific)
+            state.members = state.members.filter(e => {
+                const p = parseMemberEntry(e);
+                if (p.username !== username) return true;
+                // Remove exact matches or plain entries
+                if (p.team === null) return false;
+                if (p.team === teamName) return false;
+                return true;
+            });
+            if (checked) {
+                state.members.push(formatMemberEntry(username, teamName));
+            }
+            renderTeamList();
+        }
+
+        // Apply filters/sort to edit member list
+        function updateEditFilter(teamId, field, value) {
+            const state = teamEditState[teamId];
+            if (!state) return;
+            state[field] = value;
+            state.displayLimit = DEFAULT_DISPLAY_LIMIT;
+            renderTeamList();
+        }
+
+        function loadMoreEditMembers(teamId) {
+            const state = teamEditState[teamId];
+            if (!state) return;
+            state.displayLimit += DEFAULT_DISPLAY_LIMIT;
+            renderTeamList();
+        }
+
+        // Clear pending members in edit mode
+        function clearPendingMembers(teamId) {
+            const state = teamEditState[teamId];
+            if (!state) return;
+            if (!confirm('編集中のメンバーを全て解除しますか？（保存するまで確定されません）')) return;
+            state.members = [];
+            renderTeamList();
+        }
+
+        // Copy from another team (edit mode: applies to pending state)
+        function copyFromTeamToEdit(targetTeamId, sourceTeamId) {
+            if (!sourceTeamId) return;
+            const state = teamEditState[targetTeamId];
+            if (!state) return;
+            const sourceTeam = teams[sourceTeamId];
+            if (!sourceTeam) return;
+            const sourceMembers = sourceTeam.members || [];
+            if (sourceMembers.length === 0) {
+                showToast('コピー元のチームにメンバーがいません', 'error');
+                return;
+            }
+            state.members = [...sourceMembers];
+            showToast(`${sourceTeam.name}から${sourceMembers.length}件コピーしました（未保存）`, 'success');
+            renderTeamList();
+        }
+
+        // Get filtered/sorted user list for edit view
+        function getFilteredEditUsers(state) {
+            const allUsers = Object.keys(gameData);
+            const q = (state.search || '').toLowerCase().trim();
+            const filterTroop = state.filterTroop || '';
+            const filterMembership = state.filterMembership || '';
+
+            const filtered = allUsers.filter(username => {
+                // Search filter
+                if (q && !username.toLowerCase().includes(q)) return false;
+                // Troop filter (basic type: matches if any team has that type)
+                if (filterTroop && !userHasTroopType(username, filterTroop)) return false;
+                // Membership filter
+                if (filterMembership === 'selected' && getUserEntries(state.members, username).length === 0) return false;
+                if (filterMembership === 'unselected' && getUserEntries(state.members, username).length > 0) return false;
+                return true;
+            });
+
+            // Sort
+            const sort = state.sort || 'name_asc';
+            filtered.sort((a, b) => {
+                switch (sort) {
+                    case 'name_desc': return b.localeCompare(a);
+                    case 'team_count_desc': {
+                        const ca = getUserTeams(gameData[a]).length;
+                        const cb = getUserTeams(gameData[b]).length;
+                        if (ca !== cb) return cb - ca;
+                        return a.localeCompare(b);
+                    }
+                    case 'team_count_asc': {
+                        const ca = getUserTeams(gameData[a]).length;
+                        const cb = getUserTeams(gameData[b]).length;
+                        if (ca !== cb) return ca - cb;
+                        return a.localeCompare(b);
+                    }
+                    case 'name_asc':
+                    default: return a.localeCompare(b);
+                }
+            });
+            return filtered;
+        }
+
+        // Count total member entries (expanding "all teams" entries)
+        function countMemberSlots(members) {
+            if (!Array.isArray(members)) return 0;
+            let total = 0;
+            members.forEach(e => {
+                const p = parseMemberEntry(e);
+                if (p.team) {
+                    total += 1;
+                } else {
+                    const ud = gameData[p.username];
+                    total += ud ? getUserTeams(ud).length : 1;
+                }
+            });
+            return total;
+        }
+
+        // Delete team (needs confirm)
         async function deleteTeam(teamId) {
             const team = teams[teamId];
             if (!team) return;
-
             if (!confirm(`チーム「${team.name}」を削除しますか？`)) return;
-
             try {
                 const { database, ref, remove } = window.firebaseDB;
                 await remove(ref(database, `teams/${teamId}`));
+                delete teamEditState[teamId];
                 showToast(`チーム「${team.name}」を削除しました`, 'success');
             } catch (error) {
                 console.error('Delete team error:', error);
@@ -1373,98 +1775,16 @@
             }
         }
 
-        // Toggle team member
-        async function toggleTeamMember(teamId, username, checked) {
-            const team = teams[teamId];
-            if (!team) return;
-
-            let members = team.members || [];
-
-            if (checked && !members.includes(username)) {
-                members = [...members, username];
-            } else if (!checked) {
-                members = members.filter(m => m !== username);
-            }
-
-            try {
-                const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, `teams/${teamId}/members`), members);
-            } catch (error) {
-                console.error('Toggle member error:', error);
-                showToast('メンバーの更新に失敗しました', 'error');
-            }
-        }
-
-        // Filter team members by search query
-        function filterTeamMembers(teamId, query) {
-            const grid = document.getElementById(`teamMembersGrid_${teamId}`);
-            if (!grid) return;
-
-            const checkboxes = grid.querySelectorAll('.team-member-checkbox');
-            const lowerQuery = query.toLowerCase();
-
-            if (!query) {
-                grid.classList.remove('filtered');
-                checkboxes.forEach(cb => cb.classList.remove('visible'));
-            } else {
-                grid.classList.add('filtered');
-                checkboxes.forEach(cb => {
-                    const name = cb.dataset.username.toLowerCase();
-                    if (name.includes(lowerQuery)) {
-                        cb.classList.add('visible');
-                    } else {
-                        cb.classList.remove('visible');
-                    }
-                });
-            }
-        }
-
-        // Copy members from another team
-        async function copyFromTeam(targetTeamId, sourceTeamId) {
-            if (!sourceTeamId) return;
-
-            const sourceTeam = teams[sourceTeamId];
-            const targetTeam = teams[targetTeamId];
-            if (!sourceTeam || !targetTeam) return;
-
-            const sourceMembers = sourceTeam.members || [];
-            if (sourceMembers.length === 0) {
-                showToast('コピー元のチームにメンバーがいません', 'error');
-                return;
-            }
-
-            try {
-                const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, `teams/${targetTeamId}/members`), [...sourceMembers]);
-                showToast(`${sourceTeam.name}から${sourceMembers.length}人をコピーしました`, 'success');
-            } catch (error) {
-                console.error('Copy team error:', error);
-                showToast('コピーに失敗しました', 'error');
-            }
-        }
-
-        // Clear all team members
-        async function clearTeamMembers(teamId) {
-            const team = teams[teamId];
-            if (!team) return;
-
-            if (!confirm(`${team.name}のメンバーを全て解除しますか？`)) return;
-
-            try {
-                const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, `teams/${teamId}/members`), []);
-                showToast('メンバーを全て解除しました', 'success');
-            } catch (error) {
-                console.error('Clear members error:', error);
-                showToast('解除に失敗しました', 'error');
-            }
-        }
-
-        // Render team list
+        // Render team list (view mode or edit mode per team)
         function renderTeamList() {
             const container = document.getElementById('teamList');
             const teamList = Object.values(teams);
-            const allUsers = Object.keys(gameData).sort();
+
+            // Preserve focus across re-render
+            const focused = document.activeElement;
+            const focusKey = focused && focused.dataset ? focused.dataset.focusKey : null;
+            const selStart = focused && focused.selectionStart != null ? focused.selectionStart : null;
+            const selEnd = focused && focused.selectionEnd != null ? focused.selectionEnd : null;
 
             if (teamList.length === 0) {
                 container.innerHTML = '<div class="empty-state">チームがありません</div>';
@@ -1472,49 +1792,164 @@
             }
 
             container.innerHTML = teamList.map(team => {
-                const members = team.members || [];
-                const memberCount = members.length;
+                const isEditing = teamEditState[team.id] !== undefined;
+                return isEditing ? renderTeamEditCard(team) : renderTeamViewCard(team);
+            }).join('');
 
-                // Build other teams dropdown for copy feature
-                const otherTeams = teamList.filter(t => t.id !== team.id);
-                const copyOptions = otherTeams.map(t =>
-                    `<option value="${t.id}">${escapeHtml(t.name)}</option>`
-                ).join('');
+            // Restore focus
+            if (focusKey) {
+                const el = container.querySelector(`[data-focus-key="${focusKey}"]`);
+                if (el) {
+                    el.focus();
+                    if (selStart != null && typeof el.setSelectionRange === 'function') {
+                        try { el.setSelectionRange(selStart, selEnd); } catch (_) {}
+                    }
+                }
+            }
+        }
 
-                // Build member checkboxes
-                const memberCheckboxes = allUsers.map(username => {
-                    const isSelected = members.includes(username);
+        // Render a team card in VIEW mode (read-only)
+        function renderTeamViewCard(team) {
+            const members = Array.isArray(team.members) ? team.members : [];
+            const uniqueUsers = new Set(members.map(e => parseMemberEntry(e).username));
+            const memberCount = uniqueUsers.size;
+            const slotCount = countMemberSlots(members);
+
+            const chips = members.map(entry => {
+                const p = parseMemberEntry(entry);
+                const label = p.team
+                    ? `${escapeHtml(p.username)}<span class="team-badge">${escapeHtml(p.team)}</span>`
+                    : `${escapeHtml(p.username)}<span class="team-badge">全軍団</span>`;
+                return `<span class="team-member-chip">${label}</span>`;
+            }).join('');
+
+            return `
+                <div class="team-card">
+                    <div class="team-card-header">
+                        <h4>🎯 ${escapeHtml(team.name)}</h4>
+                        <div class="team-card-actions">
+                            <button class="team-edit-btn edit" onclick="startEditTeam('${team.id}')">✏️ 編集</button>
+                            <button class="action-btn danger" onclick="deleteTeam('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">削除</button>
+                        </div>
+                    </div>
+                    <div class="team-view-summary">
+                        <div class="summary-stats">👥 ${memberCount}ユーザー / ${slotCount}軍団スロット</div>
+                        <div class="summary-members">
+                            ${chips || '<span style="color: var(--text-muted); font-size: 0.85rem;">メンバーがいません</span>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render a team card in EDIT mode
+        function renderTeamEditCard(team) {
+            const state = teamEditState[team.id];
+            const filteredUsers = getFilteredEditUsers(state);
+            const totalCount = filteredUsers.length;
+            const displayUsers = filteredUsers.slice(0, state.displayLimit);
+
+            // Member rows
+            const userRows = displayUsers.map(username => {
+                const userData = gameData[username];
+                const userTeams = getUserTeams(userData);
+                const allChecked = hasAllTeams(state.members, username);
+
+                const armyChips = userTeams.map(teamName => {
+                    const specChecked = hasSpecificTeam(state.members, username, teamName);
+                    const troopLabel = getUserTroopLabel(username, teamName);
+                    const troopSpan = troopLabel ? `<span class="troop-badge">${escapeHtml(troopLabel)}</span>` : '';
+                    const active = allChecked || specChecked ? 'active' : '';
+                    const allCheckedClass = allChecked ? 'all-checked' : '';
                     return `
-                        <label class="team-member-checkbox ${isSelected ? 'selected' : ''}" data-username="${escapeHtml(username)}">
-                            <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleTeamMember('${team.id}', '${escapeHtml(username)}', this.checked)">
-                            ${escapeHtml(username)}
+                        <label class="team-edit-army-chk ${active} ${allCheckedClass}">
+                            <input type="checkbox" ${allChecked || specChecked ? 'checked' : ''} ${allChecked ? 'disabled' : ''}
+                                onchange="toggleSpecificTeam('${team.id}', '${escapeHtml(username)}', '${escapeHtml(teamName)}', this.checked)">
+                            ${escapeHtml(teamName)}${troopSpan}
                         </label>
                     `;
                 }).join('');
 
                 return `
-                    <div class="team-card">
-                        <div class="team-card-header">
-                            <h4>🎯 ${escapeHtml(team.name)}</h4>
-                            <div class="team-card-actions">
-                                <button class="action-btn danger" onclick="deleteTeam('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">削除</button>
+                    <div class="team-edit-user">
+                        <div class="team-edit-user-row">
+                            <div class="team-edit-user-name">${escapeHtml(username)}</div>
+                            <label class="team-edit-all-chk">
+                                <input type="checkbox" ${allChecked ? 'checked' : ''}
+                                    onchange="toggleAllTeams('${team.id}', '${escapeHtml(username)}', this.checked)">
+                                全軍団 (${userTeams.length})
+                            </label>
+                            <div class="team-edit-army-chks">
+                                ${armyChips || '<span style="color: var(--text-muted); font-size: 0.8rem;">軍団なし</span>'}
                             </div>
-                        </div>
-                        <div class="team-member-tools">
-                            <input type="text" class="team-member-search" placeholder="名前で検索..." oninput="filterTeamMembers('${team.id}', this.value)">
-                            <select class="team-copy-select" onchange="copyFromTeam('${team.id}', this.value); this.value='';">
-                                <option value="">他チームからコピー</option>
-                                ${copyOptions}
-                            </select>
-                            <button class="team-bulk-btn" onclick="clearTeamMembers('${team.id}')">全解除</button>
-                            <span class="team-member-count">${memberCount}人選択中</span>
-                        </div>
-                        <div class="team-members-grid" id="teamMembersGrid_${team.id}">
-                            ${memberCheckboxes || '<span style="color: var(--text-muted);">ユーザーがいません</span>'}
                         </div>
                     </div>
                 `;
             }).join('');
+
+            const loadMoreBtn = totalCount > state.displayLimit ? `
+                <button class="team-edit-load-more" onclick="loadMoreEditMembers('${team.id}')">
+                    もっと見る (${state.displayLimit} / ${totalCount})
+                </button>
+            ` : '';
+
+            // Copy-from dropdown
+            const otherTeams = Object.values(teams).filter(t => t.id !== team.id);
+            const copyOptions = otherTeams.map(t =>
+                `<option value="${t.id}">${escapeHtml(t.name)}</option>`
+            ).join('');
+
+            // Current pending state stats
+            const uniqueUsers = new Set(state.members.map(e => parseMemberEntry(e).username));
+            const slotCount = countMemberSlots(state.members);
+
+            return `
+                <div class="team-card" style="border-color: var(--accent-gold);">
+                    <div class="team-card-header">
+                        <h4>🎯 ${escapeHtml(team.name)} <span style="color: var(--accent-gold); font-size: 0.85rem;">(編集中)</span></h4>
+                        <div class="team-card-actions">
+                            <button class="team-edit-btn save" onclick="saveEditTeam('${team.id}')">💾 保存</button>
+                            <button class="team-edit-btn cancel" onclick="cancelEditTeam('${team.id}')">❌ キャンセル</button>
+                        </div>
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 0.5rem;">
+                        編集中: ${uniqueUsers.size}ユーザー / ${slotCount}軍団スロット (未保存)
+                    </div>
+                    <div class="team-edit-toolbar">
+                        <input type="text" placeholder="🔍 ユーザー名で検索..." value="${escapeHtml(state.search)}"
+                            data-focus-key="search-${team.id}"
+                            oninput="updateEditFilter('${team.id}', 'search', this.value)">
+                        <select onchange="updateEditFilter('${team.id}', 'filterTroop', this.value)">
+                            <option value="" ${state.filterTroop === '' ? 'selected' : ''}>兵種: 全て</option>
+                            <option value="horse" ${state.filterTroop === 'horse' ? 'selected' : ''}>馬</option>
+                            <option value="infantry" ${state.filterTroop === 'infantry' ? 'selected' : ''}>歩</option>
+                            <option value="bow" ${state.filterTroop === 'bow' ? 'selected' : ''}>弓</option>
+                        </select>
+                        <select onchange="updateEditFilter('${team.id}', 'filterMembership', this.value)">
+                            <option value="" ${state.filterMembership === '' ? 'selected' : ''}>所属: 全て</option>
+                            <option value="selected" ${state.filterMembership === 'selected' ? 'selected' : ''}>選択中のみ</option>
+                            <option value="unselected" ${state.filterMembership === 'unselected' ? 'selected' : ''}>未選択のみ</option>
+                        </select>
+                        <select onchange="updateEditFilter('${team.id}', 'sort', this.value)">
+                            <option value="name_asc" ${state.sort === 'name_asc' ? 'selected' : ''}>名前↑</option>
+                            <option value="name_desc" ${state.sort === 'name_desc' ? 'selected' : ''}>名前↓</option>
+                            <option value="team_count_desc" ${state.sort === 'team_count_desc' ? 'selected' : ''}>軍団数↓</option>
+                            <option value="team_count_asc" ${state.sort === 'team_count_asc' ? 'selected' : ''}>軍団数↑</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 0.4rem; margin-bottom: 0.4rem; flex-wrap: wrap;">
+                        <select class="team-copy-select" onchange="copyFromTeamToEdit('${team.id}', this.value); this.value='';">
+                            <option value="">他チームからコピー (上書き)</option>
+                            ${copyOptions}
+                        </select>
+                        <button class="team-bulk-btn" onclick="clearPendingMembers('${team.id}')">全解除</button>
+                    </div>
+                    <div class="team-edit-members">
+                        ${userRows || '<div style="text-align: center; padding: 1rem; color: var(--text-muted);">該当するユーザーがいません</div>'}
+                        ${loadMoreBtn}
+                    </div>
+                </div>
+            `;
         }
 
         // ========== Custom Generals Management ==========

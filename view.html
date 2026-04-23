@@ -1071,13 +1071,56 @@
             sel.value = current;
         }
 
+        // Parse member entry (new format: 'username' or 'username/軍団名')
+        function parseMemberEntry(entry) {
+            if (typeof entry !== 'string' || !entry) return { username: '', team: null };
+            const idx = entry.indexOf('/');
+            if (idx < 0) return { username: entry, team: null };
+            return { username: entry.slice(0, idx), team: entry.slice(idx + 1) };
+        }
+
         function getVisibleUsernames() {
             const filter = document.getElementById('teamFilter').value;
             const allUsers = Object.keys(gameData);
             if (filter === '__all__') return allUsers.sort();
             const team = teams[filter];
             if (!team) return [];
-            return (team.members || []).filter(u => gameData[u]).sort();
+            const members = team.members || [];
+            const unique = new Set();
+            members.forEach(e => {
+                const p = parseMemberEntry(e);
+                if (p.username && gameData[p.username]) unique.add(p.username);
+            });
+            return Array.from(unique).sort();
+        }
+
+        // Build a filter predicate: (username, teamName) -> boolean
+        function getTeamMemberFilterPredicate() {
+            const filter = document.getElementById('teamFilter').value;
+            if (filter === '__all__') return () => true;
+            const team = teams[filter];
+            if (!team) return () => false;
+            const members = team.members || [];
+            // If user has a plain 'username' entry, all teams are allowed
+            // If user has only 'username/軍団名' entries, only those teams allowed
+            const allAllowed = new Set();
+            const specificAllowed = new Map(); // username -> Set<team>
+            members.forEach(e => {
+                const p = parseMemberEntry(e);
+                if (!p.username) return;
+                if (p.team === null) {
+                    allAllowed.add(p.username);
+                } else {
+                    if (!specificAllowed.has(p.username)) specificAllowed.set(p.username, new Set());
+                    specificAllowed.get(p.username).add(p.team);
+                }
+            });
+            return (username, teamName) => {
+                if (allAllowed.has(username)) return true;
+                const spec = specificAllowed.get(username);
+                if (spec && spec.has(teamName)) return true;
+                return false;
+            };
         }
 
         // Toggle compact sticky columns (show first char only)
@@ -1131,11 +1174,13 @@
         // Get visible entries as [{username, team, data}]
         function getVisibleEntries() {
             const usernames = getVisibleUsernames();
+            const memberFilter = getTeamMemberFilterPredicate();
             const entries = [];
             usernames.forEach(username => {
                 const userData = gameData[username];
                 const teamNames = getUserTeams(userData);
                 teamNames.forEach(team => {
+                    if (!memberFilter(username, team)) return;
                     const teamData = getUserTeamData(userData, team);
                     if (teamData) {
                         entries.push({ username, team, data: teamData });
@@ -2044,14 +2089,24 @@
             const team = teams[teamId];
             if (!team) return;
 
-            const members = (team.members || []).filter(u => gameData[u]);
-            if (members.length === 0) {
+            // Parse members and collect unique usernames (expand 'username/軍団名' entries)
+            const members = team.members || [];
+            const uniqueNames = [];
+            const seen = new Set();
+            members.forEach(e => {
+                const p = parseMemberEntry(e);
+                if (p.username && gameData[p.username] && !seen.has(p.username)) {
+                    uniqueNames.push(p.username);
+                    seen.add(p.username);
+                }
+            });
+            if (uniqueNames.length === 0) {
                 showToast('このチームにメンバーがいません', 'error');
                 return;
             }
 
             // Load all team members (no upper limit)
-            selectedUsers = members.slice();
+            selectedUsers = uniqueNames;
             refreshUserCheckboxGrid();
             updateCompareButton();
             showToast(`${team.name}のメンバー${selectedUsers.length}人を選択しました`, 'success');
