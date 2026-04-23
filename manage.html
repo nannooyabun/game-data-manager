@@ -1356,33 +1356,16 @@
             <div class="section-card" id="generalCategorySection">
                 <h3>📋 武将カテゴリ編集</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                    武将の小カテゴリ（グループ）の編集・並び替えを行います。入力フォーム用と比較表用で別々に設定できます。
+                    武将の小カテゴリ（グループ）の編集・並び替えを行います。入力フォームと比較表で共通のカテゴリを使用します。
                 </p>
 
-                <!-- Tab Navigation -->
-                <div class="gen-cat-tabs">
-                    <button class="gen-cat-tab active" onclick="switchGenCatTab('index')" id="genCatTabIndex">📝 入力フォーム用</button>
-                    <button class="gen-cat-tab" onclick="switchGenCatTab('view')" id="genCatTabView">📊 比較表用</button>
-                </div>
-
-                <!-- Index.html Config -->
-                <div class="gen-cat-panel" id="genCatPanelIndex">
+                <!-- Unified Category Config -->
+                <div class="gen-cat-panel" id="genCatPanelUnified">
                     <div class="gen-cat-toolbar">
-                        <button class="gen-cat-btn" onclick="addNewCategory('index')">＋ カテゴリ追加</button>
-                        <button class="gen-cat-btn secondary" onclick="resetCategoryConfig('index')">🔄 デフォルトに戻す</button>
+                        <button class="gen-cat-btn" onclick="addNewCategory('unified')">＋ カテゴリ追加</button>
+                        <button class="gen-cat-btn secondary" onclick="resetCategoryConfig('unified')">🔄 デフォルトに戻す</button>
                     </div>
-                    <div class="gen-cat-list" id="genCatListIndex">
-                        <span style="color: var(--text-muted);">読み込み中...</span>
-                    </div>
-                </div>
-
-                <!-- View.html Config -->
-                <div class="gen-cat-panel" id="genCatPanelView" style="display: none;">
-                    <div class="gen-cat-toolbar">
-                        <button class="gen-cat-btn" onclick="addNewCategory('view')">＋ カテゴリ追加</button>
-                        <button class="gen-cat-btn secondary" onclick="resetCategoryConfig('view')">🔄 デフォルトに戻す</button>
-                    </div>
-                    <div class="gen-cat-list" id="genCatListView">
+                    <div class="gen-cat-list" id="genCatListUnified">
                         <span style="color: var(--text-muted);">読み込み中...</span>
                     </div>
                 </div>
@@ -1454,9 +1437,11 @@
         let customGenerals = {};  // { "カテゴリ": ["武将1"], "_default": ["武将2"] }
         let customItems = {};
 
-        // Category configs for generals (loaded from Firebase)
-        let generalCategoriesIndex = null;  // For index.html input form
-        let generalCategoriesView = null;   // For view.html comparison table
+        // Unified category config for generals (loaded from Firebase)
+        let generalCategories = null;  // Shared between index.html and view.html
+        // Legacy references for backwards compatibility during transition
+        let generalCategoriesIndex = null;
+        let generalCategoriesView = null;
 
         // Default generals data (from index.html)
         const DEFAULT_GENERAL_CATEGORIES = [
@@ -1651,18 +1636,14 @@
                 }
             });
 
-            // General category configs
-            onValue(ref(database, 'settings/generalCategoriesIndex'), (snap) => {
-                generalCategoriesIndex = snap.exists() ? snap.val() : null;
+            // Unified general category config
+            onValue(ref(database, 'settings/generalCategories'), (snap) => {
+                generalCategories = snap.exists() ? snap.val() : null;
+                // Keep legacy references in sync for backwards compatibility
+                generalCategoriesIndex = generalCategories;
+                generalCategoriesView = generalCategories;
                 if (document.getElementById('adminContent').classList.contains('show')) {
-                    renderGenCatList('index');
-                }
-            });
-
-            onValue(ref(database, 'settings/generalCategoriesView'), (snap) => {
-                generalCategoriesView = snap.exists() ? snap.val() : null;
-                if (document.getElementById('adminContent').classList.contains('show')) {
-                    renderGenCatList('view');
+                    renderGenCatList('unified');
                 }
             });
 
@@ -2341,30 +2322,63 @@
 
         // ========== General Category Management ==========
 
-        // Get merged categories (default + custom generals)
+        // Get merged categories (default + custom + master data generals)
         function getMergedCategories(configType) {
-            const config = configType === 'index' ? generalCategoriesIndex : generalCategoriesView;
+            // Use unified config for all types
+            const config = generalCategories;
 
-            // Get all generals (default + custom)
+            // Get all generals (default + custom + master data)
             const allCustomGenerals = customGenerals ? Object.values(customGenerals).flat() : [];
-            const allGenerals = new Set([...ALL_DEFAULT_GENERALS, ...allCustomGenerals]);
+            const masterGenerals = generalMasterData?.generals ? Object.keys(generalMasterData.generals) : [];
+            const allGenerals = new Set([...ALL_DEFAULT_GENERALS, ...allCustomGenerals, ...masterGenerals]);
 
             if (!config || !config.categories) {
-                // Return default structure if no config
+                // Build categories from default + master data
                 const categories = DEFAULT_GENERAL_CATEGORIES.map(cat => ({
                     id: cat.title,
                     title: cat.title,
                     generals: [...cat.generals]
                 }));
 
-                // Add custom generals to 未分類
-                const unassigned = { id: '_unassigned', title: '未分類', generals: [...allCustomGenerals] };
+                // Track which generals are assigned to default categories
+                const assignedGenerals = new Set(ALL_DEFAULT_GENERALS);
+
+                // Add categories from master data
+                if (generalMasterData?.categories) {
+                    for (const catName of Object.keys(generalMasterData.categories)) {
+                        // Check if this category already exists
+                        if (!categories.find(c => c.title === catName)) {
+                            categories.push({
+                                id: 'master_' + catName,
+                                title: catName,
+                                generals: []
+                            });
+                        }
+                    }
+                }
+
+                // Assign master data generals to their categories
+                if (generalMasterData?.generals) {
+                    for (const [genName, genData] of Object.entries(generalMasterData.generals)) {
+                        if (genData.category) {
+                            const cat = categories.find(c => c.title === genData.category);
+                            if (cat && !cat.generals.includes(genName)) {
+                                cat.generals.push(genName);
+                                assignedGenerals.add(genName);
+                            }
+                        }
+                    }
+                }
+
+                // Add unassigned generals (custom generals without category)
+                const unassignedGenerals = allCustomGenerals.filter(g => !assignedGenerals.has(g));
+                const unassigned = { id: '_unassigned', title: '未分類', generals: unassignedGenerals };
                 categories.push(unassigned);
 
                 return categories;
             }
 
-            // Use stored config
+            // Use stored config - include all generals from config
             const order = config.order || Object.keys(config.categories);
             const result = [];
             const assignedGenerals = new Set();
@@ -2373,14 +2387,14 @@
                 const cat = config.categories[catId];
                 if (!cat) continue;
 
-                // Filter to only include generals that still exist
-                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g));
-                validGenerals.forEach(g => assignedGenerals.add(g));
+                // Include all generals from config (they exist because they were imported)
+                const generals = cat.generals || [];
+                generals.forEach(g => assignedGenerals.add(g));
 
                 result.push({
                     id: catId,
                     title: cat.title,
-                    generals: validGenerals
+                    generals: [...generals]
                 });
             }
 
@@ -2401,12 +2415,12 @@
             if (!window.firebaseReady) return;
 
             const { database, ref, set } = window.firebaseDB;
-            const config = configType === 'index' ? generalCategoriesIndex : generalCategoriesView;
-            const path = configType === 'index' ? 'settings/generalCategoriesIndex' : 'settings/generalCategoriesView';
+            const config = generalCategories;
+            const path = 'settings/generalCategories';
 
             try {
                 await set(ref(database, path), config);
-                showToast(`${configType === 'index' ? '入力フォーム' : '比較表'}用カテゴリを保存しました`);
+                showToast('武将カテゴリを保存しました');
             } catch (error) {
                 console.error('Failed to save category config:', error);
                 showToast('保存に失敗しました', 'error');
@@ -2438,7 +2452,7 @@
 
         // Render category list
         function renderGenCatList(configType) {
-            const listEl = document.getElementById(configType === 'index' ? 'genCatListIndex' : 'genCatListView');
+            const listEl = document.getElementById('genCatListUnified');
             const categories = getMergedCategories(configType);
 
             if (categories.length === 0) {
@@ -2513,11 +2527,9 @@
             });
 
             const config = categoriesToConfig(categories);
-            if (configType === 'index') {
-                generalCategoriesIndex = config;
-            } else {
-                generalCategoriesView = config;
-            }
+            generalCategories = config;
+            generalCategoriesIndex = config;
+            generalCategoriesView = config;
 
             await saveCategoryConfig(configType);
             renderGenCatList(configType);
@@ -2527,20 +2539,17 @@
         async function renameCategoryTitle(configType, catId, newTitle) {
             if (!newTitle || !newTitle.trim()) return;
 
-            const config = configType === 'index' ? generalCategoriesIndex : generalCategoriesView;
-            if (!config || !config.categories || !config.categories[catId]) {
+            if (!generalCategories || !generalCategories.categories || !generalCategories.categories[catId]) {
                 // Initialize config first
                 const categories = getMergedCategories(configType);
                 const cat = categories.find(c => c.id === catId);
                 if (cat) cat.title = newTitle.trim();
                 const newConfig = categoriesToConfig(categories);
-                if (configType === 'index') {
-                    generalCategoriesIndex = newConfig;
-                } else {
-                    generalCategoriesView = newConfig;
-                }
+                generalCategories = newConfig;
+                generalCategoriesIndex = newConfig;
+                generalCategoriesView = newConfig;
             } else {
-                config.categories[catId].title = newTitle.trim();
+                generalCategories.categories[catId].title = newTitle.trim();
             }
 
             await saveCategoryConfig(configType);
@@ -2559,11 +2568,9 @@
             [categories[idx], categories[newIdx]] = [categories[newIdx], categories[idx]];
 
             const config = categoriesToConfig(categories);
-            if (configType === 'index') {
-                generalCategoriesIndex = config;
-            } else {
-                generalCategoriesView = config;
-            }
+            generalCategories = config;
+            generalCategoriesIndex = config;
+            generalCategoriesView = config;
 
             await saveCategoryConfig(configType);
             renderGenCatList(configType);
@@ -2590,11 +2597,9 @@
             categories.splice(idx, 1);
 
             const config = categoriesToConfig(categories);
-            if (configType === 'index') {
-                generalCategoriesIndex = config;
-            } else {
-                generalCategoriesView = config;
-            }
+            generalCategories = config;
+            generalCategoriesIndex = config;
+            generalCategoriesView = config;
 
             await saveCategoryConfig(configType);
             renderGenCatList(configType);
@@ -2602,19 +2607,17 @@
 
         // Reset to default
         async function resetCategoryConfig(configType) {
-            if (!confirm(`${configType === 'index' ? '入力フォーム' : '比較表'}用のカテゴリ設定をデフォルトに戻しますか？`)) return;
+            if (!confirm('カテゴリ設定をデフォルトに戻しますか？')) return;
 
             if (!window.firebaseReady) return;
             const { database, ref, set } = window.firebaseDB;
-            const path = configType === 'index' ? 'settings/generalCategoriesIndex' : 'settings/generalCategoriesView';
+            const path = 'settings/generalCategories';
 
             try {
                 await set(ref(database, path), null);
-                if (configType === 'index') {
-                    generalCategoriesIndex = null;
-                } else {
-                    generalCategoriesView = null;
-                }
+                generalCategories = null;
+                generalCategoriesIndex = null;
+                generalCategoriesView = null;
                 showToast('デフォルトに戻しました');
                 renderGenCatList(configType);
             } catch (error) {
@@ -2671,11 +2674,9 @@
             toCat.generals.push(generalName);
 
             const config = categoriesToConfig(categories);
-            if (configType === 'index') {
-                generalCategoriesIndex = config;
-            } else {
-                generalCategoriesView = config;
-            }
+            generalCategories = config;
+            generalCategoriesIndex = config;
+            generalCategoriesView = config;
 
             await saveCategoryConfig(configType);
             renderGenCatList(configType);
@@ -2694,11 +2695,9 @@
             [cat.generals[currentIndex], cat.generals[newIndex]] = [cat.generals[newIndex], cat.generals[currentIndex]];
 
             const config = categoriesToConfig(categories);
-            if (configType === 'index') {
-                generalCategoriesIndex = config;
-            } else {
-                generalCategoriesView = config;
-            }
+            generalCategories = config;
+            generalCategoriesIndex = config;
+            generalCategoriesView = config;
 
             await saveCategoryConfig(configType);
             renderGenCatList(configType);
@@ -2740,27 +2739,21 @@
             const { database, ref, get, onValue } = window.firebaseDB;
 
             try {
-                // Initial load
-                const [indexSnap, viewSnap] = await Promise.all([
-                    get(ref(database, 'settings/generalCategoriesIndex')),
-                    get(ref(database, 'settings/generalCategoriesView'))
-                ]);
+                // Initial load - use unified config
+                const snap = await get(ref(database, 'settings/generalCategories'));
 
-                generalCategoriesIndex = indexSnap.exists() ? indexSnap.val() : null;
-                generalCategoriesView = viewSnap.exists() ? viewSnap.val() : null;
+                generalCategories = snap.exists() ? snap.val() : null;
+                generalCategoriesIndex = generalCategories;
+                generalCategoriesView = generalCategories;
 
-                renderGenCatList('index');
-                renderGenCatList('view');
+                renderGenCatList('unified');
 
                 // Realtime updates
-                onValue(ref(database, 'settings/generalCategoriesIndex'), (snap) => {
-                    generalCategoriesIndex = snap.exists() ? snap.val() : null;
-                    renderGenCatList('index');
-                });
-
-                onValue(ref(database, 'settings/generalCategoriesView'), (snap) => {
-                    generalCategoriesView = snap.exists() ? snap.val() : null;
-                    renderGenCatList('view');
+                onValue(ref(database, 'settings/generalCategories'), (snap) => {
+                    generalCategories = snap.exists() ? snap.val() : null;
+                    generalCategoriesIndex = generalCategories;
+                    generalCategoriesView = generalCategories;
+                    renderGenCatList('unified');
                 });
             } catch (error) {
                 console.error('Failed to load category configs:', error);
@@ -2796,26 +2789,48 @@
             const currentValue = select.value;
             const customSubcategories = getGeneralSubcategories();
 
-            // Combine existing categories and custom subcategories
-            const allCategories = [...EXISTING_GENERAL_CATEGORIES];
+            // Get current categories from unified config
+            const configCategories = [];
+            if (generalCategories?.categories) {
+                const order = generalCategories.order || Object.keys(generalCategories.categories);
+                order.forEach(catId => {
+                    const cat = generalCategories.categories[catId];
+                    if (cat?.title) {
+                        configCategories.push(cat.title);
+                    }
+                });
+            }
+
+            // Combine config categories and custom subcategories
+            const allCategories = [...configCategories];
             customSubcategories.forEach(sub => {
                 if (!allCategories.includes(sub)) {
                     allCategories.push(sub);
                 }
             });
 
-            select.innerHTML = `
-                <option value="_default">（カテゴリなし）</option>
+            // Build dropdown options
+            let optionsHtml = '<option value="_default">（カテゴリなし）</option>';
+
+            if (configCategories.length > 0) {
+                optionsHtml += `
                 <optgroup label="既存カテゴリ">
-                    ${EXISTING_GENERAL_CATEGORIES.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('')}
-                </optgroup>
-                ${customSubcategories.length > 0 ? `
+                    ${configCategories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('')}
+                </optgroup>`;
+            }
+
+            // Add custom subcategories that are not in config
+            const customOnlySubcategories = customSubcategories.filter(sub => !configCategories.includes(sub));
+            if (customOnlySubcategories.length > 0) {
+                optionsHtml += `
                 <optgroup label="カスタムカテゴリ">
-                    ${customSubcategories.filter(sub => !EXISTING_GENERAL_CATEGORIES.includes(sub)).map(sub => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join('')}
-                </optgroup>
-                ` : ''}
-                <option value="__new__">+ 新規カテゴリを作成</option>
-            `;
+                    ${customOnlySubcategories.map(sub => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join('')}
+                </optgroup>`;
+            }
+
+            optionsHtml += '<option value="__new__">+ 新規カテゴリを作成</option>';
+
+            select.innerHTML = optionsHtml;
 
             if (currentValue && (allCategories.includes(currentValue) || currentValue === '_default' || currentValue === '__new__')) {
                 select.value = currentValue;
@@ -3097,7 +3112,7 @@
                             </span>
                             ${!isPredefined ? `
                                 <span class="category-group-actions">
-                                    <button onclick="event.stopPropagation(); deleteCategory('${escapeHtml(category)}')" title="カテゴリを削除">🗑️ 削除</button>
+                                    <button onclick="event.stopPropagation(); deleteCustomItemCategory('${escapeHtml(category)}')" title="カテゴリを削除">🗑️ 削除</button>
                                 </span>
                             ` : ''}
                         </div>
@@ -3262,7 +3277,7 @@
             }
         }
 
-        async function deleteCategory(category) {
+        async function deleteCustomItemCategory(category) {
             const catData = customItems[category] || {};
             const totalItems = Object.values(catData).reduce((sum, items) => sum + (Array.isArray(items) ? items.length : 0), 0);
             const msg = totalItems > 0
@@ -3290,8 +3305,7 @@
                 teams: teams,
                 customGenerals: customGenerals,
                 customItems: customItems,
-                generalCategoriesIndex: generalCategoriesIndex,
-                generalCategoriesView: generalCategoriesView,
+                generalCategories: generalCategories,
                 exportedAt: new Date().toISOString()
             };
 
@@ -3344,12 +3358,12 @@
                             await set(ref(database, 'customItems'), data.customItems);
                         }
 
-                        // Import general category configs
-                        if (data.generalCategoriesIndex) {
-                            await set(ref(database, 'settings/generalCategoriesIndex'), data.generalCategoriesIndex);
-                        }
-                        if (data.generalCategoriesView) {
-                            await set(ref(database, 'settings/generalCategoriesView'), data.generalCategoriesView);
+                        // Import general category config
+                        if (data.generalCategories) {
+                            await set(ref(database, 'settings/generalCategories'), data.generalCategories);
+                        } else if (data.generalCategoriesIndex) {
+                            // Backwards compatibility: use old index config as the unified config
+                            await set(ref(database, 'settings/generalCategories'), data.generalCategoriesIndex);
                         }
 
                         showToast('データをインポートしました', 'success');
@@ -3657,14 +3671,17 @@
                         };
                     }
 
-                    await set(ref(database, 'settings/generalCategoriesIndex'), newCategoryConfig);
-                    await set(ref(database, 'settings/generalCategoriesView'), newCategoryConfig);
+                    await set(ref(database, 'settings/generalCategories'), newCategoryConfig);
+
+                    // Update local state
+                    generalCategories = newCategoryConfig;
+                    generalCategoriesIndex = newCategoryConfig;
+                    generalCategoriesView = newCategoryConfig;
 
                     showToast(`${totalGenerals}人の武将データをインポートしました`, 'success');
 
                     // Refresh UI
-                    renderGenCatList('index');
-                    renderGenCatList('view');
+                    renderGenCatList('unified');
 
                 } catch (error) {
                     console.error('CSV import error:', error);
