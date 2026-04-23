@@ -236,6 +236,64 @@
             color: transparent;
         }
 
+        /* Numeric value display */
+        .cell-value {
+            position: relative;
+            display: inline-block;
+        }
+
+        .cell-value .val-num {
+            position: absolute;
+            bottom: -2px;
+            right: -4px;
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            text-shadow: 0 0 2px var(--bg-primary), 0 0 2px var(--bg-primary);
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        /* Color intensity based on value (1-10 scale) */
+        .val-low { opacity: 0.5; }
+        .val-mid { opacity: 0.75; }
+        .val-high { opacity: 1; }
+
+        /* Numeric mode: show value prominently */
+        body.numeric-mode .cell-value .cell-equipped,
+        body.numeric-mode .cell-value .cell-owned {
+            opacity: 0.3;
+            font-size: 0.8rem;
+        }
+
+        body.numeric-mode .cell-value .val-num {
+            position: static;
+            font-size: 0.9rem;
+            color: var(--accent-gold);
+            text-shadow: none;
+        }
+
+        /* Numeric mode toggle button */
+        .numeric-toggle-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        .numeric-toggle-btn:hover {
+            border-color: var(--accent-gold);
+        }
+
+        .numeric-toggle-btn.active {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+        }
+
         /* Sticky column widths - default mode */
         :root {
             --sticky-col1-w: 120px;
@@ -981,6 +1039,74 @@
         let customGenerals = {};
         let customItems = {};
         let collapsedCategories = new Set();
+        let categoriesViewConfig = null;  // Custom category config for view.html
+
+        // Flatten generals (for all generals list)
+        const allDefaultGenerals = generalCategories.flatMap(cat => cat.generals);
+
+        // Get effective general categories for view.html
+        function getEffectiveViewCategories() {
+            const customGenList = getCustomGeneralsList();
+            const allGenerals = new Set([...allDefaultGenerals, ...customGenList]);
+
+            if (!categoriesViewConfig || !categoriesViewConfig.categories) {
+                // Use default categories + custom generals
+                const result = generalCategories.map(cat => ({
+                    title: cat.title,
+                    generals: [...cat.generals]
+                }));
+
+                // Add custom generals by their subcategory
+                if (customGenerals && typeof customGenerals === 'object') {
+                    for (const [subcat, gens] of Object.entries(customGenerals)) {
+                        if (!Array.isArray(gens) || gens.length === 0) continue;
+                        const catTitle = subcat === '_default' ? '追加武将' : subcat;
+                        let existingCat = result.find(c => c.title === catTitle);
+                        if (existingCat) {
+                            existingCat.generals.push(...gens);
+                        } else {
+                            result.push({ title: catTitle, generals: [...gens] });
+                        }
+                    }
+                }
+                return result;
+            }
+
+            // Use stored config
+            const order = categoriesViewConfig.order || Object.keys(categoriesViewConfig.categories);
+            const result = [];
+            const assignedGenerals = new Set();
+
+            for (const catId of order) {
+                const cat = categoriesViewConfig.categories[catId];
+                if (!cat) continue;
+
+                // Filter to only include generals that still exist
+                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g));
+                validGenerals.forEach(g => assignedGenerals.add(g));
+
+                if (validGenerals.length > 0 || catId !== '_unassigned') {
+                    result.push({
+                        id: catId,
+                        title: cat.title,
+                        generals: validGenerals
+                    });
+                }
+            }
+
+            // Add any unassigned generals
+            const unassignedGenerals = [...allGenerals].filter(g => !assignedGenerals.has(g));
+            if (unassignedGenerals.length > 0) {
+                let unassignedCat = result.find(c => c.id === '_unassigned');
+                if (unassignedCat) {
+                    unassignedCat.generals.push(...unassignedGenerals);
+                } else {
+                    result.push({ id: '_unassigned', title: '未分類', generals: unassignedGenerals });
+                }
+            }
+
+            return result;
+        }
 
         // Flatten custom generals object to array
         function flattenCustomGenerals(data) {
@@ -1025,17 +1151,19 @@
             const { database, ref, get } = window.firebaseDB;
             try {
                 setStatus('データ取得中...');
-                const [gameSnap, teamSnap, genSnap, itemSnap] = await Promise.all([
+                const [gameSnap, teamSnap, genSnap, itemSnap, catSnap] = await Promise.all([
                     get(ref(database, 'gameData')),
                     get(ref(database, 'teams')),
                     get(ref(database, 'customGenerals')),
-                    get(ref(database, 'customItems'))
+                    get(ref(database, 'customItems')),
+                    get(ref(database, 'generalCategoriesView'))
                 ]);
                 gameData = gameSnap.exists() ? gameSnap.val() : {};
                 teams = teamSnap.exists() ? teamSnap.val() : {};
                 const genData = genSnap.exists() ? genSnap.val() : {};
                 customGenerals = Array.isArray(genData) ? { '_default': genData } : genData;
                 customItems = itemSnap.exists() ? itemSnap.val() : {};
+                categoriesViewConfig = catSnap.exists() ? catSnap.val() : null;
 
                 const userCount = Object.keys(gameData).length;
                 const teamCount = Object.keys(teams).length;
@@ -1073,6 +1201,10 @@
             });
             onValue(ref(database, 'customItems'), (snap) => {
                 customItems = snap.exists() ? snap.val() : {};
+                renderPreview();
+            });
+            onValue(ref(database, 'generalCategoriesView'), (snap) => {
+                categoriesViewConfig = snap.exists() ? snap.val() : null;
                 renderPreview();
             });
         }
@@ -1156,6 +1288,24 @@
             try {
                 if (localStorage.getItem('view_compact_sticky') === '1') {
                     document.body.classList.add('compact-sticky');
+                }
+            } catch (_) {}
+        }
+
+        // Toggle numeric display mode
+        function toggleNumericMode() {
+            document.body.classList.toggle('numeric-mode');
+            try {
+                localStorage.setItem('view_numeric_mode',
+                    document.body.classList.contains('numeric-mode') ? '1' : '0');
+            } catch (_) {}
+            renderTable();
+        }
+
+        function restoreNumericMode() {
+            try {
+                if (localStorage.getItem('view_numeric_mode') === '1') {
+                    document.body.classList.add('numeric-mode');
                 }
             } catch (_) {}
         }
@@ -1316,46 +1466,32 @@
             return 'none';
         }
 
-        // Build general categories dynamically (merge custom generals into matching categories)
-        function buildGeneralCategories() {
-            const customRaw = (customGenerals && typeof customGenerals === 'object' && !Array.isArray(customGenerals))
-                ? customGenerals
-                : { _default: Array.isArray(customGenerals) ? customGenerals : [] };
+        // Helper for general cell value (level)
+        function getGeneralCellValue(user, generalName) {
+            const g = user.generals && user.generals[generalName];
+            if (!g) return null;
+            // Support both new format {level, formed, owned} and old format (just level number)
+            if (typeof g === 'object') {
+                return g.level !== undefined ? g.level : null;
+            }
+            return typeof g === 'number' ? g : null;
+        }
 
-            const cats = generalCategories.map((gc, i) => {
-                const matchingCustom = Array.isArray(customRaw[gc.title]) ? customRaw[gc.title] : [];
-                const combinedItems = [...gc.generals, ...matchingCustom].map(name => ({ id: name, name }));
+        // Build general categories dynamically using effective view config
+        function buildGeneralCategories() {
+            const effectiveCategories = getEffectiveViewCategories();
+
+            return effectiveCategories.map((cat, i) => {
+                if (cat.generals.length === 0) return null;  // Skip empty categories
                 return {
                     key: `general_${i}`,
-                    title: `②-2 ${gc.title}`,
+                    title: `②-2 ${cat.title}`,
                     colorClass: 'cat-general',
-                    items: combinedItems,
-                    getCellState: (user, item) => getGeneralCellState(user, item.id)
+                    items: cat.generals.map(name => ({ id: name, name })),
+                    getCellState: (user, item) => getGeneralCellState(user, item.id),
+                    getCellValue: (user, item) => getGeneralCellValue(user, item.id)
                 };
-            });
-
-            // Collect unmatched custom subcategories
-            const existingTitles = new Set(generalCategories.map(c => c.title));
-            const customSubcats = Object.keys(customRaw).filter(k => !existingTitles.has(k) && Array.isArray(customRaw[k]) && customRaw[k].length > 0);
-            customSubcats.sort((a, b) => {
-                if (a === '_default') return 1;
-                if (b === '_default') return -1;
-                return a.localeCompare(b);
-            });
-
-            customSubcats.forEach((subcat, idx) => {
-                const names = customRaw[subcat] || [];
-                const displayTitle = subcat === '_default' ? '追加武将' : subcat;
-                cats.push({
-                    key: `general_custom_${idx}`,
-                    title: `②-2 ${displayTitle}`,
-                    colorClass: 'cat-general',
-                    items: names.map(name => ({ id: name, name })),
-                    getCellState: (user, item) => getGeneralCellState(user, item.id)
-                });
-            });
-
-            return cats;
+            }).filter(Boolean);  // Remove nulls
         }
 
         // Get flattened list of custom items for a category
@@ -1442,6 +1578,18 @@
                         if (w.status === 'equipped') return 'equipped';
                         if (w.status === 'owned') return 'owned';
                         return 'none';
+                    },
+                    getCellValue: (user, item) => {
+                        if (item.isCustom) {
+                            const w = user.customItems?.weapons?.[item.id];
+                            const u = parseInt(w?.upgrade) || 0;
+                            const r = parseInt(w?.reform) || 0;
+                            return (u || r) ? `${u}/${r}` : null;
+                        }
+                        const w = user.weapons && user.weapons[item.id];
+                        const u = parseInt(w?.upgrade) || 0;
+                        const r = parseInt(w?.reform) || 0;
+                        return (u || r) ? `${u}/${r}` : null;
                     }
                 },
                 {
@@ -1560,9 +1708,17 @@
                         if (!t) return 'none';
                         if (t.equipped) return 'equipped';
                         if (t.owned) return 'owned';
-                    return 'none';
+                        return 'none';
+                    },
+                    getCellValue: (user, item) => {
+                        if (item.isCustom) {
+                            const t = user.customItems?.tactics?.[item.id];
+                            return t?.level || null;
+                        }
+                        const t = user.tactics && user.tactics[item.id];
+                        return t?.level || null;
+                    }
                 }
-            }
             ];
         }
 
@@ -1578,10 +1734,40 @@
             return result;
         }
 
-        function stateSymbol(state) {
-            if (state === 'equipped') return '<span class="cell-equipped">●</span>';
-            if (state === 'owned') return '<span class="cell-owned">○</span>';
-            return '';
+        function stateSymbol(state, value = null) {
+            if (state === 'none') return '';
+
+            // If no value, just show the symbol
+            if (value === null || value === undefined) {
+                if (state === 'equipped') return '<span class="cell-equipped">●</span>';
+                if (state === 'owned') return '<span class="cell-owned">○</span>';
+                return '';
+            }
+
+            // Determine color intensity class based on value
+            let intensityClass = 'val-high';
+            let numericValue = typeof value === 'number' ? value : null;
+
+            // Handle string values like "5/3" (upgrade/reform)
+            if (typeof value === 'string' && value.includes('/')) {
+                const parts = value.split('/');
+                numericValue = parseInt(parts[0]) || 0;  // Use upgrade value for intensity
+            } else if (typeof value === 'string') {
+                numericValue = parseInt(value) || 0;
+            }
+
+            if (numericValue !== null) {
+                // Normalize to 1-10 scale (generals 1-12, tactics 1-80, etc.)
+                const normalizedVal = numericValue <= 12 ? numericValue : Math.ceil(numericValue / 10);
+                if (normalizedVal <= 3) intensityClass = 'val-low';
+                else if (normalizedVal <= 6) intensityClass = 'val-mid';
+            }
+
+            const symbol = state === 'equipped'
+                ? `<span class="cell-equipped ${intensityClass}">●</span>`
+                : `<span class="cell-owned ${intensityClass}">○</span>`;
+
+            return `<span class="cell-value">${symbol}<span class="val-num">${value}</span></span>`;
         }
 
         function escapeHtml(str) {
@@ -1995,6 +2181,7 @@
                             return `<td class="${cat.colorClass}${borderClass} cell-text">${escapeHtml(text)}</td>`;
                         }
                         const state = cat.getCellState(user, item);
+                        const value = cat.getCellValue ? cat.getCellValue(user, item) : null;
                         // Add dotted border between asura level groups
                         if (item.id === 'asura60_0' || item.id === 'asura90_0') {
                             borderClass += ' asura-level-border';
@@ -2009,7 +2196,7 @@
                         const clickHandler = isClickable
                             ? ` onclick="toggleCellState('${escapeHtml(username)}', '${escapeHtml(team)}', '${cat.key}', '${escapeHtml(itemIdStr)}', '${isCustomStr}', '${escapeHtml(itemNameStr)}')"`
                             : '';
-                        return `<td class="${cat.colorClass}${borderClass}${clickClass}"${clickHandler}>${stateSymbol(state)}</td>`;
+                        return `<td class="${cat.colorClass}${borderClass}${clickClass}"${clickHandler}>${stateSymbol(state, value)}</td>`;
                     });
                 }).join('');
                 const usernameShort = username ? username.charAt(0) : '';
@@ -2026,9 +2213,11 @@
             }).join('');
 
             const isCompact = document.body.classList.contains('compact-sticky');
+            const isNumeric = document.body.classList.contains('numeric-mode');
             main.innerHTML = `
                 <div class="scroll-indicator" style="display: flex; align-items: center; gap: 0.5rem;">
                     <button class="compact-toggle-btn${isCompact ? ' active' : ''}" onclick="toggleCompactSticky()" title="固定列を最小化">${isCompact ? '▶ 全表示' : '◀ 最小化'}</button>
+                    <button class="numeric-toggle-btn${isNumeric ? ' active' : ''}" onclick="toggleNumericMode()" title="数値表示モード">${isNumeric ? '🔢 数値' : '●○ 通常'}</button>
                     <span style="color: var(--text-secondary); font-size: 0.7rem;">カテゴリ:</span>
                     ${scrollIndicator}
                 </div>
@@ -2195,45 +2384,15 @@
                 items.push({ id, name, type: 'SP武将', category: 'spgeneral' });
             });
 
-            // Regular Generals (merge custom generals into matching categories)
-            const customRaw = (customGenerals && typeof customGenerals === 'object' && !Array.isArray(customGenerals))
-                ? customGenerals
-                : { _default: Array.isArray(customGenerals) ? customGenerals : [] };
-
+            // Regular Generals (using effective view categories)
+            const effectiveCategories = getEffectiveViewCategories();
             let globalIndex = 0;
-            generalCategories.forEach((cat, catIndex) => {
+
+            effectiveCategories.forEach((cat, catIndex) => {
                 cat.generals.forEach((name) => {
                     items.push({
                         id: `general_${globalIndex}`, name, type: '武将', category: 'general',
                         index: globalIndex, generalName: name, subcategory: cat.title, subcategoryIndex: catIndex
-                    });
-                    globalIndex++;
-                });
-                // Add matching custom generals to this category
-                const matchingCustom = Array.isArray(customRaw[cat.title]) ? customRaw[cat.title] : [];
-                matchingCustom.forEach((name) => {
-                    items.push({
-                        id: `general_${globalIndex}`, name, type: '武将', category: 'general',
-                        index: globalIndex, generalName: name, subcategory: cat.title, subcategoryIndex: catIndex
-                    });
-                    globalIndex++;
-                });
-            });
-
-            // Unmatched custom subcategories
-            const existingTitles = new Set(generalCategories.map(c => c.title));
-            const customSubcats = Object.keys(customRaw).filter(k => !existingTitles.has(k) && Array.isArray(customRaw[k]) && customRaw[k].length > 0);
-            customSubcats.sort((a, b) => {
-                if (a === '_default') return 1;
-                if (b === '_default') return -1;
-                return a.localeCompare(b);
-            });
-            customSubcats.forEach((subcat, idx) => {
-                const displayTitle = subcat === '_default' ? '追加武将' : subcat;
-                (customRaw[subcat] || []).forEach((name) => {
-                    items.push({
-                        id: `general_${globalIndex}`, name, type: '武将', category: 'general',
-                        index: globalIndex, generalName: name, subcategory: displayTitle, subcategoryIndex: generalCategories.length + idx
                     });
                     globalIndex++;
                 });
@@ -2508,8 +2667,7 @@
             resultsDiv.classList.add('show');
 
             const generalSubcatLabels = {};
-            generalCategories.forEach(cat => { generalSubcatLabels[cat.title] = cat.title; });
-            generalSubcatLabels['追加武将'] = '追加武将';
+            getEffectiveViewCategories().forEach(cat => { generalSubcatLabels[cat.title] = cat.title; });
 
             function groupByCategory(items) {
                 const groups = {};
@@ -2631,6 +2789,7 @@
 
         // Init
         restoreCompactSticky();
+        restoreNumericMode();
         document.addEventListener('firebaseReady', async () => {
             await loadAllData();
             subscribeRealtime();

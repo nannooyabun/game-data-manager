@@ -2130,6 +2130,73 @@
         let cachedCustomGeneralsRaw = {};  // Keep raw object structure { subcategory: [names] }
         let cachedCustomItems = {};
         let cachedTeams = {};  // teams keyed by team.id (for manage-screen team membership)
+        let cachedCategoriesIndex = null;  // Custom category config for index.html
+
+        // Get effective general categories (from Firebase config or defaults)
+        function getEffectiveGeneralCategories() {
+            // Get all generals (default + custom)
+            const allCustomGenerals = cachedCustomGenerals || [];
+            const allGenerals = new Set([...generals, ...allCustomGenerals]);
+
+            if (!cachedCategoriesIndex || !cachedCategoriesIndex.categories) {
+                // Use default categories + custom generals in their own categories
+                const result = generalCategories.map(cat => ({
+                    title: cat.title,
+                    generals: [...cat.generals]
+                }));
+
+                // Add custom generals by their subcategory
+                if (cachedCustomGeneralsRaw && typeof cachedCustomGeneralsRaw === 'object') {
+                    for (const [subcat, gens] of Object.entries(cachedCustomGeneralsRaw)) {
+                        if (!Array.isArray(gens) || gens.length === 0) continue;
+                        const catTitle = subcat === '_default' ? '追加武将' : subcat;
+                        let existingCat = result.find(c => c.title === catTitle);
+                        if (existingCat) {
+                            existingCat.generals.push(...gens);
+                        } else {
+                            result.push({ title: catTitle, generals: [...gens] });
+                        }
+                    }
+                }
+
+                return result;
+            }
+
+            // Use stored config
+            const order = cachedCategoriesIndex.order || Object.keys(cachedCategoriesIndex.categories);
+            const result = [];
+            const assignedGenerals = new Set();
+
+            for (const catId of order) {
+                const cat = cachedCategoriesIndex.categories[catId];
+                if (!cat) continue;
+
+                // Filter to only include generals that still exist
+                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g));
+                validGenerals.forEach(g => assignedGenerals.add(g));
+
+                if (validGenerals.length > 0 || catId !== '_unassigned') {
+                    result.push({
+                        id: catId,
+                        title: cat.title,
+                        generals: validGenerals
+                    });
+                }
+            }
+
+            // Add any unassigned generals
+            const unassignedGenerals = [...allGenerals].filter(g => !assignedGenerals.has(g));
+            if (unassignedGenerals.length > 0) {
+                let unassignedCat = result.find(c => c.id === '_unassigned');
+                if (unassignedCat) {
+                    unassignedCat.generals.push(...unassignedGenerals);
+                } else {
+                    result.push({ id: '_unassigned', title: '未分類', generals: unassignedGenerals });
+                }
+            }
+
+            return result;
+        }
 
         // ========== Firebase Database Functions ==========
         
@@ -2853,6 +2920,20 @@
             }
         }
 
+        // Get general category config for index.html
+        async function getCategoriesIndex() {
+            if (!window.firebaseReady) return cachedCategoriesIndex;
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const snapshot = await get(ref(database, 'generalCategoriesIndex'));
+                cachedCategoriesIndex = snapshot.exists() ? snapshot.val() : null;
+                return cachedCategoriesIndex;
+            } catch (error) {
+                console.error('Error getting category config:', error);
+                return cachedCategoriesIndex;
+            }
+        }
+
         // Set up real-time listeners
         function setupRealtimeListeners() {
             if (!window.firebaseReady) return;
@@ -2882,6 +2963,15 @@
                 if (JSON.stringify(newItems) !== JSON.stringify(cachedCustomItems)) {
                     cachedCustomItems = newItems;
                     renderAllCustomItems();
+                }
+            });
+
+            // Listen for category config changes
+            onValue(ref(database, 'generalCategoriesIndex'), (snapshot) => {
+                const newConfig = snapshot.exists() ? snapshot.val() : null;
+                if (JSON.stringify(newConfig) !== JSON.stringify(cachedCategoriesIndex)) {
+                    cachedCategoriesIndex = newConfig;
+                    initGeneralGrid();  // Re-render generals with new categories
                 }
             });
 
@@ -3361,8 +3451,9 @@
             initTacticSection();
             initAsuraTapTargets();
 
-            // Load custom generals first
+            // Load custom generals and category config first
             cachedCustomGenerals = await getCustomGenerals();
+            await getCategoriesIndex();
             initGeneralGrid();
 
             // Load custom items
@@ -3561,7 +3652,7 @@
         // Initialize general grid with categories
         function initGeneralGrid() {
             const grid = document.getElementById('generalGrid');
-            const customRaw = cachedCustomGeneralsRaw || {};
+            const effectiveCategories = getEffectiveGeneralCategories();
 
             let globalIndex = 0;
             let html = '';
@@ -3578,39 +3669,14 @@
                 `;
             };
 
-            // Add predefined categories (merge matching custom generals)
-            generalCategories.forEach(cat => {
-                const matchingCustom = customRaw[cat.title] || [];
-                const combinedGenerals = [...cat.generals, ...matchingCustom];
+            // Render categories from effective config
+            effectiveCategories.forEach(cat => {
+                if (cat.generals.length === 0) return;  // Skip empty categories
                 html += `
                     <div class="general-category">
                         <div class="general-category-title">●${cat.title}</div>
                         <div class="general-grid">
-                            ${combinedGenerals.map(generalItemHtml).join('')}
-                        </div>
-                    </div>
-                `;
-            });
-
-            // Collect unmatched custom subcategories (i.e. new custom categories or _default)
-            const existingTitles = new Set(generalCategories.map(c => c.title));
-            const customSubcats = Object.keys(customRaw).filter(k => !existingTitles.has(k) && Array.isArray(customRaw[k]) && customRaw[k].length > 0);
-
-            // Sort so _default comes last
-            customSubcats.sort((a, b) => {
-                if (a === '_default') return 1;
-                if (b === '_default') return -1;
-                return a.localeCompare(b);
-            });
-
-            customSubcats.forEach(subcat => {
-                const names = customRaw[subcat] || [];
-                const displayTitle = subcat === '_default' ? '追加武将' : subcat;
-                html += `
-                    <div class="general-category">
-                        <div class="general-category-title">●${displayTitle}</div>
-                        <div class="general-grid">
-                            ${names.map(generalItemHtml).join('')}
+                            ${cat.generals.map(generalItemHtml).join('')}
                         </div>
                     </div>
                 `;
@@ -3621,29 +3687,8 @@
 
         // Get all generals including custom ones (matches display order in initGeneralGrid)
         function getAllGenerals() {
-            const customRaw = cachedCustomGeneralsRaw || {};
-            const result = [];
-
-            // Predefined categories with matching custom generals merged in
-            generalCategories.forEach(cat => {
-                result.push(...cat.generals);
-                const matchingCustom = customRaw[cat.title] || [];
-                result.push(...matchingCustom);
-            });
-
-            // Unmatched custom subcategories (in display order)
-            const existingTitles = new Set(generalCategories.map(c => c.title));
-            const customSubcats = Object.keys(customRaw).filter(k => !existingTitles.has(k) && Array.isArray(customRaw[k]) && customRaw[k].length > 0);
-            customSubcats.sort((a, b) => {
-                if (a === '_default') return 1;
-                if (b === '_default') return -1;
-                return a.localeCompare(b);
-            });
-            customSubcats.forEach(subcat => {
-                result.push(...(customRaw[subcat] || []));
-            });
-
-            return result;
+            const effectiveCategories = getEffectiveGeneralCategories();
+            return effectiveCategories.flatMap(cat => cat.generals);
         }
 
         // Get total general count for indexing
@@ -4917,23 +4962,35 @@
         }
 
         function bulkSelectGenerals(category, action) {
-            const categoryMap = { 'all': null, 'want': 0, 'gather': 1, 'alltype': 2, 'horse': 3, 'infantry': 4, 'bow': 5 };
+            // Map button IDs to original category title patterns
+            const categoryTitleMap = {
+                'want': 'この辺は一人は欲しい武将',
+                'gather': '集結で使う武将',
+                'alltype': '全兵種対応武将',
+                'horse': '馬用',
+                'infantry': '歩用',
+                'bow': '弓用'
+            };
+
+            const effectiveCategories = getEffectiveGeneralCategories();
             const allGenerals = getAllGenerals();
-            let startIndex = 0;
-            
+
             if (category === 'all') {
                 for (let i = 0; i < allGenerals.length; i++) {
                     setGeneralState(i, action === 'owned' ? 1 : 0);
                 }
             } else {
-                const catIndex = categoryMap[category];
-                if (catIndex !== undefined && catIndex < generalCategories.length) {
-                    for (let i = 0; i < catIndex; i++) {
-                        startIndex += generalCategories[i].generals.length;
-                    }
-                    const count = generalCategories[catIndex].generals.length;
-                    for (let i = startIndex; i < startIndex + count; i++) {
-                        setGeneralState(i, action === 'owned' ? 1 : 0);
+                const targetTitle = categoryTitleMap[category];
+                if (targetTitle) {
+                    let startIndex = 0;
+                    for (const cat of effectiveCategories) {
+                        if (cat.title === targetTitle) {
+                            for (let i = startIndex; i < startIndex + cat.generals.length; i++) {
+                                setGeneralState(i, action === 'owned' ? 1 : 0);
+                            }
+                            break;
+                        }
+                        startIndex += cat.generals.length;
                     }
                 }
             }
