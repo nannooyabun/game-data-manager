@@ -1156,7 +1156,7 @@
                     get(ref(database, 'teams')),
                     get(ref(database, 'customGenerals')),
                     get(ref(database, 'customItems')),
-                    get(ref(database, 'generalCategoriesView'))
+                    get(ref(database, 'settings/generalCategoriesView'))
                 ]);
                 gameData = gameSnap.exists() ? gameSnap.val() : {};
                 teams = teamSnap.exists() ? teamSnap.val() : {};
@@ -1203,7 +1203,7 @@
                 customItems = snap.exists() ? snap.val() : {};
                 renderPreview();
             });
-            onValue(ref(database, 'generalCategoriesView'), (snap) => {
+            onValue(ref(database, 'settings/generalCategoriesView'), (snap) => {
                 categoriesViewConfig = snap.exists() ? snap.val() : null;
                 renderPreview();
             });
