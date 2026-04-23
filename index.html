@@ -2158,6 +2158,37 @@
             return '未所持';
         }
 
+        // Japanese display name maps for item IDs
+        const ITEM_NAME_MAPS = {
+            weapons: { akoni: '赤鬼', inseki: '隕石', hanya: '般若' },
+            spGenerals: { nobunaga: '信長', hideyoshi: '秀吉', ieyasu: '家康' },
+            academy: {
+                momiji: '紅葉', banseki: '盤石', shishi: '獅子の洞入り', tengu: '天狗抄',
+                attack: '攻撃', defense: '防御', combo: '連撃', resist: '抵抗',
+                shield: '楯突', pierce: '貫通', evade: '回避', accuracy: '命中', barrier: '障壁'
+            },
+            masks: { genko: '玄狐神使', kirin: '金麒麟', reikyo: '霊棘', kinen: '金猿', hanya: '般若', kiou: '鬼王' }
+        };
+
+        // Get display name for item by category key and item id
+        function getItemDisplayName(categoryKey, itemId) {
+            if (!itemId) return itemId;
+            if (categoryKey === 'weapons') return ITEM_NAME_MAPS.weapons[itemId] || itemId;
+            if (categoryKey === 'spGenerals') return ITEM_NAME_MAPS.spGenerals[itemId] || itemId;
+            if (categoryKey === 'academy') return ITEM_NAME_MAPS.academy[itemId] || itemId;
+            if (categoryKey === 'masks') return ITEM_NAME_MAPS.masks[itemId] || itemId;
+            if (categoryKey === 'flowers') {
+                const f = flowerFormations.find(x => x.id === itemId);
+                return f ? f.name : itemId;
+            }
+            if (categoryKey === 'tactics') {
+                const t = tactics.find(x => x.id === itemId);
+                return t ? t.name : itemId;
+            }
+            // For generals and custom items, the id IS the Japanese name
+            return itemId;
+        }
+
         // Build sync plan: returns { plan, hasChanges }
         // plan[teamName] = [{ category, itemId, itemName, fromState, toState }]
         function buildSyncPlan(username, targetTeam, oldTargetData, newTargetData) {
@@ -2211,7 +2242,7 @@
                                 categoryLabel: cat.label,
                                 pattern: cat.pattern,
                                 itemId: key,
-                                itemName: key,
+                                itemName: getItemDisplayName(cat.key, key),
                                 fromState: otherState,
                                 toState: syncToState,
                                 getContainer: cat.getContainer,
@@ -2954,12 +2985,20 @@
             const editUser = urlParams.get('edit');
             const editTeam = urlParams.get('team');
             let loadedFromUrl = false;
+            // Debug: log edit mode parameters
+            console.log('[EditMode] editUser:', JSON.stringify(editUser), 'editTeam:', JSON.stringify(editTeam));
+            console.log('[EditMode] cachedGameData keys:', Object.keys(cachedGameData || {}));
             if (editUser) {
                 const userData = cachedGameData[editUser];
+                console.log('[EditMode] userData found:', !!userData);
                 if (userData) {
+                    console.log('[EditMode] userData structure:', Object.keys(userData));
+                    console.log('[EditMode] isOldFormat:', isOldFormatUserData(userData));
                     const teamName = editTeam || '1軍';
                     const teamData = getUserTeamData(userData, teamName);
+                    console.log('[EditMode] teamName:', JSON.stringify(teamName), 'teamData found:', !!teamData);
                     if (teamData) {
+                        console.log('[EditMode] teamData keys:', Object.keys(teamData));
                         teamData.username = editUser;
                         teamData.team = teamName;
                         loadDataToForm(teamData);
@@ -2968,6 +3007,7 @@
                     } else {
                         // Team not found - show available teams
                         const availableTeams = getUserTeams(userData);
+                        console.log('[EditMode] Available teams:', availableTeams);
                         showToast(`${editUser}の${teamName}データが見つかりません（利用可能: ${availableTeams.join(', ')}）`, 'error');
                     }
                 } else {
