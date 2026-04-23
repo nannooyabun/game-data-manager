@@ -2776,6 +2776,7 @@
         // Render custom weapons
         function renderCustomWeapons() {
             const container = document.getElementById('customWeaponsContainer');
+            if (!container) return; // Safety check
             const items = getCustomItemsForCategory('兵器');
 
             if (items.length === 0) {
@@ -2867,6 +2868,7 @@
         // Render custom tactics (戦法)
         function renderCustomTactics() {
             const container = document.getElementById('customTacticsContainer');
+            if (!container) return; // Safety check
             const items = getCustomItemsForCategory('戦法');
 
             if (items.length === 0) {
