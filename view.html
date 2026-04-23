@@ -197,12 +197,12 @@
         }
 
         .sticky-col-2 {
-            left: var(--sticky-col1-w, 120px);
+            left: var(--sticky-col1-w);
             z-index: 2;
         }
 
         .sticky-col-3 {
-            left: calc(var(--sticky-col1-w, 120px) + var(--sticky-col2-w, 60px));
+            left: calc(var(--sticky-col1-w) + var(--sticky-col2-w));
             z-index: 2;
         }
 
@@ -236,26 +236,30 @@
             color: transparent;
         }
 
-        /* First user column width - compact */
-        .col-username { width: 120px; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 8px; }
-        .col-team { width: 60px; max-width: 60px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 4px; text-align: center; font-size: 0.85rem; }
-        .col-troop { width: 40px; max-width: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 4px; text-align: center; }
+        /* Sticky column widths - default mode */
+        :root {
+            --sticky-col1-w: 120px;
+            --sticky-col2-w: 60px;
+            --sticky-col3-w: 40px;
+        }
+
+        .col-username { width: var(--sticky-col1-w); min-width: var(--sticky-col1-w); max-width: var(--sticky-col1-w); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 8px; }
+        .col-team { width: var(--sticky-col2-w); min-width: var(--sticky-col2-w); max-width: var(--sticky-col2-w); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 4px; text-align: center; font-size: 0.85rem; }
+        .col-troop { width: var(--sticky-col3-w); min-width: var(--sticky-col3-w); max-width: var(--sticky-col3-w); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 4px; text-align: center; }
 
         /* Compact mode: show only first character, single-char columns */
         .compact-sticky {
             --sticky-col1-w: 32px;
             --sticky-col2-w: 28px;
+            --sticky-col3-w: 28px;
         }
         .compact-sticky .col-username,
         .compact-sticky .col-team,
         .compact-sticky .col-troop {
-            width: 28px;
-            max-width: 32px;
             padding: 4px 2px;
             text-align: center;
             font-size: 0.9rem;
         }
-        .compact-sticky .col-username { width: 32px; max-width: 32px; }
         .compact-sticky .col-username .full-text,
         .compact-sticky .col-team .full-text,
         .compact-sticky .col-troop .full-text {
@@ -1504,12 +1508,16 @@
 
         function restoreScrollPosition() {
             if (pendingScrollRestore) {
-                const wrapper = document.getElementById('tableWrapper');
-                if (wrapper) {
-                    wrapper.scrollLeft = pendingScrollRestore.left;
-                    wrapper.scrollTop = pendingScrollRestore.top;
-                }
+                const savedPos = pendingScrollRestore;
                 pendingScrollRestore = null;
+                // Use requestAnimationFrame to wait for DOM to be fully rendered
+                requestAnimationFrame(() => {
+                    const wrapper = document.getElementById('tableWrapper');
+                    if (wrapper) {
+                        wrapper.scrollLeft = savedPos.left;
+                        wrapper.scrollTop = savedPos.top;
+                    }
+                });
             }
         }
 
