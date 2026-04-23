@@ -2121,6 +2121,60 @@
             return itemId;
         }
 
+        // Shared basic fields (same user's common data that should sync across all teams)
+        const SHARED_BASIC_FIELDS = [
+            {
+                key: 'rallyLimit',
+                label: '集結数上限',
+                type: 'simple',
+                getValue: (data) => data.rallyLimit || '',
+                formatDisplay: (v) => v === '' ? '未設定' : String(v),
+                applyToTeam: (teamData, newValue) => { teamData.rallyLimit = newValue; }
+            },
+            {
+                key: 'reinforcementLimit',
+                label: '援軍数上限',
+                type: 'simple',
+                getValue: (data) => data.reinforcementLimit || '',
+                formatDisplay: (v) => v === '' ? '未設定' : String(v),
+                applyToTeam: (teamData, newValue) => { teamData.reinforcementLimit = newValue; }
+            },
+            {
+                key: 'healSpeed',
+                label: '治療加速',
+                type: 'speed',
+                getValue: (data) => ({
+                    h2: parseInt(data.healSpeed?.h2) || 0,
+                    h1: parseInt(data.healSpeed?.h1) || 0,
+                    m6: parseInt(data.healSpeed?.m6) || 0
+                }),
+                formatDisplay: (v) => `${formatSpeedTotal(v.h2, v.h1, v.m6)} (2h:${v.h2},1h:${v.h1},6m:${v.m6})`,
+                applyToTeam: (teamData, newValue) => { teamData.healSpeed = { ...newValue }; }
+            },
+            {
+                key: 'commonSpeed',
+                label: '共通加速',
+                type: 'speed',
+                getValue: (data) => ({
+                    h2: parseInt(data.commonSpeed?.h2) || 0,
+                    h1: parseInt(data.commonSpeed?.h1) || 0,
+                    m6: parseInt(data.commonSpeed?.m6) || 0
+                }),
+                formatDisplay: (v) => `${formatSpeedTotal(v.h2, v.h1, v.m6)} (2h:${v.h2},1h:${v.h1},6m:${v.m6})`,
+                applyToTeam: (teamData, newValue) => { teamData.commonSpeed = { ...newValue }; }
+            }
+        ];
+
+        // Compare two values for equality (supports simple and object types)
+        function isSharedBasicEqual(a, b, type) {
+            if (type === 'speed') {
+                return (a?.h2 || 0) === (b?.h2 || 0) &&
+                       (a?.h1 || 0) === (b?.h1 || 0) &&
+                       (a?.m6 || 0) === (b?.m6 || 0);
+            }
+            return String(a || '') === String(b || '');
+        }
+
         // Build sync plan: returns { plan, hasChanges }
         // plan[teamName] = [{ category, itemId, itemName, fromState, toState }]
         function buildSyncPlan(username, targetTeam, oldTargetData, newTargetData) {
@@ -2185,16 +2239,52 @@
                 });
             });
 
-            const hasChanges = Object.keys(plan).length > 0;
-            return { plan, hasChanges };
+            // Detect shared basic field changes.
+            // Baseline = old target team's value if non-empty; otherwise first other team's value.
+            const hasOldTarget = oldTargetData && Object.keys(oldTargetData).length > 0;
+            const baselineTeamData = hasOldTarget ? oldTargetData :
+                (otherTeams.length > 0 ? getUserTeamData(userData, otherTeams[0]) : {});
+            const sharedBasicChanges = [];
+            SHARED_BASIC_FIELDS.forEach(field => {
+                const oldValue = field.getValue(baselineTeamData || {});
+                const newValue = field.getValue(newTargetData);
+                // Check if any other team has a value that would actually change with newValue
+                const anyTeamWouldChange = otherTeams.some(t => {
+                    const td = getUserTeamData(userData, t);
+                    return td && !isSharedBasicEqual(field.getValue(td), newValue, field.type);
+                });
+                if (!isSharedBasicEqual(oldValue, newValue, field.type) && anyTeamWouldChange) {
+                    sharedBasicChanges.push({
+                        key: field.key,
+                        label: field.label,
+                        oldDisplay: field.formatDisplay(oldValue),
+                        newDisplay: field.formatDisplay(newValue),
+                        newValue: newValue,
+                        applyToTeam: field.applyToTeam
+                    });
+                }
+            });
+
+            const hasChanges = Object.keys(plan).length > 0 || (sharedBasicChanges.length > 0 && otherTeams.length > 0);
+            return { plan, sharedBasicChanges, otherTeams, hasChanges };
         }
 
         // Format sync plan for dialog display
-        function formatSyncPlan(username, plan) {
-            let msg = `【${username}】以下の所持状況が他の軍団データに反映されます：\n\n`;
+        function formatSyncPlan(username, plan, sharedBasicChanges, otherTeams) {
+            let msg = `【${username}】以下の変更が他の軍団データに反映されます：\n\n`;
+
+            // Shared basic field changes (apply to all other teams)
+            if (sharedBasicChanges && sharedBasicChanges.length > 0 && otherTeams && otherTeams.length > 0) {
+                msg += `■ 共通データ（${otherTeams.join('、')} 全てに反映）：\n`;
+                sharedBasicChanges.forEach(c => {
+                    msg += `  ・${c.label}: ${c.oldDisplay} → ${c.newDisplay}\n`;
+                });
+                msg += '\n';
+            }
+
+            // Item-level changes (per team)
             Object.entries(plan).forEach(([team, changes]) => {
-                msg += `■ ${team} への変更：\n`;
-                // Group by category
+                msg += `■ ${team} への所持状況変更：\n`;
                 const byCategory = {};
                 changes.forEach(c => {
                     if (!byCategory[c.categoryLabel]) byCategory[c.categoryLabel] = [];
@@ -2209,49 +2299,51 @@
                 msg += '\n';
             });
             msg += '番号を入力してください：\n';
-            msg += `1 = ${username}の他軍団にも所持状況を反映する\n`;
-            msg += '2 = 所持状況は反映させず保存する\n';
+            msg += `1 = ${username}の他軍団にも変更を反映する\n`;
+            msg += '2 = 反映させずこの軍団のみ保存する\n';
             msg += 'それ以外 = 保存を中止';
             return msg;
         }
 
         // Apply sync plan to Firebase (after main team save)
-        async function applySyncPlan(username, plan) {
+        async function applySyncPlan(username, plan, sharedBasicChanges, otherTeams) {
             const { database, ref, set, get } = window.firebaseDB;
             const userData = cachedGameData[username];
             if (!userData) return;
 
             const isOld = isOldFormatUserData(userData);
 
-            for (const [teamName, changes] of Object.entries(plan)) {
+            // Union of teams that need updates: item-change teams + all other teams (for shared basic)
+            const teamsToUpdate = new Set(Object.keys(plan));
+            if (sharedBasicChanges && sharedBasicChanges.length > 0 && otherTeams) {
+                otherTeams.forEach(t => teamsToUpdate.add(t));
+            }
+
+            for (const teamName of teamsToUpdate) {
                 // Get current team data (fresh clone)
                 let teamData;
                 if (isOld && teamName === '1軍') {
-                    // For old format, we need to migrate first. This case should already be handled by saveUserData
                     teamData = JSON.parse(JSON.stringify(userData));
-                    // Remove any nested team keys just in case
                 } else {
                     teamData = JSON.parse(JSON.stringify(userData[teamName] || {}));
                 }
 
-                // Apply changes
+                // Apply item-level changes for this team (if any)
+                const changes = plan[teamName] || [];
                 changes.forEach(c => {
                     const container = c.ensurePath(teamData);
                     container[c.itemId] = buildEntryForState(c.pattern, c.toState, container[c.itemId]);
                 });
 
-                // Write back
-                if (isOld) {
-                    // After saveUserData's migration, data is now at gameData/username/1軍
-                    await set(ref(database, `gameData/${username}/${teamName}`), teamData);
-                } else {
-                    await set(ref(database, `gameData/${username}/${teamName}`), teamData);
+                // Apply shared basic field changes (to every other team)
+                if (sharedBasicChanges && sharedBasicChanges.length > 0) {
+                    sharedBasicChanges.forEach(c => {
+                        c.applyToTeam(teamData, c.newValue);
+                    });
                 }
 
-                // Update cache
-                if (!cachedGameData[username] || isOldFormatUserData(cachedGameData[username])) {
-                    // Already migrated by saveUserData
-                }
+                await set(ref(database, `gameData/${username}/${teamName}`), teamData);
+
                 if (cachedGameData[username]) {
                     cachedGameData[username][teamName] = teamData;
                 }
@@ -3675,17 +3767,22 @@
 
             // Build multi-team sync plan (for any existing other teams)
             let syncPlan = null;
+            let syncSharedBasic = null;
+            let syncOtherTeams = null;
             const userEntry = cachedGameData[data.username];
-            const hasOtherTeams = userEntry && Object.keys(userEntry).length > 0;
+            const hasOtherTeams = userEntry && Object.keys(userEntry).length > 0 &&
+                (isOldFormatUserData(userEntry) ? '1軍' !== teamName : Object.keys(userEntry).some(t => t !== teamName));
             if (hasOtherTeams) {
                 // Treat no old target data as empty (all items 'none')
                 const oldForCompare = oldTargetData || {};
-                const { plan, hasChanges } = buildSyncPlan(data.username, teamName, oldForCompare, data);
+                const { plan, sharedBasicChanges, otherTeams, hasChanges } = buildSyncPlan(data.username, teamName, oldForCompare, data);
                 if (hasChanges) {
-                    const msg = formatSyncPlan(data.username, plan);
+                    const msg = formatSyncPlan(data.username, plan, sharedBasicChanges, otherTeams);
                     const choice = prompt(msg, '1');
                     if (choice === '1') {
                         syncPlan = plan;
+                        syncSharedBasic = sharedBasicChanges;
+                        syncOtherTeams = otherTeams;
                     } else if (choice === '2') {
                         // Save without syncing
                         syncPlan = null;
@@ -3699,10 +3796,14 @@
             const success = await saveUserData(data.username, teamName, data);
 
             if (success) {
-                if (syncPlan) {
+                if (syncPlan !== null) {
                     try {
-                        await applySyncPlan(data.username, syncPlan);
-                        const teamCount = Object.keys(syncPlan).length;
+                        await applySyncPlan(data.username, syncPlan, syncSharedBasic, syncOtherTeams);
+                        const affectedTeams = new Set(Object.keys(syncPlan));
+                        if (syncSharedBasic && syncSharedBasic.length > 0 && syncOtherTeams) {
+                            syncOtherTeams.forEach(t => affectedTeams.add(t));
+                        }
+                        const teamCount = affectedTeams.size;
                         showToast(`${data.username}の${teamName}を保存し、${teamCount}軍団に同期しました`, 'success');
                     } catch (err) {
                         console.error('Sync error:', err);
