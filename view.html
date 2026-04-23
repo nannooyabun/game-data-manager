@@ -243,9 +243,47 @@
             --sticky-col3-w: 40px;
         }
 
-        .col-username { width: var(--sticky-col1-w); min-width: var(--sticky-col1-w); max-width: var(--sticky-col1-w); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 8px; }
-        .col-team { width: var(--sticky-col2-w); min-width: var(--sticky-col2-w); max-width: var(--sticky-col2-w); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 4px; text-align: center; font-size: 0.85rem; }
-        .col-troop { width: var(--sticky-col3-w); min-width: var(--sticky-col3-w); max-width: var(--sticky-col3-w); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 4px; text-align: center; }
+        .col-username { width: var(--sticky-col1-w); min-width: var(--sticky-col1-w); max-width: var(--sticky-col1-w); padding: 6px 8px; position: relative; }
+        .col-team { width: var(--sticky-col2-w); min-width: var(--sticky-col2-w); max-width: var(--sticky-col2-w); padding: 6px 4px; text-align: center; font-size: 0.85rem; position: relative; }
+        .col-troop { width: var(--sticky-col3-w); min-width: var(--sticky-col3-w); max-width: var(--sticky-col3-w); padding: 6px 4px; text-align: center; position: relative; }
+
+        /* Inner wrapper handles ellipsis; parent td keeps overflow visible so tooltip can escape */
+        .col-username .cell-wrap,
+        .col-team .cell-wrap,
+        .col-troop .cell-wrap {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Custom CSS tooltip for user/team/troop cells (shown on hover/tap) */
+        td.sticky-col[data-tooltip]:hover::after,
+        td.sticky-col[data-tooltip]:focus::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 2px;
+            background: rgba(10, 10, 15, 0.98);
+            color: #e8e4dc;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--accent-gold-dim, #8a7020);
+            white-space: nowrap;
+            z-index: 1000;
+            font-size: 0.85rem;
+            font-weight: normal;
+            pointer-events: none;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+            text-align: left;
+        }
+        /* Last column (troop) - align tooltip to the right to avoid overflow */
+        td.sticky-col-3[data-tooltip]:hover::after,
+        td.sticky-col-3[data-tooltip]:focus::after {
+            left: auto;
+            right: 0;
+        }
 
         /* Compact mode: show only first character, single-char columns */
         .compact-sticky {
@@ -798,7 +836,7 @@
                 <button onclick="loadTeamMembers()">メンバーを読み込む</button>
                 <button onclick="clearSelectedUsers()">全解除</button>
             </div>
-            <h5>比較するユーザーを選択（最大10人）</h5>
+            <h5>比較するユーザーを選択</h5>
             <div class="user-checkbox-grid" id="userCheckboxGrid">
                 <!-- Populated by JS -->
             </div>
@@ -1877,7 +1915,7 @@
             // Build body rows
             const bodyRows = entries.map(entry => {
                 const { username, team, data: user } = entry;
-                const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓', 'horse_infantry': '馬歩', 'horse_bow': '馬弓', 'infantry_bow': '歩弓' };
+                const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓', 'horse_infantry': '馬歩', 'horse_bow': '馬弓', 'infantry_bow': '歩弓', 'horse_infantry_bow': '馬歩弓' };
                 const troop = troopMap[user.troopType] || user.troopType || '-';
                 const dataCells = allCats.flatMap((cat, catIdx) => {
                     const isCollapsed = collapsedCategories.has(cat.key);
@@ -1915,9 +1953,9 @@
                 const troopShort = troop && troop !== '-' ? troop.charAt(0) : '-';
                 return `
                     <tr>
-                        <td class="sticky-col col-username"><span class="full-text">${escapeHtml(username)}</span><span class="short-text">${escapeHtml(usernameShort)}</span></td>
-                        <td class="sticky-col sticky-col-2 col-team"><span class="full-text">${escapeHtml(team)}</span><span class="short-text">${escapeHtml(teamShort)}</span></td>
-                        <td class="sticky-col sticky-col-3 col-troop"><span class="full-text">${escapeHtml(troop)}</span><span class="short-text">${escapeHtml(troopShort)}</span></td>
+                        <td class="sticky-col col-username" data-tooltip="${escapeHtml(username)}" tabindex="0"><span class="cell-wrap"><span class="full-text">${escapeHtml(username)}</span><span class="short-text">${escapeHtml(usernameShort)}</span></span></td>
+                        <td class="sticky-col sticky-col-2 col-team" data-tooltip="${escapeHtml(team)}" tabindex="0"><span class="cell-wrap"><span class="full-text">${escapeHtml(team)}</span><span class="short-text">${escapeHtml(teamShort)}</span></span></td>
+                        <td class="sticky-col sticky-col-3 col-troop" data-tooltip="${escapeHtml(troop)}" tabindex="0"><span class="cell-wrap"><span class="full-text">${escapeHtml(troop)}</span><span class="short-text">${escapeHtml(troopShort)}</span></span></td>
                         ${dataCells}
                     </tr>
                 `;
@@ -2012,8 +2050,8 @@
                 return;
             }
 
-            // Clear and add team members (max 10)
-            selectedUsers = members.slice(0, 10);
+            // Load all team members (no upper limit)
+            selectedUsers = members.slice();
             refreshUserCheckboxGrid();
             updateCompareButton();
             showToast(`${team.name}のメンバー${selectedUsers.length}人を選択しました`, 'success');
@@ -2044,11 +2082,6 @@
 
         function toggleUserSelection(username, checked) {
             if (checked && !selectedUsers.includes(username)) {
-                if (selectedUsers.length >= 10) {
-                    showToast('最大10人まで選択できます', 'error');
-                    refreshUserCheckboxGrid();
-                    return;
-                }
                 selectedUsers.push(username);
             } else {
                 selectedUsers = selectedUsers.filter(u => u !== username);
