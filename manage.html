@@ -884,6 +884,255 @@
             opacity: 0.7;
         }
 
+        /* General Category Management */
+        .gen-cat-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .gen-cat-tab {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px 6px 0 0;
+            padding: 0.6rem 1.2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .gen-cat-tab:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .gen-cat-tab.active {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+            border-color: var(--accent-gold);
+        }
+
+        .gen-cat-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .gen-cat-btn {
+            padding: 0.5rem 1rem;
+            background: var(--accent-green);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .gen-cat-btn:hover { opacity: 0.85; }
+
+        .gen-cat-btn.secondary {
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .gen-cat-btn.secondary:hover {
+            background: var(--bg-secondary);
+        }
+
+        .gen-cat-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .gen-cat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .gen-cat-card.unassigned {
+            border-color: var(--text-muted);
+            opacity: 0.8;
+        }
+
+        .gen-cat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .gen-cat-card-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            color: var(--accent-gold);
+        }
+
+        .gen-cat-card-title input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed var(--accent-gold);
+            color: var(--accent-gold);
+            font-weight: 500;
+            font-size: 1rem;
+            padding: 0.2rem 0.4rem;
+            width: auto;
+            min-width: 100px;
+        }
+
+        .gen-cat-card-title input:focus {
+            outline: none;
+            border-bottom-style: solid;
+        }
+
+        .gen-cat-card-count {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            background: var(--bg-primary);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+        }
+
+        .gen-cat-card-actions {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .gen-cat-card-actions button {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .gen-cat-card-actions button:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .gen-cat-card-actions button.danger:hover {
+            background: var(--accent-red);
+            color: white;
+            border-color: var(--accent-red);
+        }
+
+        .gen-cat-card-body {
+            padding: 0.8rem 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            min-height: 40px;
+        }
+
+        .gen-cat-general-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: grab;
+        }
+
+        .gen-cat-general-tag:active { cursor: grabbing; }
+
+        .gen-cat-general-tag.dragging {
+            opacity: 0.5;
+            background: var(--accent-gold);
+        }
+
+        .gen-cat-general-tag .move-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 0 0.2rem;
+        }
+
+        .gen-cat-general-tag .move-btn:hover {
+            color: var(--accent-gold);
+        }
+
+        .gen-cat-card-body.drag-over {
+            background: rgba(138, 112, 32, 0.15);
+            border: 2px dashed var(--accent-gold);
+            border-radius: 4px;
+        }
+
+        .gen-cat-move-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .gen-cat-move-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            min-width: 280px;
+            max-width: 90%;
+        }
+
+        .gen-cat-move-modal h4 {
+            margin: 0 0 1rem 0;
+            color: var(--accent-gold);
+        }
+
+        .gen-cat-move-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .gen-cat-move-list button {
+            text-align: left;
+            padding: 0.6rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .gen-cat-move-list button:hover {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+        }
+
+        .gen-cat-move-cancel {
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
         /* Data management */
         .data-management-row {
             display: flex;
@@ -1084,6 +1333,42 @@
                 </div>
             </div>
 
+            <!-- General Category Management Section -->
+            <div class="section-card" id="generalCategorySection">
+                <h3>📋 武将カテゴリ編集</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    武将の小カテゴリ（グループ）の編集・並び替えを行います。入力フォーム用と比較表用で別々に設定できます。
+                </p>
+
+                <!-- Tab Navigation -->
+                <div class="gen-cat-tabs">
+                    <button class="gen-cat-tab active" onclick="switchGenCatTab('index')" id="genCatTabIndex">📝 入力フォーム用</button>
+                    <button class="gen-cat-tab" onclick="switchGenCatTab('view')" id="genCatTabView">📊 比較表用</button>
+                </div>
+
+                <!-- Index.html Config -->
+                <div class="gen-cat-panel" id="genCatPanelIndex">
+                    <div class="gen-cat-toolbar">
+                        <button class="gen-cat-btn" onclick="addNewCategory('index')">＋ カテゴリ追加</button>
+                        <button class="gen-cat-btn secondary" onclick="resetCategoryConfig('index')">🔄 デフォルトに戻す</button>
+                    </div>
+                    <div class="gen-cat-list" id="genCatListIndex">
+                        <span style="color: var(--text-muted);">読み込み中...</span>
+                    </div>
+                </div>
+
+                <!-- View.html Config -->
+                <div class="gen-cat-panel" id="genCatPanelView" style="display: none;">
+                    <div class="gen-cat-toolbar">
+                        <button class="gen-cat-btn" onclick="addNewCategory('view')">＋ カテゴリ追加</button>
+                        <button class="gen-cat-btn secondary" onclick="resetCategoryConfig('view')">🔄 デフォルトに戻す</button>
+                    </div>
+                    <div class="gen-cat-list" id="genCatListView">
+                        <span style="color: var(--text-muted);">読み込み中...</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Data Export/Import Section -->
             <div class="section-card">
                 <h3>💾 データエクスポート/インポート</h3>
@@ -1131,6 +1416,23 @@
         let teams = {};
         let customGenerals = {};  // { "カテゴリ": ["武将1"], "_default": ["武将2"] }
         let customItems = {};
+
+        // Category configs for generals (loaded from Firebase)
+        let generalCategoriesIndex = null;  // For index.html input form
+        let generalCategoriesView = null;   // For view.html comparison table
+
+        // Default generals data (from index.html)
+        const DEFAULT_GENERAL_CATEGORIES = [
+            { title: 'この辺は一人は欲しい武将', generals: ['鈴木重秀', '寿桂尼', 'おつやの方', '鍋島直茂', '加藤清正', '吉川広家', '加藤嘉明', '足利義昭', '真柄直隆', '加藤段蔵', '山内一豊'] },
+            { title: '集結で使う武将', generals: ['北条早雲', '織田信長', '本多忠勝', '北条氏康', '山本勘助', '毛利元就', '島津家久', '堀秀政', '真田幸村', '黒田官兵衛', '徳川家康', '村井貞勝', '上泉信綱', '真田幸隆', '柳生宗厳', '太田道灌'] },
+            { title: '全兵種対応武将', generals: ['井伊直虎', '櫛橋光', '直江兼続', '豊臣秀吉', '尼子経久', '立花宗茂', '緋村剣心', '神谷薫', '宇喜多直家', '井伊直政', '森長可', '果心居士', '藤堂高虎', '秋山信友', '榊原康政', '三浦按針', '上杉景勝'] },
+            { title: '馬用', generals: ['武田信玄', '伊達政宗', '北条氏綱', '山中鹿之介', '甲斐姫', '山県昌景', '義姫', '高坂昌信', '真田信之', '綾御前', '柿崎景家', '佐々成政'] },
+            { title: '歩用', generals: ['宮本武蔵', 'リヴァイ', '淀', '小早川', '細川忠興', '武田信繁', '三好長慶', '千代', '北条綱成', 'ねね', '高橋紹運', '愛姫', '福島正則', '伊達成実'] },
+            { title: '弓用', generals: ['斎藤利三', '赤井直正', '出雲阿国', '伊達植宗', '春日局', '織田信忠', '島津歳久', '天草四郎'] }
+        ];
+
+        // Get all default generals as a flat list
+        const ALL_DEFAULT_GENERALS = DEFAULT_GENERAL_CATEGORIES.flatMap(cat => cat.generals);
 
         // Existing general categories (from index.html)
         const EXISTING_GENERAL_CATEGORIES = [
@@ -1306,6 +1608,24 @@
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderCustomGenerals();
                     updateGeneralSubcategorySelect();
+                    // Also refresh category lists since they depend on custom generals
+                    renderGenCatList('index');
+                    renderGenCatList('view');
+                }
+            });
+
+            // General category configs
+            onValue(ref(database, 'generalCategoriesIndex'), (snap) => {
+                generalCategoriesIndex = snap.exists() ? snap.val() : null;
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    renderGenCatList('index');
+                }
+            });
+
+            onValue(ref(database, 'generalCategoriesView'), (snap) => {
+                generalCategoriesView = snap.exists() ? snap.val() : null;
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    renderGenCatList('view');
                 }
             });
 
@@ -1594,6 +1914,29 @@
         // Per-team edit state: {members, search, filterTroop, filterMembership, sort, displayLimit}
         const teamEditState = {};
         const DEFAULT_DISPLAY_LIMIT = 30;
+
+        // IME composition tracking for search inputs
+        let isComposingSearch = false;
+        let pendingSearchUpdate = null;  // { teamId, value }
+
+        function onSearchCompositionStart() {
+            isComposingSearch = true;
+        }
+
+        function onSearchCompositionEnd(teamId, el) {
+            isComposingSearch = false;
+            // Apply the final composed value
+            updateEditFilter(teamId, 'search', el.value);
+        }
+
+        function onSearchInput(teamId, value) {
+            if (isComposingSearch) {
+                // Store for later but don't apply yet
+                pendingSearchUpdate = { teamId, value };
+                return;
+            }
+            updateEditFilter(teamId, 'search', value);
+        }
 
         function startEditTeam(teamId) {
             const team = teams[teamId];
@@ -1918,7 +2261,9 @@
                     <div class="team-edit-toolbar">
                         <input type="text" placeholder="🔍 ユーザー名で検索..." value="${escapeHtml(state.search)}"
                             data-focus-key="search-${team.id}"
-                            oninput="updateEditFilter('${team.id}', 'search', this.value)">
+                            oninput="onSearchInput('${team.id}', this.value)"
+                            oncompositionstart="onSearchCompositionStart()"
+                            oncompositionend="onSearchCompositionEnd('${team.id}', this)">
                         <select onchange="updateEditFilter('${team.id}', 'filterTroop', this.value)">
                             <option value="" ${state.filterTroop === '' ? 'selected' : ''}>兵種: 全て</option>
                             <option value="horse" ${state.filterTroop === 'horse' ? 'selected' : ''}>馬</option>
@@ -1950,6 +2295,407 @@
                     </div>
                 </div>
             `;
+        }
+
+        // ========== General Category Management ==========
+
+        // Get merged categories (default + custom generals)
+        function getMergedCategories(configType) {
+            const config = configType === 'index' ? generalCategoriesIndex : generalCategoriesView;
+
+            // Get all generals (default + custom)
+            const allCustomGenerals = customGenerals ? Object.values(customGenerals).flat() : [];
+            const allGenerals = new Set([...ALL_DEFAULT_GENERALS, ...allCustomGenerals]);
+
+            if (!config || !config.categories) {
+                // Return default structure if no config
+                const categories = DEFAULT_GENERAL_CATEGORIES.map(cat => ({
+                    id: cat.title,
+                    title: cat.title,
+                    generals: [...cat.generals]
+                }));
+
+                // Add custom generals to 未分類
+                const unassigned = { id: '_unassigned', title: '未分類', generals: [...allCustomGenerals] };
+                categories.push(unassigned);
+
+                return categories;
+            }
+
+            // Use stored config
+            const order = config.order || Object.keys(config.categories);
+            const result = [];
+            const assignedGenerals = new Set();
+
+            for (const catId of order) {
+                const cat = config.categories[catId];
+                if (!cat) continue;
+
+                // Filter to only include generals that still exist
+                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g));
+                validGenerals.forEach(g => assignedGenerals.add(g));
+
+                result.push({
+                    id: catId,
+                    title: cat.title,
+                    generals: validGenerals
+                });
+            }
+
+            // Add any unassigned generals to 未分類
+            const unassignedGenerals = [...allGenerals].filter(g => !assignedGenerals.has(g));
+            let unassignedCat = result.find(c => c.id === '_unassigned');
+            if (!unassignedCat) {
+                unassignedCat = { id: '_unassigned', title: '未分類', generals: [] };
+                result.push(unassignedCat);
+            }
+            unassignedCat.generals.push(...unassignedGenerals);
+
+            return result;
+        }
+
+        // Save category config to Firebase
+        async function saveCategoryConfig(configType) {
+            if (!window.firebaseReady) return;
+
+            const { database, ref, set } = window.firebaseDB;
+            const config = configType === 'index' ? generalCategoriesIndex : generalCategoriesView;
+            const path = configType === 'index' ? 'generalCategoriesIndex' : 'generalCategoriesView';
+
+            try {
+                await set(ref(database, path), config);
+                showToast(`${configType === 'index' ? '入力フォーム' : '比較表'}用カテゴリを保存しました`);
+            } catch (error) {
+                console.error('Failed to save category config:', error);
+                showToast('保存に失敗しました', 'error');
+            }
+        }
+
+        // Convert categories array to config object
+        function categoriesToConfig(categories) {
+            const config = {
+                order: categories.map(c => c.id),
+                categories: {}
+            };
+            for (const cat of categories) {
+                config.categories[cat.id] = {
+                    title: cat.title,
+                    generals: cat.generals
+                };
+            }
+            return config;
+        }
+
+        // Switch tab
+        function switchGenCatTab(tabName) {
+            document.getElementById('genCatTabIndex').classList.toggle('active', tabName === 'index');
+            document.getElementById('genCatTabView').classList.toggle('active', tabName === 'view');
+            document.getElementById('genCatPanelIndex').style.display = tabName === 'index' ? '' : 'none';
+            document.getElementById('genCatPanelView').style.display = tabName === 'view' ? '' : 'none';
+        }
+
+        // Render category list
+        function renderGenCatList(configType) {
+            const listEl = document.getElementById(configType === 'index' ? 'genCatListIndex' : 'genCatListView');
+            const categories = getMergedCategories(configType);
+
+            if (categories.length === 0) {
+                listEl.innerHTML = '<span style="color: var(--text-muted);">カテゴリがありません</span>';
+                return;
+            }
+
+            listEl.innerHTML = categories.map((cat, idx) => {
+                const isUnassigned = cat.id === '_unassigned';
+                const canMoveUp = idx > 0 && !isUnassigned;
+                const canMoveDown = idx < categories.length - 1 && categories[idx + 1].id !== '_unassigned';
+
+                return `
+                    <div class="gen-cat-card ${isUnassigned ? 'unassigned' : ''}" data-cat-id="${cat.id}">
+                        <div class="gen-cat-card-header">
+                            <div class="gen-cat-card-title">
+                                ${isUnassigned ?
+                                    `<span>📦 ${escapeHtml(cat.title)}</span>` :
+                                    `<input type="text" value="${escapeHtml(cat.title)}"
+                                        onchange="renameCategoryTitle('${configType}', '${cat.id}', this.value)"
+                                        onkeydown="if(event.key==='Enter')this.blur()">`
+                                }
+                                <span class="gen-cat-card-count">${cat.generals.length}名</span>
+                            </div>
+                            <div class="gen-cat-card-actions">
+                                ${canMoveUp ? `<button onclick="moveCategoryOrder('${configType}', '${cat.id}', -1)">▲</button>` : ''}
+                                ${canMoveDown ? `<button onclick="moveCategoryOrder('${configType}', '${cat.id}', 1)">▼</button>` : ''}
+                                ${!isUnassigned ? `<button class="danger" onclick="deleteCategory('${configType}', '${cat.id}')">🗑</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="gen-cat-card-body"
+                            ondragover="onGeneralDragOver(event)"
+                            ondragleave="onGeneralDragLeave(event)"
+                            ondrop="onGeneralDrop(event, '${configType}', '${cat.id}')">
+                            ${cat.generals.length === 0 ?
+                                '<span style="color: var(--text-muted); font-size: 0.8rem;">（武将なし - ドラッグでここに追加）</span>' :
+                                cat.generals.map(gen => `
+                                    <div class="gen-cat-general-tag" draggable="true"
+                                        ondragstart="onGeneralDragStart(event, '${configType}', '${cat.id}', '${escapeHtml(gen)}')"
+                                        ondragend="onGeneralDragEnd(event)">
+                                        <span>${escapeHtml(gen)}</span>
+                                        <button class="move-btn" onclick="showMoveModal('${configType}', '${cat.id}', '${escapeHtml(gen)}')">⇄</button>
+                                    </div>
+                                `).join('')
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Add new category
+        async function addNewCategory(configType) {
+            const title = prompt('新しいカテゴリ名を入力してください:');
+            if (!title || !title.trim()) return;
+
+            const categories = getMergedCategories(configType);
+            const newId = 'cat_' + Date.now();
+
+            // Insert before 未分類
+            const unassignedIdx = categories.findIndex(c => c.id === '_unassigned');
+            const insertIdx = unassignedIdx >= 0 ? unassignedIdx : categories.length;
+
+            categories.splice(insertIdx, 0, {
+                id: newId,
+                title: title.trim(),
+                generals: []
+            });
+
+            const config = categoriesToConfig(categories);
+            if (configType === 'index') {
+                generalCategoriesIndex = config;
+            } else {
+                generalCategoriesView = config;
+            }
+
+            await saveCategoryConfig(configType);
+            renderGenCatList(configType);
+        }
+
+        // Rename category
+        async function renameCategoryTitle(configType, catId, newTitle) {
+            if (!newTitle || !newTitle.trim()) return;
+
+            const config = configType === 'index' ? generalCategoriesIndex : generalCategoriesView;
+            if (!config || !config.categories || !config.categories[catId]) {
+                // Initialize config first
+                const categories = getMergedCategories(configType);
+                const cat = categories.find(c => c.id === catId);
+                if (cat) cat.title = newTitle.trim();
+                const newConfig = categoriesToConfig(categories);
+                if (configType === 'index') {
+                    generalCategoriesIndex = newConfig;
+                } else {
+                    generalCategoriesView = newConfig;
+                }
+            } else {
+                config.categories[catId].title = newTitle.trim();
+            }
+
+            await saveCategoryConfig(configType);
+        }
+
+        // Move category order
+        async function moveCategoryOrder(configType, catId, direction) {
+            const categories = getMergedCategories(configType);
+            const idx = categories.findIndex(c => c.id === catId);
+            if (idx < 0) return;
+
+            const newIdx = idx + direction;
+            if (newIdx < 0 || newIdx >= categories.length) return;
+            if (categories[newIdx].id === '_unassigned') return;
+
+            [categories[idx], categories[newIdx]] = [categories[newIdx], categories[idx]];
+
+            const config = categoriesToConfig(categories);
+            if (configType === 'index') {
+                generalCategoriesIndex = config;
+            } else {
+                generalCategoriesView = config;
+            }
+
+            await saveCategoryConfig(configType);
+            renderGenCatList(configType);
+        }
+
+        // Delete category (move generals to unassigned)
+        async function deleteCategory(configType, catId) {
+            if (catId === '_unassigned') return;
+
+            const categories = getMergedCategories(configType);
+            const cat = categories.find(c => c.id === catId);
+            if (!cat) return;
+
+            if (!confirm(`「${cat.title}」を削除しますか？\n所属武将は「未分類」に移動されます。`)) return;
+
+            // Move generals to unassigned
+            const unassigned = categories.find(c => c.id === '_unassigned');
+            if (unassigned) {
+                unassigned.generals.push(...cat.generals);
+            }
+
+            // Remove category
+            const idx = categories.findIndex(c => c.id === catId);
+            categories.splice(idx, 1);
+
+            const config = categoriesToConfig(categories);
+            if (configType === 'index') {
+                generalCategoriesIndex = config;
+            } else {
+                generalCategoriesView = config;
+            }
+
+            await saveCategoryConfig(configType);
+            renderGenCatList(configType);
+        }
+
+        // Reset to default
+        async function resetCategoryConfig(configType) {
+            if (!confirm(`${configType === 'index' ? '入力フォーム' : '比較表'}用のカテゴリ設定をデフォルトに戻しますか？`)) return;
+
+            if (!window.firebaseReady) return;
+            const { database, ref, set } = window.firebaseDB;
+            const path = configType === 'index' ? 'generalCategoriesIndex' : 'generalCategoriesView';
+
+            try {
+                await set(ref(database, path), null);
+                if (configType === 'index') {
+                    generalCategoriesIndex = null;
+                } else {
+                    generalCategoriesView = null;
+                }
+                showToast('デフォルトに戻しました');
+                renderGenCatList(configType);
+            } catch (error) {
+                console.error('Failed to reset:', error);
+                showToast('リセットに失敗しました', 'error');
+            }
+        }
+
+        // Drag and drop for generals
+        let dragData = null;
+
+        function onGeneralDragStart(event, configType, fromCatId, generalName) {
+            dragData = { configType, fromCatId, generalName };
+            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+        }
+
+        function onGeneralDragEnd(event) {
+            event.target.classList.remove('dragging');
+            dragData = null;
+        }
+
+        function onGeneralDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drag-over');
+        }
+
+        function onGeneralDragLeave(event) {
+            event.currentTarget.classList.remove('drag-over');
+        }
+
+        async function onGeneralDrop(event, configType, toCatId) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+
+            if (!dragData || dragData.configType !== configType) return;
+            if (dragData.fromCatId === toCatId) return;
+
+            await moveGeneral(configType, dragData.fromCatId, toCatId, dragData.generalName);
+        }
+
+        // Move general between categories
+        async function moveGeneral(configType, fromCatId, toCatId, generalName) {
+            const categories = getMergedCategories(configType);
+
+            const fromCat = categories.find(c => c.id === fromCatId);
+            const toCat = categories.find(c => c.id === toCatId);
+            if (!fromCat || !toCat) return;
+
+            const idx = fromCat.generals.indexOf(generalName);
+            if (idx < 0) return;
+
+            fromCat.generals.splice(idx, 1);
+            toCat.generals.push(generalName);
+
+            const config = categoriesToConfig(categories);
+            if (configType === 'index') {
+                generalCategoriesIndex = config;
+            } else {
+                generalCategoriesView = config;
+            }
+
+            await saveCategoryConfig(configType);
+            renderGenCatList(configType);
+        }
+
+        // Move modal for mobile/touch
+        function showMoveModal(configType, fromCatId, generalName) {
+            const categories = getMergedCategories(configType);
+            const otherCats = categories.filter(c => c.id !== fromCatId);
+
+            const modal = document.createElement('div');
+            modal.className = 'gen-cat-move-modal';
+            modal.innerHTML = `
+                <div class="gen-cat-move-modal-content">
+                    <h4>「${escapeHtml(generalName)}」の移動先</h4>
+                    <div class="gen-cat-move-list">
+                        ${otherCats.map(cat => `
+                            <button onclick="executeMoveFromModal('${configType}', '${fromCatId}', '${cat.id}', '${escapeHtml(generalName)}')">${escapeHtml(cat.title)}</button>
+                        `).join('')}
+                    </div>
+                    <button class="gen-cat-move-cancel" onclick="this.closest('.gen-cat-move-modal').remove()">キャンセル</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+
+        async function executeMoveFromModal(configType, fromCatId, toCatId, generalName) {
+            document.querySelector('.gen-cat-move-modal')?.remove();
+            await moveGeneral(configType, fromCatId, toCatId, generalName);
+        }
+
+        // Load category configs from Firebase
+        async function loadCategoryConfigs() {
+            if (!window.firebaseReady) return;
+
+            const { database, ref, get, onValue } = window.firebaseDB;
+
+            try {
+                // Initial load
+                const [indexSnap, viewSnap] = await Promise.all([
+                    get(ref(database, 'generalCategoriesIndex')),
+                    get(ref(database, 'generalCategoriesView'))
+                ]);
+
+                generalCategoriesIndex = indexSnap.exists() ? indexSnap.val() : null;
+                generalCategoriesView = viewSnap.exists() ? viewSnap.val() : null;
+
+                renderGenCatList('index');
+                renderGenCatList('view');
+
+                // Realtime updates
+                onValue(ref(database, 'generalCategoriesIndex'), (snap) => {
+                    generalCategoriesIndex = snap.exists() ? snap.val() : null;
+                    renderGenCatList('index');
+                });
+
+                onValue(ref(database, 'generalCategoriesView'), (snap) => {
+                    generalCategoriesView = snap.exists() ? snap.val() : null;
+                    renderGenCatList('view');
+                });
+            } catch (error) {
+                console.error('Failed to load category configs:', error);
+            }
         }
 
         // ========== Custom Generals Management ==========
@@ -2475,6 +3221,8 @@
                 teams: teams,
                 customGenerals: customGenerals,
                 customItems: customItems,
+                generalCategoriesIndex: generalCategoriesIndex,
+                generalCategoriesView: generalCategoriesView,
                 exportedAt: new Date().toISOString()
             };
 
@@ -2525,6 +3273,14 @@
                         // Import customItems
                         if (data.customItems) {
                             await set(ref(database, 'customItems'), data.customItems);
+                        }
+
+                        // Import general category configs
+                        if (data.generalCategoriesIndex) {
+                            await set(ref(database, 'generalCategoriesIndex'), data.generalCategoriesIndex);
+                        }
+                        if (data.generalCategoriesView) {
+                            await set(ref(database, 'generalCategoriesView'), data.generalCategoriesView);
                         }
 
                         showToast('データをインポートしました', 'success');
