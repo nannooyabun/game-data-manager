@@ -2131,6 +2131,15 @@
         let cachedCustomItems = {};
         let cachedTeams = {};  // teams keyed by team.id (for manage-screen team membership)
         let cachedCategoriesIndex = null;  // Custom category config for index.html
+        let cachedGeneralMasterData = null;  // General master data with rally limits, notes, categories
+
+        // Helper: check if general should be hidden (empty category in master data)
+        function isHiddenGeneral(genName) {
+            if (!cachedGeneralMasterData?.generals) return false;
+            const genData = cachedGeneralMasterData.generals[genName];
+            if (!genData) return false;
+            return genData.category === '' || genData.category === undefined;
+        }
 
         // Get effective general categories (from Firebase config or defaults)
         function getEffectiveGeneralCategories() {
@@ -2142,19 +2151,21 @@
                 // Use default categories + custom generals in their own categories
                 const result = generalCategories.map(cat => ({
                     title: cat.title,
-                    generals: [...cat.generals]
-                }));
+                    generals: [...cat.generals].filter(g => !isHiddenGeneral(g))
+                })).filter(cat => cat.generals.length > 0);
 
                 // Add custom generals by their subcategory
                 if (cachedCustomGeneralsRaw && typeof cachedCustomGeneralsRaw === 'object') {
                     for (const [subcat, gens] of Object.entries(cachedCustomGeneralsRaw)) {
                         if (!Array.isArray(gens) || gens.length === 0) continue;
                         const catTitle = subcat === '_default' ? '追加武将' : subcat;
+                        const filteredGens = gens.filter(g => !isHiddenGeneral(g));
+                        if (filteredGens.length === 0) continue;
                         let existingCat = result.find(c => c.title === catTitle);
                         if (existingCat) {
-                            existingCat.generals.push(...gens);
+                            existingCat.generals.push(...filteredGens);
                         } else {
-                            result.push({ title: catTitle, generals: [...gens] });
+                            result.push({ title: catTitle, generals: [...filteredGens] });
                         }
                     }
                 }
@@ -2165,33 +2176,23 @@
             // Use stored config
             const order = cachedCategoriesIndex.order || Object.keys(cachedCategoriesIndex.categories);
             const result = [];
-            const assignedGenerals = new Set();
 
             for (const catId of order) {
+                // Skip '_unassigned' category (hidden generals)
+                if (catId === '_unassigned') continue;
+
                 const cat = cachedCategoriesIndex.categories[catId];
                 if (!cat) continue;
 
-                // Filter to only include generals that still exist
-                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g));
-                validGenerals.forEach(g => assignedGenerals.add(g));
+                // Filter to only include generals that still exist and are not hidden
+                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g) && !isHiddenGeneral(g));
 
-                if (validGenerals.length > 0 || catId !== '_unassigned') {
+                if (validGenerals.length > 0) {
                     result.push({
                         id: catId,
                         title: cat.title,
                         generals: validGenerals
                     });
-                }
-            }
-
-            // Add any unassigned generals
-            const unassignedGenerals = [...allGenerals].filter(g => !assignedGenerals.has(g));
-            if (unassignedGenerals.length > 0) {
-                let unassignedCat = result.find(c => c.id === '_unassigned');
-                if (unassignedCat) {
-                    unassignedCat.generals.push(...unassignedGenerals);
-                } else {
-                    result.push({ id: '_unassigned', title: '未分類', generals: unassignedGenerals });
                 }
             }
 
@@ -2934,6 +2935,20 @@
             }
         }
 
+        // Get general master data (rally limits, notes, etc.)
+        async function getGeneralMasterData() {
+            if (!window.firebaseReady) return cachedGeneralMasterData;
+            try {
+                const { database, ref, get } = window.firebaseDB;
+                const snapshot = await get(ref(database, 'settings/generalMasterData'));
+                cachedGeneralMasterData = snapshot.exists() ? snapshot.val() : null;
+                return cachedGeneralMasterData;
+            } catch (error) {
+                console.error('Error getting general master data:', error);
+                return cachedGeneralMasterData;
+            }
+        }
+
         // Set up real-time listeners
         function setupRealtimeListeners() {
             if (!window.firebaseReady) return;
@@ -2972,6 +2987,15 @@
                 if (JSON.stringify(newConfig) !== JSON.stringify(cachedCategoriesIndex)) {
                     cachedCategoriesIndex = newConfig;
                     initGeneralGrid();  // Re-render generals with new categories
+                }
+            });
+
+            // Listen for general master data changes
+            onValue(ref(database, 'settings/generalMasterData'), (snapshot) => {
+                const newData = snapshot.exists() ? snapshot.val() : null;
+                if (JSON.stringify(newData) !== JSON.stringify(cachedGeneralMasterData)) {
+                    cachedGeneralMasterData = newData;
+                    initGeneralGrid();  // Re-render generals with new master data
                 }
             });
 
@@ -3451,9 +3475,10 @@
             initTacticSection();
             initAsuraTapTargets();
 
-            // Load custom generals and category config first
+            // Load custom generals, category config, and master data first
             cachedCustomGenerals = await getCustomGenerals();
             await getCategoriesIndex();
+            await getGeneralMasterData();
             initGeneralGrid();
 
             // Load custom items
