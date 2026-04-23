@@ -1007,6 +1007,34 @@
             border-color: var(--accent-gold);
         }
 
+        /* Toggle Switch for Display Mode */
+        .toggle-switch .toggle-slider {
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            background: var(--border-color);
+            border-radius: 10px;
+            position: relative;
+            transition: background 0.3s;
+        }
+        .toggle-switch .toggle-slider::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-gold);
+        }
+        .toggle-switch input:checked + .toggle-slider::after {
+            transform: translateX(20px);
+        }
+
         /* Floating Navigation */
         .floating-nav {
             position: fixed;
@@ -1573,6 +1601,15 @@
                     <button class="bulk-btn" onclick="bulkSelectGenerals('bow', 'owned')">弓用ON</button>
                 </div>
 
+                <!-- Display Mode Toggle -->
+                <div style="margin: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <label class="toggle-switch" style="display: inline-flex; align-items: center; cursor: pointer; gap: 0.5rem;">
+                        <input type="checkbox" id="showByIndexOrder" onchange="toggleGeneralDisplayMode()" style="display: none;">
+                        <span class="toggle-slider" style="width: 40px; height: 20px; background: var(--border-color); border-radius: 10px; position: relative; transition: background 0.3s;"></span>
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">武将図鑑順表示</span>
+                    </label>
+                </div>
+
                 <div class="general-list">
                     <h4>編成武将リスト</h4>
                     <div class="general-categories" id="generalGrid">
@@ -2132,6 +2169,84 @@
         let cachedTeams = {};  // teams keyed by team.id (for manage-screen team membership)
         let cachedCategoriesIndex = null;  // Custom category config for index.html
         let cachedGeneralMasterData = null;  // General master data with rally limits, notes, categories
+        let showByIndexOrder = false;  // Toggle for index order display
+
+        // Toggle between category view and index order view
+        function toggleGeneralDisplayMode() {
+            const checkbox = document.getElementById('showByIndexOrder');
+            showByIndexOrder = checkbox.checked;
+
+            // Collect current general states before re-rendering
+            const savedStates = collectGeneralStates();
+
+            // Re-render the grid
+            initGeneralGrid();
+
+            // Restore states after re-rendering
+            applyGeneralStates(savedStates);
+            updateProgress();
+        }
+
+        // Collect current general states
+        function collectGeneralStates() {
+            const states = {};
+            const allGenerals = getAllGenerals();
+            for (let i = 0; i < allGenerals.length; i++) {
+                const genName = allGenerals[i];
+                const levelEl = document.getElementById(`general_${i}`);
+                const stateEl = document.getElementById(`generalState_${i}`);
+                if (levelEl && stateEl) {
+                    states[genName] = {
+                        level: parseInt(levelEl.value) || 10,
+                        state: parseInt(stateEl.value) || 0
+                    };
+                }
+            }
+            return states;
+        }
+
+        // Apply saved general states after re-rendering
+        function applyGeneralStates(savedStates) {
+            const allGenerals = getAllGenerals();
+            for (let i = 0; i < allGenerals.length; i++) {
+                const genName = allGenerals[i];
+                const saved = savedStates[genName];
+                if (saved) {
+                    const levelEl = document.getElementById(`general_${i}`);
+                    const stateEl = document.getElementById(`generalState_${i}`);
+                    const itemEl = document.getElementById(`generalItem_${i}`);
+
+                    if (levelEl) levelEl.value = saved.level;
+                    if (stateEl) stateEl.value = saved.state;
+                    if (itemEl) {
+                        itemEl.dataset.state = saved.state;
+                        itemEl.classList.remove('owned', 'formed');
+                        if (saved.state === 1) {
+                            itemEl.classList.add('owned');
+                        } else if (saved.state === 2) {
+                            itemEl.classList.add('formed');
+                        }
+                    }
+                }
+            }
+        }
+
+        // Get generals sorted by index number from master data
+        function getGeneralsInIndexOrder() {
+            const allCustomGenerals = cachedCustomGenerals || [];
+            const masterGenerals = cachedGeneralMasterData?.generals ? Object.keys(cachedGeneralMasterData.generals) : [];
+            const allGeneralSet = new Set([...generals, ...allCustomGenerals, ...masterGenerals]);
+
+            // Filter out hidden generals
+            const visibleGenerals = [...allGeneralSet].filter(g => !isHiddenGeneral(g));
+
+            // Sort by indexNo from master data
+            return visibleGenerals.sort((a, b) => {
+                const indexA = cachedGeneralMasterData?.generals?.[a]?.indexNo ?? 9999;
+                const indexB = cachedGeneralMasterData?.generals?.[b]?.indexNo ?? 9999;
+                return indexA - indexB;
+            });
+        }
 
         // Helper: check if general should be hidden (empty category in master data)
         function isHiddenGeneral(genName) {
@@ -2143,9 +2258,10 @@
 
         // Get effective general categories (from Firebase config or defaults)
         function getEffectiveGeneralCategories() {
-            // Get all generals (default + custom)
+            // Get all generals (default + custom + master data)
             const allCustomGenerals = cachedCustomGenerals || [];
-            const allGenerals = new Set([...generals, ...allCustomGenerals]);
+            const masterGenerals = cachedGeneralMasterData?.generals ? Object.keys(cachedGeneralMasterData.generals) : [];
+            const allGenerals = new Set([...generals, ...allCustomGenerals, ...masterGenerals]);
 
             if (!cachedCategoriesIndex || !cachedCategoriesIndex.categories) {
                 // Use default categories + custom generals in their own categories
@@ -2173,7 +2289,7 @@
                 return result;
             }
 
-            // Use stored config
+            // Use stored config - include all generals from config (they exist because they were imported)
             const order = cachedCategoriesIndex.order || Object.keys(cachedCategoriesIndex.categories);
             const result = [];
 
@@ -2184,8 +2300,8 @@
                 const cat = cachedCategoriesIndex.categories[catId];
                 if (!cat) continue;
 
-                // Filter to only include generals that still exist and are not hidden
-                const validGenerals = (cat.generals || []).filter(g => allGenerals.has(g) && !isHiddenGeneral(g));
+                // Include all generals from config, only filter hidden ones
+                const validGenerals = (cat.generals || []).filter(g => !isHiddenGeneral(g));
 
                 if (validGenerals.length > 0) {
                     result.push({
@@ -2921,12 +3037,12 @@
             }
         }
 
-        // Get general category config for index.html
+        // Get unified general category config
         async function getCategoriesIndex() {
             if (!window.firebaseReady) return cachedCategoriesIndex;
             try {
                 const { database, ref, get } = window.firebaseDB;
-                const snapshot = await get(ref(database, 'settings/generalCategoriesIndex'));
+                const snapshot = await get(ref(database, 'settings/generalCategories'));
                 cachedCategoriesIndex = snapshot.exists() ? snapshot.val() : null;
                 return cachedCategoriesIndex;
             } catch (error) {
@@ -2981,8 +3097,8 @@
                 }
             });
 
-            // Listen for category config changes
-            onValue(ref(database, 'settings/generalCategoriesIndex'), (snapshot) => {
+            // Listen for unified category config changes
+            onValue(ref(database, 'settings/generalCategories'), (snapshot) => {
                 const newConfig = snapshot.exists() ? snapshot.val() : null;
                 if (JSON.stringify(newConfig) !== JSON.stringify(cachedCategoriesIndex)) {
                     cachedCategoriesIndex = newConfig;
@@ -3677,16 +3793,16 @@
         // Initialize general grid with categories
         function initGeneralGrid() {
             const grid = document.getElementById('generalGrid');
-            const effectiveCategories = getEffectiveGeneralCategories();
-
             let globalIndex = 0;
             let html = '';
 
             const generalItemHtml = (g) => {
                 const index = globalIndex++;
+                const indexNo = cachedGeneralMasterData?.generals?.[g]?.indexNo;
+                const indexLabel = showByIndexOrder && indexNo !== undefined ? `<span style="color: var(--text-muted); font-size: 0.7rem; margin-right: 0.3rem;">${indexNo}.</span>` : '';
                 return `
                     <div class="general-item" id="generalItem_${index}" data-general="${g}" data-state="0">
-                        <span class="general-name" onclick="toggleGeneralState(${index})">${g}</span>
+                        <span class="general-name" onclick="toggleGeneralState(${index})">${indexLabel}${g}</span>
                         <span class="status-badge"></span>
                         <input type="number" id="general_${index}" min="0" max="12" value="10" onchange="updateProgress()">
                         <input type="hidden" id="generalState_${index}" value="0">
@@ -3694,24 +3810,41 @@
                 `;
             };
 
-            // Render categories from effective config
-            effectiveCategories.forEach(cat => {
-                if (cat.generals.length === 0) return;  // Skip empty categories
-                html += `
+            if (showByIndexOrder) {
+                // Index order mode - single flat list sorted by indexNo
+                const sortedGenerals = getGeneralsInIndexOrder();
+                html = `
                     <div class="general-category">
-                        <div class="general-category-title">●${cat.title}</div>
+                        <div class="general-category-title">●武将図鑑順（${sortedGenerals.length}名）</div>
                         <div class="general-grid">
-                            ${cat.generals.map(generalItemHtml).join('')}
+                            ${sortedGenerals.map(generalItemHtml).join('')}
                         </div>
                     </div>
                 `;
-            });
+            } else {
+                // Category mode - grouped by categories
+                const effectiveCategories = getEffectiveGeneralCategories();
+                effectiveCategories.forEach(cat => {
+                    if (cat.generals.length === 0) return;
+                    html += `
+                        <div class="general-category">
+                            <div class="general-category-title">●${cat.title}</div>
+                            <div class="general-grid">
+                                ${cat.generals.map(generalItemHtml).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
 
             grid.innerHTML = html;
         }
 
         // Get all generals including custom ones (matches display order in initGeneralGrid)
         function getAllGenerals() {
+            if (showByIndexOrder) {
+                return getGeneralsInIndexOrder();
+            }
             const effectiveCategories = getEffectiveGeneralCategories();
             return effectiveCategories.flatMap(cat => cat.generals);
         }
