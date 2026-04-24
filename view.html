@@ -1903,15 +1903,17 @@
                     }
                 });
             });
-            // Add virtual members (simulation mode)
-            virtualMembers.forEach(vm => {
-                entries.push({
-                    username: vm.username,
-                    team: vm.team,
-                    data: vm.data,
-                    isVirtual: true
+            // Add virtual members only when simulation mode is active
+            if (simulationModeActive) {
+                virtualMembers.forEach(vm => {
+                    entries.push({
+                        username: vm.username,
+                        team: vm.team,
+                        data: vm.data,
+                        isVirtual: true
+                    });
                 });
-            });
+            }
             return entries;
         }
 
@@ -2422,8 +2424,16 @@
             }[c]));
         }
 
-        function escapeJs(str) {
-            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        function escapeJsAttr(str) {
+            // Escape for JS string inside HTML onclick attribute: onclick="func('...')"
+            // Order matters: & first, then other HTML entities, then JS escapes
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'");
         }
 
         // Toast notification
@@ -2859,8 +2869,8 @@
                         const itemNameStr = item.name || '';
                         const isCustomStr = item.isCustom ? '1' : '0';
                         const clickHandler = (simulationModeActive && !cat.isTextCategory)
-                            ? ` onclick="toggleCellState('${escapeJs(username)}', '${escapeJs(team)}', '${cat.key}', '${escapeJs(itemIdStr)}', '${isCustomStr}', '${escapeJs(itemNameStr)}')"`
-                            : (isClickable ? ` onclick="toggleCellState('${escapeJs(username)}', '${escapeJs(team)}', '${cat.key}', '${escapeJs(itemIdStr)}', '${isCustomStr}', '${escapeJs(itemNameStr)}')"` : '');
+                            ? ` onclick="toggleCellState('${escapeJsAttr(username)}', '${escapeJsAttr(team)}', '${cat.key}', '${escapeJsAttr(itemIdStr)}', '${isCustomStr}', '${escapeJsAttr(itemNameStr)}')"`
+                            : (isClickable ? ` onclick="toggleCellState('${escapeJsAttr(username)}', '${escapeJsAttr(team)}', '${cat.key}', '${escapeJsAttr(itemIdStr)}', '${isCustomStr}', '${escapeJsAttr(itemNameStr)}')"` : '');
                         // Debug: log first virtual member cell
                         if (isVirtual && cat.items.indexOf(item) === 0 && catIdx === 0) {
                             console.log('Virtual member cell debug:', { username, team, isVirtual, simulationModeActive, clickHandler: clickHandler.substring(0, 100) });
