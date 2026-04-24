@@ -2045,6 +2045,9 @@
             // General master data
             onValue(ref(database, 'settings/generalMasterData'), (snap) => {
                 generalMasterData = snap.exists() ? snap.val() : null;
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    populateCategoryDropdowns();
+                }
                 tryInitialStateSave();
             });
         }
@@ -4231,8 +4234,23 @@
 
         // Populate category dropdowns
         function populateCategoryDropdowns() {
+            // Get categories from generalCategories (primary source)
+            const categoriesFromConfig = [];
+            if (generalCategories?.categories) {
+                for (const catId of (generalCategories.order || Object.keys(generalCategories.categories))) {
+                    const cat = generalCategories.categories[catId];
+                    if (cat?.title && catId !== '_unassigned') {
+                        categoriesFromConfig.push(cat.title);
+                    }
+                }
+            }
+
+            // Also get categories from existing generals (fallback)
             const allGenerals = getAllGeneralsWithData();
-            const categories = [...new Set(allGenerals.map(g => g.category).filter(c => c))];
+            const categoriesFromGenerals = [...new Set(allGenerals.map(g => g.category).filter(c => c))];
+
+            // Merge and dedupe
+            const categories = [...new Set([...categoriesFromConfig, ...categoriesFromGenerals])];
             categories.sort((a, b) => a.localeCompare(b, 'ja'));
 
             const categorySelect = document.getElementById('newGeneralCategory');
