@@ -1132,6 +1132,22 @@
                 }
             }
 
+            // Sort by categoriesViewConfig.order if available
+            if (categoriesViewConfig?.order && categoriesViewConfig?.categories) {
+                const titleToOrder = {};
+                categoriesViewConfig.order.forEach((catId, index) => {
+                    const cat = categoriesViewConfig.categories[catId];
+                    if (cat?.title) {
+                        titleToOrder[cat.title] = index;
+                    }
+                });
+                filteredResult.sort((a, b) => {
+                    const orderA = titleToOrder[a.title] ?? 9999;
+                    const orderB = titleToOrder[b.title] ?? 9999;
+                    return orderA - orderB;
+                });
+            }
+
             return filteredResult;
         }
 
