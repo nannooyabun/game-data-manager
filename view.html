@@ -153,12 +153,23 @@
             letter-spacing: 0.05em;
         }
 
-        /* Category notes icon - displayed inline */
-        .cat-notes {
-            display: inline;
-            margin-left: 0.3rem;
-            font-size: 0.7rem;
-            cursor: help;
+        /* Category notes - displayed as small text below title */
+        .cat-notes-text {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-top: 2px;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        .cat-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* Rally limit display in item header */
@@ -476,8 +487,8 @@
             filter: brightness(1.2);
         }
 
-        /* Scroll position indicator */
-        .scroll-indicator {
+        /* View controls container */
+        .view-controls {
             position: sticky;
             top: 0;
             left: 0;
@@ -487,11 +498,25 @@
             border-bottom: 2px solid var(--accent-gold-dim);
             padding: 0.4rem 1rem;
             font-size: 0.85rem;
-            color: var(--accent-gold);
+        }
+        .view-controls-row {
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
             align-items: center;
+            margin-bottom: 0.3rem;
+        }
+        .view-controls-row:last-child {
+            margin-bottom: 0;
+        }
+        .control-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        /* Scroll position indicator */
+        .scroll-indicator {
+            color: var(--accent-gold);
         }
         .scroll-indicator-item {
             padding: 0.2rem 0.6rem;
@@ -2218,12 +2243,12 @@
                 const isCollapsed = collapsedCategories.has(cat.key);
                 const toggleIcon = isCollapsed ? '▶' : '▼';
                 const catNotes = cat.categoryNotes || '';
-                const catNotesHtml = catNotes ? `<div class="cat-notes" title="${escapeHtml(catNotes)}">📝</div>` : '';
+                const catNotesHtml = catNotes ? `<div class="cat-notes-text">📝 ${escapeHtml(catNotes)}</div>` : '';
 
                 if (isCollapsed) {
                     return `<th class="cat-header cat-collapsed-placeholder ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" rowspan="2">${escapeHtml(cat.title.substring(0, 6))}…</th>`;
                 }
-                return `<th class="cat-header ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" colspan="${cat.items.length}" title="${escapeHtml(catNotes)}">${escapeHtml(cat.title)}${catNotesHtml}<span class="cat-toggle">${toggleIcon}</span></th>`;
+                return `<th class="cat-header ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" colspan="${cat.items.length}"><div class="cat-header-content">${escapeHtml(cat.title)}<span class="cat-toggle">${toggleIcon}</span></div>${catNotesHtml}</th>`;
             }).join('');
 
             // Build item header row (skip collapsed categories)
@@ -2298,11 +2323,17 @@
             const isCompact = document.body.classList.contains('compact-sticky');
             const isNumeric = document.body.classList.contains('numeric-mode');
             main.innerHTML = `
-                <div class="scroll-indicator" style="display: flex; align-items: center; gap: 0.5rem;">
-                    <button class="compact-toggle-btn${isCompact ? ' active' : ''}" onclick="toggleCompactSticky()" title="固定列を最小化">${isCompact ? '▶ 全表示' : '◀ 最小化'}</button>
-                    <button class="numeric-toggle-btn${isNumeric ? ' active' : ''}" onclick="toggleNumericMode()" title="数値表示モード">${isNumeric ? '🔢 数値' : '●○ 通常'}</button>
-                    <span style="color: var(--text-secondary); font-size: 0.7rem;">カテゴリ:</span>
-                    ${scrollIndicator}
+                <div class="view-controls">
+                    <div class="view-controls-row">
+                        <span class="control-label">📊 固定列:</span>
+                        <button class="compact-toggle-btn${isCompact ? '' : ' active'}" onclick="toggleCompactSticky()" title="ユーザー・軍団・兵種列の表示切替">${isCompact ? '全表示' : '最小化'}</button>
+                        <span class="control-label" style="margin-left: 1rem;">🔢 セル:</span>
+                        <button class="numeric-toggle-btn${isNumeric ? ' active' : ''}" onclick="toggleNumericMode()" title="セルの表示形式切替">${isNumeric ? '数値' : '●○ 通常'}</button>
+                    </div>
+                    <div class="view-controls-row scroll-indicator">
+                        <span class="control-label">📍 ジャンプ:</span>
+                        ${scrollIndicator}
+                    </div>
                 </div>
                 <div class="table-wrapper" id="tableWrapper">
                     <table class="view-table">
