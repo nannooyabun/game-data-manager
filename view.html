@@ -1735,33 +1735,6 @@
             }
         }
 
-        function toggleCellState(username, team, catKey, itemId, isCustom, itemName) {
-            console.log('toggleCellState called:', { username, team, catKey, itemId, isCustom, itemName, simulationModeActive });
-            if (!simulationModeActive) {
-                console.log('simulationModeActive is false, returning');
-                return;
-            }
-
-            const editKey = `${username}/${team}/${catKey}/${itemId}`;
-
-            // Get current state
-            let currentState = cellEdits[editKey];
-            if (currentState === undefined) {
-                // Get from original data
-                currentState = getOriginalCellState(username, team, catKey, itemId, isCustom === '1');
-            }
-
-            // Cycle: none → owned → equipped → none
-            let newState;
-            if (currentState === 'none') newState = 'owned';
-            else if (currentState === 'owned') newState = 'equipped';
-            else newState = 'none';
-
-            cellEdits[editKey] = newState;
-            saveSimulationState();
-            renderTable();
-        }
-
         function getOriginalCellState(username, team, catKey, itemId, isCustom) {
             // Find the user data
             let userData;
@@ -2525,6 +2498,31 @@
 
         // Toggle cell state between equipped ⇄ owned
         async function toggleCellState(username, teamName, catKey, itemId, isCustomFlag, itemName) {
+            // Handle simulation mode editing (virtual members or any cell when simulation is active)
+            if (simulationModeActive) {
+                const isVirtual = virtualMembers.some(vm => vm.username === username && vm.team === teamName);
+
+                // In simulation mode, all edits go to cellEdits (not Firebase)
+                const editKey = `${username}/${teamName}/${catKey}/${itemId}`;
+                let currentState = cellEdits[editKey];
+
+                if (currentState === undefined) {
+                    currentState = getOriginalCellState(username, teamName, catKey, itemId, isCustomFlag === '1');
+                }
+
+                // Cycle: none → owned → equipped → none
+                let newState;
+                if (currentState === 'none') newState = 'owned';
+                else if (currentState === 'owned') newState = 'equipped';
+                else newState = 'none';
+
+                cellEdits[editKey] = newState;
+                saveSimulationState();
+                showToast(`${itemName || itemId}: ${newState === 'equipped' ? '編成' : newState === 'owned' ? '所持' : '未所持'}`, 'success');
+                renderTable();
+                return;
+            }
+
             if (!window.firebaseReady) {
                 showToast('Firebase未接続', 'error');
                 return;
@@ -2871,10 +2869,6 @@
                         const clickHandler = (simulationModeActive && !cat.isTextCategory)
                             ? ` onclick="toggleCellState('${escapeJsAttr(username)}', '${escapeJsAttr(team)}', '${cat.key}', '${escapeJsAttr(itemIdStr)}', '${isCustomStr}', '${escapeJsAttr(itemNameStr)}')"`
                             : (isClickable ? ` onclick="toggleCellState('${escapeJsAttr(username)}', '${escapeJsAttr(team)}', '${cat.key}', '${escapeJsAttr(itemIdStr)}', '${isCustomStr}', '${escapeJsAttr(itemNameStr)}')"` : '');
-                        // Debug: log first virtual member cell
-                        if (isVirtual && cat.items.indexOf(item) === 0 && catIdx === 0) {
-                            console.log('Virtual member cell debug:', { username, team, isVirtual, simulationModeActive, clickHandler: clickHandler.substring(0, 100) });
-                        }
                         return `<td class="${cat.colorClass}${borderClass}${clickClass}"${clickHandler}>${stateSymbol(state, value)}</td>`;
                     });
                 }).join('');
