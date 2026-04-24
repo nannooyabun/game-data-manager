@@ -1719,12 +1719,33 @@
                     <input type="checkbox" id="nobunagaOwned" data-role="owned" style="display:none;" onchange="updateProgress()">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>足跡レベル</label>
-                            <input type="text" id="nobunagaFootprint" placeholder="レベルを入力" onchange="updateProgress()">
+                            <label>主義Lv</label>
+                            <select id="nobunagaIdeology" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>スキルLv</label>
+                            <select id="nobunagaSkill" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>副将段階</label>
+                            <select id="nobunagaDeputyStage" onchange="updateProgress()">
+                                <option value="0">未開放</option>
+                                <option value="1">軍馬まで</option>
+                                <option value="2">守護霊まで</option>
+                                <option value="3">神格衣装</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="nobunagaDeputy" placeholder="副将の名前" onchange="updateProgress()">
+                            <input type="text" id="nobunagaDeputy" placeholder="副将の名前" list="generalNameList" onchange="updateProgress()">
                         </div>
                     </div>
                 </div>
@@ -1735,12 +1756,33 @@
                     <input type="checkbox" id="hideyoshiOwned" data-role="owned" style="display:none;" onchange="updateProgress()">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>足跡レベル</label>
-                            <input type="text" id="hideyoshiFootprint" placeholder="レベルを入力" onchange="updateProgress()">
+                            <label>主義Lv</label>
+                            <select id="hideyoshiIdeology" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>スキルLv</label>
+                            <select id="hideyoshiSkill" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>副将段階</label>
+                            <select id="hideyoshiDeputyStage" onchange="updateProgress()">
+                                <option value="0">未開放</option>
+                                <option value="1">軍馬まで</option>
+                                <option value="2">守護霊まで</option>
+                                <option value="3">神格衣装</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="hideyoshiDeputy" placeholder="副将の名前" onchange="updateProgress()">
+                            <input type="text" id="hideyoshiDeputy" placeholder="副将の名前" list="generalNameList" onchange="updateProgress()">
                         </div>
                     </div>
                 </div>
@@ -1751,15 +1793,39 @@
                     <input type="checkbox" id="ieyasuOwned" data-role="owned" style="display:none;" onchange="updateProgress()">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>足跡レベル</label>
-                            <input type="text" id="ieyasuFootprint" placeholder="レベルを入力" onchange="updateProgress()">
+                            <label>主義Lv</label>
+                            <select id="ieyasuIdeology" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>スキルLv</label>
+                            <select id="ieyasuSkill" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>副将段階</label>
+                            <select id="ieyasuDeputyStage" onchange="updateProgress()">
+                                <option value="0">未開放</option>
+                                <option value="1">軍馬まで</option>
+                                <option value="2">守護霊まで</option>
+                                <option value="3">神格衣装</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="ieyasuDeputy" placeholder="副将の名前" onchange="updateProgress()">
+                            <input type="text" id="ieyasuDeputy" placeholder="副将の名前" list="generalNameList" onchange="updateProgress()">
                         </div>
                     </div>
                 </div>
+
+                <!-- General name datalist for autocomplete -->
+                <datalist id="generalNameList"></datalist>
 
                 <!-- Custom SP Generals -->
                 <div id="customSpGeneralsContainer"></div>
@@ -4399,7 +4465,9 @@
                 data.spGenerals[sp] = {
                     formed: document.getElementById(`${sp}Formed`).checked,
                     owned: document.getElementById(`${sp}Owned`).checked,
-                    footprint: document.getElementById(`${sp}Footprint`).value,
+                    ideology: document.getElementById(`${sp}Ideology`).value,
+                    skill: document.getElementById(`${sp}Skill`).value,
+                    deputyStage: document.getElementById(`${sp}DeputyStage`).value,
                     deputy: document.getElementById(`${sp}Deputy`).value
                 };
             });
@@ -5048,7 +5116,9 @@
                     if (data.spGenerals[sp]) {
                         document.getElementById(`${sp}Formed`).checked = data.spGenerals[sp].formed || false;
                         document.getElementById(`${sp}Owned`).checked = data.spGenerals[sp].owned || false;
-                        document.getElementById(`${sp}Footprint`).value = data.spGenerals[sp].footprint || '';
+                        document.getElementById(`${sp}Ideology`).value = data.spGenerals[sp].ideology || '';
+                        document.getElementById(`${sp}Skill`).value = data.spGenerals[sp].skill || '';
+                        document.getElementById(`${sp}DeputyStage`).value = data.spGenerals[sp].deputyStage || '0';
                         document.getElementById(`${sp}Deputy`).value = data.spGenerals[sp].deputy || '';
                     }
                 });
