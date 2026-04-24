@@ -143,7 +143,7 @@
         }
 
         .view-table thead tr:nth-child(2) th {
-            top: 36px;
+            top: 52px;  /* Increased to account for category notes */
             z-index: 3;
         }
 
@@ -1618,8 +1618,11 @@
             for (const [name, g] of Object.entries(user.generals)) {
                 if (g && (g.owned || g.formed)) {
                     ownedCount++;
-                    if (g.level && typeof g.level === 'number') {
-                        spiritLevelSum += g.level;
+                    // Support both string and number levels
+                    const level = typeof g === 'object' ? g.level : g;
+                    const numLevel = parseInt(level) || 0;
+                    if (numLevel > 0) {
+                        spiritLevelSum += numLevel;
                     }
                 }
             }
