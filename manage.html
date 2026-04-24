@@ -273,24 +273,36 @@
             filter: brightness(1.1);
         }
 
+        /* Data table container with scroll */
+        .data-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
         /* Data table */
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .data-table th,
         .data-table td {
-            padding: 0.8rem;
+            padding: 0.5rem 0.6rem;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
         }
 
         .data-table th {
             background: var(--bg-secondary);
             color: var(--accent-gold);
             font-weight: 500;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
 
         .data-table tr:hover td {
@@ -300,6 +312,11 @@
         .data-table .actions {
             display: flex;
             gap: 0.3rem;
+        }
+
+        .data-table .completion {
+            text-align: right;
+            font-weight: 500;
         }
 
         .data-table .btn-edit {
@@ -371,14 +388,17 @@
         .team-list {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.8rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
         }
 
         .team-card {
             background: var(--bg-input);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 1rem;
+            padding: 0.8rem;
         }
 
         .team-card-header {
@@ -1747,15 +1767,15 @@
                 <div class="action-row">
                     <button class="action-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
                 </div>
-                <div style="overflow-x: auto;">
+                <div class="data-table-container">
                     <table class="data-table" id="dataTable">
                         <thead>
                             <tr>
-                                <th>ユーザー名</th>
+                                <th>ユーザー</th>
                                 <th>軍団</th>
                                 <th>兵種</th>
-                                <th>更新日時</th>
-                                <th>完成度</th>
+                                <th>更新</th>
+                                <th>%</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -2127,20 +2147,23 @@
 
             tbody.innerHTML = rows.map(({ name, team, data }) => {
                 const completion = calculateCompletion(data);
-                const date = data.timestamp ? new Date(data.timestamp).toLocaleString('ja-JP') : '-';
+                // Format date as YY/MM/DD
+                let dateStr = '-';
+                if (data.timestamp) {
+                    const d = new Date(data.timestamp);
+                    const yy = String(d.getFullYear()).slice(-2);
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    dateStr = `${yy}/${mm}/${dd}`;
+                }
                 const troop = troopMap[data.troopType] || data.troopType || '-';
                 return `
                     <tr>
                         <td>${escapeHtml(name)}</td>
                         <td>${escapeHtml(team)}</td>
                         <td>${escapeHtml(troop)}</td>
-                        <td>${date}</td>
-                        <td>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${completion}%"></div>
-                            </div>
-                            <span>${completion}%</span>
-                        </td>
+                        <td>${dateStr}</td>
+                        <td class="completion">${completion}%</td>
                         <td class="actions">
                             <button class="btn-edit" onclick="editUser('${escapeHtml(name)}', '${escapeHtml(team)}')">編集</button>
                             <button class="btn-delete" onclick="confirmDeleteUser('${escapeHtml(name)}', '${escapeHtml(team)}')">削除</button>
