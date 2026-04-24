@@ -1041,6 +1041,32 @@
             bottom: 2rem;
             right: 2rem;
             z-index: 999;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .floating-nav.dragging {
+            opacity: 0.8;
+        }
+
+        .floating-nav .drag-handle {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            cursor: move;
+            display: none;
+        }
+
+        .floating-nav:hover .drag-handle,
+        .floating-nav.dragging .drag-handle {
+            display: block;
         }
 
         .floating-btn {
@@ -2026,7 +2052,8 @@
     </main>
 
     <!-- Floating Navigation -->
-    <div class="floating-nav">
+    <div class="floating-nav" id="floatingNav">
+        <span class="drag-handle">⋮⋮ ドラッグで移動</span>
         <div class="floating-menu" id="floatingMenu">
             <button class="floating-menu-item" onclick="scrollToSection('weaponSection')">① 兵器</button>
             <button class="floating-menu-item" onclick="scrollToSection('spGeneralSection')">②-1 SP武将</button>
@@ -2036,6 +2063,7 @@
             <button class="floating-menu-item" onclick="scrollToSection('armorSection')">⑤ 核心具足</button>
             <button class="floating-menu-item" onclick="scrollToSection('flowerSection')">⑥ 花陣</button>
             <button class="floating-menu-item" onclick="scrollToSection('horseSection')">⑦ 軍馬</button>
+            <button class="floating-menu-item" onclick="resetFloatingNavPosition()" style="color: var(--text-muted); font-size: 0.75rem;">↩ 位置をリセット</button>
             <button class="floating-menu-item" onclick="scrollToSection('tacticSection')">⑧ 戦法</button>
         </div>
         <button class="floating-btn" onclick="toggleFloatingMenu()">☰</button>
@@ -5392,6 +5420,105 @@
                 document.getElementById('floatingMenu').classList.remove('show');
             }
         });
+
+        // Floating nav drag functionality
+        (function initFloatingNavDrag() {
+            const nav = document.getElementById('floatingNav');
+            if (!nav) return;
+
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+
+            // Load saved position
+            const savedPos = localStorage.getItem('floatingNavPosition');
+            if (savedPos) {
+                try {
+                    const pos = JSON.parse(savedPos);
+                    nav.style.right = 'auto';
+                    nav.style.bottom = 'auto';
+                    nav.style.left = pos.left + 'px';
+                    nav.style.top = pos.top + 'px';
+                } catch (e) {}
+            }
+
+            function onStart(e) {
+                // Only drag from the button or drag handle, not menu items
+                const target = e.target;
+                if (target.closest('.floating-menu-item')) return;
+
+                isDragging = true;
+                nav.classList.add('dragging');
+
+                const touch = e.touches ? e.touches[0] : e;
+                startX = touch.clientX;
+                startY = touch.clientY;
+
+                const rect = nav.getBoundingClientRect();
+                startLeft = rect.left;
+                startTop = rect.top;
+
+                e.preventDefault();
+            }
+
+            function onMove(e) {
+                if (!isDragging) return;
+
+                const touch = e.touches ? e.touches[0] : e;
+                const deltaX = touch.clientX - startX;
+                const deltaY = touch.clientY - startY;
+
+                let newLeft = startLeft + deltaX;
+                let newTop = startTop + deltaY;
+
+                // Keep within viewport
+                const maxLeft = window.innerWidth - nav.offsetWidth;
+                const maxTop = window.innerHeight - nav.offsetHeight;
+                newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+                newTop = Math.max(0, Math.min(newTop, maxTop));
+
+                nav.style.right = 'auto';
+                nav.style.bottom = 'auto';
+                nav.style.left = newLeft + 'px';
+                nav.style.top = newTop + 'px';
+
+                e.preventDefault();
+            }
+
+            function onEnd() {
+                if (!isDragging) return;
+                isDragging = false;
+                nav.classList.remove('dragging');
+
+                // Save position
+                const rect = nav.getBoundingClientRect();
+                localStorage.setItem('floatingNavPosition', JSON.stringify({
+                    left: rect.left,
+                    top: rect.top
+                }));
+            }
+
+            // Mouse events
+            nav.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+
+            // Touch events
+            nav.addEventListener('touchstart', onStart, { passive: false });
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
+        })();
+
+        function resetFloatingNavPosition() {
+            const nav = document.getElementById('floatingNav');
+            if (!nav) return;
+
+            localStorage.removeItem('floatingNavPosition');
+            nav.style.left = '';
+            nav.style.top = '';
+            nav.style.right = '2rem';
+            nav.style.bottom = '2rem';
+            document.getElementById('floatingMenu').classList.remove('show');
+        }
 
         // ========== Formation Count ==========
 
