@@ -1829,8 +1829,8 @@
                     return 'none';
                 }
                 default: {
-                    // General categories (cat_X format)
-                    if (catKey.startsWith('cat_')) {
+                    // General categories (general_X format)
+                    if (catKey.startsWith('general_') || catKey === 'generalSummary') {
                         const g = userData.generals?.[itemId];
                         if (!g) return 'none';
                         if (typeof g === 'object') {
