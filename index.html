@@ -4151,12 +4151,13 @@
         function initAcademyGrid() {
             const grid = document.getElementById('academyGrid');
             if (!grid) return;
-            // Items 0-3 (紅葉～天狗抄) are NOT owned by default
-            // Items 4-12 (攻撃～障壁) are owned by default
+            // Items 0-3 (紅葉～天狗抄) are NOT owned by default, and can be 未所持
+            // Items 4-12 (攻撃～障壁) are owned by default, 2-state (所持/装備 only)
             grid.innerHTML = academyHeihoItems.map((h, idx) => {
                 const defaultOwned = idx >= 4;
+                const twoState = idx >= 4; // Only basic items are 2-state
                 return `
-                <div class="flower-item tap-card" data-state="${defaultOwned ? 1 : 0}" data-two-state="1" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+                <div class="flower-item tap-card" data-state="${defaultOwned ? 1 : 0}" ${twoState ? 'data-two-state="1"' : ''} data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
                     <div class="tap-header" style="flex: 1; display: block;">
                         <div class="name">${h.name}<span class="tap-state-badge">${defaultOwned ? '所持' : '未所持'}</span></div>
                     </div>
