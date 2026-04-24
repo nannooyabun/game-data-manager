@@ -2418,6 +2418,10 @@
             }[c]));
         }
 
+        function escapeJs(str) {
+            return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
         // Toast notification
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
@@ -2851,8 +2855,8 @@
                         const itemNameStr = item.name || '';
                         const isCustomStr = item.isCustom ? '1' : '0';
                         const clickHandler = (simulationModeActive && !cat.isTextCategory)
-                            ? ` onclick="toggleCellState('${escapeHtml(username)}', '${escapeHtml(team)}', '${cat.key}', '${escapeHtml(itemIdStr)}', '${isCustomStr}', '${escapeHtml(itemNameStr)}')"`
-                            : (isClickable ? ` onclick="toggleCellState('${escapeHtml(username)}', '${escapeHtml(team)}', '${cat.key}', '${escapeHtml(itemIdStr)}', '${isCustomStr}', '${escapeHtml(itemNameStr)}')"` : '');
+                            ? ` onclick="toggleCellState('${escapeJs(username)}', '${escapeJs(team)}', '${cat.key}', '${escapeJs(itemIdStr)}', '${isCustomStr}', '${escapeJs(itemNameStr)}')"`
+                            : (isClickable ? ` onclick="toggleCellState('${escapeJs(username)}', '${escapeJs(team)}', '${cat.key}', '${escapeJs(itemIdStr)}', '${isCustomStr}', '${escapeJs(itemNameStr)}')"` : '');
                         return `<td class="${cat.colorClass}${borderClass}${clickClass}"${clickHandler}>${stateSymbol(state, value)}</td>`;
                     });
                 }).join('');
