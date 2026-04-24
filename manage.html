@@ -1580,23 +1580,15 @@
                 <!-- Tabs -->
                 <div class="tab-container">
                     <div class="tab-buttons">
-                        <button class="tab-btn active" onclick="switchGeneralTab('list')">武将一覧</button>
+                        <button class="tab-btn active" onclick="switchGeneralTab('register')">武将登録</button>
+                        <button class="tab-btn" onclick="switchGeneralTab('edit')">武将編集</button>
                         <button class="tab-btn" onclick="switchGeneralTab('index')">図鑑番号編集</button>
                     </div>
 
-                    <!-- Tab: 武将一覧 -->
-                    <div class="tab-content active" id="generalTabList">
-                        <!-- Search and Filter -->
-                        <div class="search-filter-bar">
-                            <input type="text" class="search-input" id="generalSearchInput" placeholder="武将名で検索..." oninput="filterGeneralList()">
-                            <select class="filter-select" id="generalCategoryFilter" onchange="filterGeneralList()">
-                                <option value="">全カテゴリ</option>
-                            </select>
-                        </div>
-
-                        <!-- Add General Form -->
-                        <div class="edit-form" id="generalAddForm">
-                            <h4>武将を追加</h4>
+                    <!-- Tab: 武将登録 -->
+                    <div class="tab-content active" id="generalTabRegister">
+                        <div class="edit-form">
+                            <h4>新規武将を登録</h4>
                             <div class="form-grid">
                                 <div class="form-field">
                                     <label>武将名 *</label>
@@ -1618,8 +1610,19 @@
                                 </div>
                             </div>
                             <div class="form-actions">
-                                <button class="action-btn success" onclick="addGeneral()">追加</button>
+                                <button class="action-btn success" onclick="addGeneral()">登録</button>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: 武将編集 -->
+                    <div class="tab-content" id="generalTabEdit">
+                        <!-- Search and Filter -->
+                        <div class="search-filter-bar">
+                            <input type="text" class="search-input" id="generalSearchInput" placeholder="武将名で検索..." oninput="filterGeneralList()">
+                            <select class="filter-select" id="generalCategoryFilter" onchange="filterGeneralList()">
+                                <option value="">全カテゴリ</option>
+                            </select>
                         </div>
 
                         <!-- General List -->
@@ -1631,7 +1634,8 @@
                     <!-- Tab: 図鑑番号編集 -->
                     <div class="tab-content" id="generalTabIndex">
                         <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.85rem;">
-                            図鑑番号が未設定の武将を選択し、既存リストの挿入位置を指定してください。
+                            図鑑番号が未設定の武将を選択し、既存リストの挿入位置を指定してください。<br>
+                            ※ CSVインポートで図鑑番号を一括設定することも可能です。
                         </p>
 
                         <!-- Unassigned Generals -->
@@ -2021,6 +2025,7 @@
                     // Also refresh category list since it depends on custom generals
                     renderGenCatList('unified');
                 }
+                tryInitialStateSave();
             });
 
             // Unified general category config
@@ -2033,6 +2038,7 @@
                     renderGenCatList('unified');
                     updateGeneralSubcategorySelect();  // Update dropdown when categories change
                 }
+                tryInitialStateSave();
             });
 
             onValue(ref(database, 'customItems'), (snap) => {
@@ -2046,6 +2052,7 @@
             // General master data
             onValue(ref(database, 'settings/generalMasterData'), (snap) => {
                 generalMasterData = snap.exists() ? snap.val() : null;
+                tryInitialStateSave();
             });
         }
 
@@ -3818,8 +3825,10 @@
 
                 for (const genName of cat.generals) {
                     const genData = masterData.generals?.[genName] || {};
+                    // Use stored indexNo if available, otherwise use sequential position
+                    const indexNo = genData.indexNo !== undefined ? genData.indexNo : idx;
                     rows.push([
-                        idx,
+                        indexNo,
                         genName,
                         genData.rallyLimit || '',
                         genData.notes || '',
@@ -3835,8 +3844,9 @@
             if (unassigned && unassigned.generals.length > 0) {
                 for (const genName of unassigned.generals) {
                     const genData = masterData.generals?.[genName] || {};
+                    const indexNo = genData.indexNo !== undefined ? genData.indexNo : idx;
                     rows.push([
-                        idx,
+                        indexNo,
                         genName,
                         genData.rallyLimit || '',
                         genData.notes || '',
@@ -3970,7 +3980,8 @@
                     }
 
                     // Parse header to find column indices
-                    const header = rows[0].map(h => h.toLowerCase().replace(/[\s\-_]/g, ''));
+                    const header = rows[0].map(h => (h || '').toLowerCase().replace(/[\s\-_]/g, ''));
+                    const indexCol = header.findIndex(h => h.includes('no') || h.includes('番号') || h.includes('index'));
                     const nameCol = header.findIndex(h => h.includes('武将名') || h === '武将名');
                     const rallyCol = header.findIndex(h => h.includes('上限人数') || h.includes('上限'));
                     const notesCol = header.findIndex(h => h.includes('武将') && h.includes('補足'));
@@ -3979,6 +3990,7 @@
 
                     // Fallback to fixed positions if headers not found
                     const col = {
+                        index: indexCol >= 0 ? indexCol : 0,
                         name: nameCol >= 0 ? nameCol : 1,
                         rally: rallyCol >= 0 ? rallyCol : 2,
                         notes: notesCol >= 0 ? notesCol : 3,
@@ -3997,12 +4009,15 @@
                         const name = row[col.name] || '';
                         if (!name) continue;
 
+                        const parsedIndex = parseInt(row[col.index]);
+                        const indexNo = !isNaN(parsedIndex) ? parsedIndex : undefined;
                         const category = row[col.category] || '';
                         const rallyLimit = row[col.rally] || '';
                         const notes = row[col.notes] || '';
                         const catNotes = row[col.catNotes] || '';
 
                         generals[name] = {
+                            indexNo: indexNo,
                             rallyLimit: rallyLimit,
                             notes: notes,
                             category: category
@@ -4165,6 +4180,9 @@
         let categoryUndoHistory = [];
         let categoryInitialState = null;
 
+        // Flag to track if we need to save initial state after login
+        let pendingInitialStateSave = false;
+
         // Index editing state
         let selectedGeneralForIndex = null;
         let selectedInsertPositions = [];
@@ -4175,12 +4193,42 @@
             document.querySelectorAll('#generalManagementSection .tab-content').forEach(content => content.classList.remove('active'));
 
             document.querySelector(`#generalManagementSection .tab-btn[onclick*="${tabId}"]`).classList.add('active');
-            document.getElementById(tabId === 'list' ? 'generalTabList' : 'generalTabIndex').classList.add('active');
 
-            if (tabId === 'list') {
+            const tabMap = {
+                'register': 'generalTabRegister',
+                'edit': 'generalTabEdit',
+                'index': 'generalTabIndex'
+            };
+            document.getElementById(tabMap[tabId]).classList.add('active');
+
+            if (tabId === 'edit') {
                 renderGeneralList();
-            } else {
+                populateCategoryDropdowns();
+            } else if (tabId === 'index') {
                 renderIndexGrid();
+            } else if (tabId === 'register') {
+                populateCategoryDropdowns();
+            }
+        }
+
+        // Populate category dropdowns
+        function populateCategoryDropdowns() {
+            const allGenerals = getAllGeneralsWithData();
+            const categories = [...new Set(allGenerals.map(g => g.category).filter(c => c))];
+            categories.sort((a, b) => a.localeCompare(b, 'ja'));
+
+            const categorySelect = document.getElementById('newGeneralCategory');
+            if (categorySelect) {
+                categorySelect.innerHTML = '<option value="">（未分類）</option>' +
+                    categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+            }
+
+            const categoryFilter = document.getElementById('generalCategoryFilter');
+            if (categoryFilter) {
+                const currentValue = categoryFilter.value;
+                categoryFilter.innerHTML = '<option value="">全カテゴリ</option>' +
+                    categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+                categoryFilter.value = currentValue;
             }
         }
 
@@ -4249,21 +4297,12 @@
         // Render general list with search/filter
         function renderGeneralList() {
             const container = document.getElementById('generalListContainer');
+            if (!container) return;
+
             const searchInput = document.getElementById('generalSearchInput');
             const categoryFilter = document.getElementById('generalCategoryFilter');
-            const categorySelect = document.getElementById('newGeneralCategory');
 
             const allGenerals = getAllGeneralsWithData();
-
-            // Populate category filter and select
-            const categories = [...new Set(allGenerals.map(g => g.category).filter(c => c))];
-            categories.sort((a, b) => a.localeCompare(b, 'ja'));
-
-            categoryFilter.innerHTML = '<option value="">全カテゴリ</option>' +
-                categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-
-            categorySelect.innerHTML = '<option value="">（未分類）</option>' +
-                categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
 
             // Filter
             const searchTerm = (searchInput?.value || '').toLowerCase();
@@ -4317,11 +4356,11 @@
                 return;
             }
 
+            // Save undo state before any changes
+            saveGeneralUndoState();
+
             try {
                 const { database, ref, get, set } = window.firebaseDB;
-
-                // Save undo state
-                saveGeneralUndoState();
 
                 // Add to customGenerals
                 const catKey = category || '_default';
@@ -4335,8 +4374,7 @@
                 masterData.generals[name] = {
                     category: category || '',
                     rallyLimit: rallyLimit,
-                    notes: notes,
-                    indexNo: undefined
+                    notes: notes
                 };
                 masterData.updatedAt = new Date().toISOString();
                 await set(ref(database, 'settings/generalMasterData'), masterData);
@@ -4347,15 +4385,70 @@
                 document.getElementById('newGeneralRallyLimit').value = '';
                 document.getElementById('newGeneralNotes').value = '';
 
-                showToast(`${name}を追加しました`, 'success');
+                showToast(`${name}を登録しました`, 'success');
             } catch (error) {
                 console.error('Add general error:', error);
-                showToast('追加に失敗しました', 'error');
+                showToast('登録に失敗しました: ' + error.message, 'error');
             }
         }
 
-        // Edit general (show modal or inline edit)
+        // Edit general with dropdown for category
         function editGeneral(name) {
+            const allGenerals = getAllGeneralsWithData();
+            const general = allGenerals.find(g => g.name === name);
+            if (!general) return;
+
+            // Build category options
+            const categories = [...new Set(allGenerals.map(g => g.category).filter(c => c))];
+            categories.sort((a, b) => a.localeCompare(b, 'ja'));
+
+            // Create modal dialog
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;';
+            modal.innerHTML = `
+                <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:1.5rem;max-width:400px;width:90%;">
+                    <h4 style="color:var(--accent-gold);margin-bottom:1rem;">${escapeHtml(name)} を編集</h4>
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.3rem;">カテゴリ</label>
+                        <select id="editCategory" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);">
+                            <option value="">（未分類）</option>
+                            ${categories.map(c => `<option value="${escapeHtml(c)}" ${c === general.category ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.3rem;">集結上限人数</label>
+                        <input type="text" id="editRallyLimit" value="${escapeHtml(general.rallyLimit)}" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);">
+                    </div>
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block;font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.3rem;">補足事項</label>
+                        <input type="text" id="editNotes" value="${escapeHtml(general.notes)}" style="width:100%;padding:0.5rem;background:var(--bg-input);border:1px solid var(--border-color);border-radius:4px;color:var(--text-primary);">
+                    </div>
+                    <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+                        <button onclick="this.closest('div').parentElement.remove()" style="padding:0.5rem 1rem;background:var(--bg-input);border:1px solid var(--border-color);border-radius:4px;color:var(--text-secondary);cursor:pointer;">キャンセル</button>
+                        <button onclick="saveGeneralEdit('${escapeHtml(name)}')" style="padding:0.5rem 1rem;background:var(--accent-green);border:none;border-radius:4px;color:white;cursor:pointer;">保存</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function saveGeneralEdit(name) {
+            const newCategory = document.getElementById('editCategory').value;
+            const newRallyLimit = document.getElementById('editRallyLimit').value.trim();
+            const newNotes = document.getElementById('editNotes').value.trim();
+
+            // Remove modal
+            document.querySelector('div[style*="position:fixed"]').remove();
+
+            await updateGeneralData(name, {
+                category: newCategory,
+                rallyLimit: newRallyLimit,
+                notes: newNotes
+            });
+        }
+
+        // For backward compatibility with old editGeneral
+        function editGeneralOld(name) {
             const allGenerals = getAllGeneralsWithData();
             const general = allGenerals.find(g => g.name === name);
             if (!general) return;
@@ -4590,6 +4683,18 @@
             document.getElementById('generalUndoBtn').disabled = generalUndoHistory.length === 0;
         }
 
+        function tryInitialStateSave() {
+            if (!pendingInitialStateSave) return;
+            if (document.getElementById('adminContent').style.display === 'none') return;
+            // Wait until we have loaded data from Firebase
+            if (customGenerals === null && generalMasterData === null && generalCategories === null) return;
+
+            saveGeneralInitialState();
+            saveCategoryInitialState();
+            pendingInitialStateSave = false;
+            renderGeneralList();
+        }
+
         function saveGeneralInitialState() {
             generalInitialState = {
                 customGenerals: JSON.parse(JSON.stringify(customGenerals || {})),
@@ -4669,13 +4774,17 @@
         verifyPassword = async function() {
             await originalVerifyPassword();
             // After successful login, save initial states and render lists
-            setTimeout(() => {
-                if (document.getElementById('adminContent').style.display !== 'none') {
+            if (document.getElementById('adminContent').style.display !== 'none') {
+                // If data is already loaded, save immediately
+                if (generalMasterData !== null || customGenerals !== null) {
                     saveGeneralInitialState();
                     saveCategoryInitialState();
                     renderGeneralList();
+                } else {
+                    // Data not loaded yet, set flag for onValue listener to handle
+                    pendingInitialStateSave = true;
                 }
-            }, 500);
+            }
         };
 
         // Init
