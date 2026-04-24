@@ -1212,6 +1212,321 @@
                 padding: 0.5rem;
             }
         }
+
+        /* ========== Tab UI ========== */
+        .tab-container {
+            margin-bottom: 1rem;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 0.3rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px 6px 0 0;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-gold-dim);
+            color: var(--accent-gold);
+            border-color: var(--accent-gold-dim);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* ========== Search and Filter ========== */
+        .search-filter-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 150px;
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        /* ========== General List ========== */
+        .general-list-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        .general-list-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .general-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .general-list-item:hover {
+            background: var(--bg-input);
+        }
+
+        .general-list-item .name {
+            flex: 1;
+            min-width: 100px;
+            font-weight: 500;
+        }
+
+        .general-list-item .category-badge {
+            padding: 0.2rem 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .general-list-item .index-no {
+            padding: 0.2rem 0.5rem;
+            background: var(--accent-gold-dim);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+        }
+
+        .general-list-item .item-actions {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .general-list-item .btn-sm {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .general-list-item .btn-sm.edit {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .general-list-item .btn-sm.delete {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        /* ========== Undo/Restore Toolbar ========== */
+        .undo-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            flex-wrap: wrap;
+        }
+
+        .undo-btn {
+            padding: 0.4rem 0.8rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .undo-btn:hover:not(:disabled) {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .undo-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .undo-btn.restore {
+            background: var(--accent-gold-dim);
+            color: var(--accent-gold);
+            border-color: var(--accent-gold-dim);
+        }
+
+        /* ========== Index Number Grid (4 columns) ========== */
+        .index-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.3rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            background: var(--bg-input);
+            border-radius: 8px;
+        }
+
+        .index-grid-item {
+            padding: 0.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .index-grid-item:hover {
+            border-color: var(--accent-gold);
+            background: var(--bg-secondary);
+        }
+
+        .index-grid-item.selected {
+            border-color: var(--accent-gold);
+            background: var(--accent-gold-dim);
+        }
+
+        .index-grid-item.new-general {
+            background: var(--accent-green);
+            color: white;
+            border-color: var(--accent-green);
+        }
+
+        .index-grid-item .idx-no {
+            display: block;
+            font-weight: bold;
+            color: var(--accent-gold);
+            font-size: 0.7rem;
+        }
+
+        .index-grid-item .idx-name {
+            display: block;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        /* ========== Add/Edit Form ========== */
+        .edit-form {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .edit-form h4 {
+            color: var(--accent-gold);
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .form-field label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            padding: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* ========== Unassigned Generals Panel ========== */
+        .unassigned-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-gold-dim);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .unassigned-panel h4 {
+            color: var(--accent-gold);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .unassigned-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+
+        .unassigned-item {
+            padding: 0.3rem 0.6rem;
+            background: var(--accent-red);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: white;
+            cursor: pointer;
+        }
+
+        .unassigned-item:hover {
+            filter: brightness(1.2);
+        }
     </style>
 </head>
 <body>
@@ -1248,82 +1563,131 @@
 
         <!-- Admin Content (hidden until login) -->
         <div class="admin-content" id="adminContent">
-            <!-- User Data Section -->
-            <div class="section-card">
-                <h3>👥 ユーザーデータ管理</h3>
-                <div class="action-row">
-                    <button class="action-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
-                </div>
-                <div style="overflow-x: auto;">
-                    <table class="data-table" id="dataTable">
-                        <thead>
-                            <tr>
-                                <th>ユーザー名</th>
-                                <th>軍団</th>
-                                <th>兵種</th>
-                                <th>更新日時</th>
-                                <th>完成度</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dataTableBody">
-                            <tr><td colspan="6" class="empty-state">データを読み込んでいます...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
-            <!-- Team Management Section -->
-            <div class="section-card" id="teamSection">
-                <h3>🎯 チーム管理</h3>
-                <div class="team-create-form">
-                    <input type="text" id="newTeamName" placeholder="新しいチーム名を入力" maxlength="30">
-                    <button onclick="createTeam()">チーム作成</button>
-                </div>
-                <div class="team-list" id="teamList">
-                    <div class="empty-state">チームがありません</div>
-                </div>
-            </div>
-
-            <!-- Custom Generals Section -->
-            <div class="section-card" id="customGeneralSection">
-                <h3>⚔️ カスタム武将管理</h3>
+            <!-- ① 武将管理 Section -->
+            <div class="section-card" id="generalManagementSection">
+                <h3>⚔️ 武将管理</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                    デフォルトの武将リストに含まれない武将を追加できます。追加した武将は全ユーザーの入力フォームに表示されます。
+                    武将の追加・編集・削除、カテゴリ設定、図鑑番号の管理を行います。
                 </p>
-                <div class="custom-item-form">
-                    <div class="form-row">
-                        <select id="generalSubcategorySelect" onchange="onGeneralSubcategorySelectChange()">
-                            <option value="_default">（カテゴリなし）</option>
-                            <optgroup label="既存カテゴリ">
-                                <option value="この辺は一人は欲しい武将">この辺は一人は欲しい武将</option>
-                                <option value="集結で使う武将">集結で使う武将</option>
-                                <option value="全兵種対応武将">全兵種対応武将</option>
-                                <option value="馬用">馬用</option>
-                                <option value="歩用">歩用</option>
-                                <option value="弓用">弓用</option>
-                            </optgroup>
-                            <option value="__new__">+ 新規カテゴリを作成</option>
-                        </select>
-                    </div>
-                    <div class="form-row new-subcategory-row" id="newGeneralSubcategoryRow">
-                        <input type="text" id="newGeneralSubcategoryName" placeholder="新規カテゴリ名を入力" maxlength="20" style="flex: 1;">
-                    </div>
-                    <div class="form-row">
-                        <input type="text" id="newGeneralName" placeholder="武将名を入力" maxlength="20" style="flex: 1;">
-                        <button onclick="addCustomGeneral()">追加</button>
-                    </div>
+
+                <!-- Undo Toolbar -->
+                <div class="undo-toolbar" id="generalUndoToolbar">
+                    <button class="undo-btn" onclick="undoGeneralAction()" id="generalUndoBtn" disabled>↩ 元に戻す</button>
+                    <button class="undo-btn restore" onclick="restoreGeneralInitialState()" id="generalRestoreBtn">🔄 編集前の状態に戻す</button>
                 </div>
-                <div class="custom-general-list" id="customGeneralList">
-                    <span style="color: var(--text-muted);">読み込み中...</span>
+
+                <!-- Tabs -->
+                <div class="tab-container">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="switchGeneralTab('list')">武将一覧</button>
+                        <button class="tab-btn" onclick="switchGeneralTab('index')">図鑑番号編集</button>
+                    </div>
+
+                    <!-- Tab: 武将一覧 -->
+                    <div class="tab-content active" id="generalTabList">
+                        <!-- Search and Filter -->
+                        <div class="search-filter-bar">
+                            <input type="text" class="search-input" id="generalSearchInput" placeholder="武将名で検索..." oninput="filterGeneralList()">
+                            <select class="filter-select" id="generalCategoryFilter" onchange="filterGeneralList()">
+                                <option value="">全カテゴリ</option>
+                            </select>
+                        </div>
+
+                        <!-- Add General Form -->
+                        <div class="edit-form" id="generalAddForm">
+                            <h4>武将を追加</h4>
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label>武将名 *</label>
+                                    <input type="text" id="newGeneralName" placeholder="武将名を入力" maxlength="20">
+                                </div>
+                                <div class="form-field">
+                                    <label>カテゴリ</label>
+                                    <select id="newGeneralCategory">
+                                        <option value="">（未分類）</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label>集結上限人数</label>
+                                    <input type="text" id="newGeneralRallyLimit" placeholder="例: 3">
+                                </div>
+                                <div class="form-field">
+                                    <label>補足事項</label>
+                                    <input type="text" id="newGeneralNotes" placeholder="メモ">
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button class="action-btn success" onclick="addGeneral()">追加</button>
+                            </div>
+                        </div>
+
+                        <!-- General List -->
+                        <div class="general-list-container" id="generalListContainer">
+                            <span style="color: var(--text-muted);">読み込み中...</span>
+                        </div>
+                    </div>
+
+                    <!-- Tab: 図鑑番号編集 -->
+                    <div class="tab-content" id="generalTabIndex">
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.85rem;">
+                            図鑑番号が未設定の武将を選択し、既存リストの挿入位置を指定してください。
+                        </p>
+
+                        <!-- Unassigned Generals -->
+                        <div class="unassigned-panel" id="unassignedGeneralsPanel">
+                            <h4>📌 図鑑番号未設定の武将</h4>
+                            <div class="unassigned-list" id="unassignedGeneralsList">
+                                <span style="color: var(--text-muted);">すべての武将に番号が設定されています</span>
+                            </div>
+                        </div>
+
+                        <!-- Index Grid -->
+                        <div style="margin-bottom: 0.5rem;">
+                            <span style="color: var(--text-secondary); font-size: 0.85rem;">
+                                挿入位置を選択: 2つの武将をタップしてその間に挿入
+                            </span>
+                        </div>
+                        <div class="index-grid" id="indexGrid">
+                            <span style="color: var(--text-muted);">読み込み中...</span>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 1rem;">
+                            <button class="action-btn primary" onclick="confirmIndexAssignment()" id="confirmIndexBtn" disabled>挿入位置を確定</button>
+                            <button class="action-btn" onclick="cancelIndexSelection()" style="background: var(--bg-input); color: var(--text-secondary);">キャンセル</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Custom Items by Category Section -->
-            <div class="section-card" id="customItemSection">
-                <h3>📦 カスタムアイテム管理</h3>
+            <!-- ② 武将カテゴリ管理 Section -->
+            <div class="section-card" id="generalCategorySection">
+                <h3>📋 武将カテゴリ管理</h3>
                 <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                    既存カテゴリにアイテムを追加、または新しいカテゴリ・小カテゴリを作成できます。
+                    武将のカテゴリ（グループ）の追加・編集・並び替えを行います。入力フォームと比較表で共通のカテゴリを使用します。
+                </p>
+
+                <!-- Undo Toolbar -->
+                <div class="undo-toolbar" id="categoryUndoToolbar">
+                    <button class="undo-btn" onclick="undoCategoryAction()" id="categoryUndoBtn" disabled>↩ 元に戻す</button>
+                    <button class="undo-btn restore" onclick="restoreCategoryInitialState()" id="categoryRestoreBtn">🔄 編集前の状態に戻す</button>
+                </div>
+
+                <div class="gen-cat-panel" id="genCatPanelUnified">
+                    <div class="gen-cat-toolbar">
+                        <button class="gen-cat-btn" onclick="addNewCategory('unified')">＋ カテゴリ追加</button>
+                    </div>
+                    <div class="gen-cat-list" id="genCatListUnified">
+                        <span style="color: var(--text-muted);">読み込み中...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ③ アイテム管理 Section -->
+            <div class="section-card" id="customItemSection">
+                <h3>📦 アイテム管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                    カスタムアイテムの追加・管理を行います。既存カテゴリにアイテムを追加、または新しいカテゴリを作成できます。
                 </p>
                 <div class="custom-item-form">
                     <div class="form-row">
@@ -1352,53 +1716,77 @@
                 </div>
             </div>
 
-            <!-- General Category Management Section -->
-            <div class="section-card" id="generalCategorySection">
-                <h3>📋 武将カテゴリ編集</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                    武将の小カテゴリ（グループ）の編集・並び替えを行います。入力フォームと比較表で共通のカテゴリを使用します。
-                </p>
+            <!-- ④ ユーザーデータ管理 Section -->
+            <div class="section-card" id="userDataSection">
+                <h3>👥 ユーザーデータ管理</h3>
+                <div class="action-row">
+                    <button class="action-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>ユーザー名</th>
+                                <th>軍団</th>
+                                <th>兵種</th>
+                                <th>更新日時</th>
+                                <th>完成度</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr><td colspan="6" class="empty-state">データを読み込んでいます...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-                <!-- Unified Category Config -->
-                <div class="gen-cat-panel" id="genCatPanelUnified">
-                    <div class="gen-cat-toolbar">
-                        <button class="gen-cat-btn" onclick="addNewCategory('unified')">＋ カテゴリ追加</button>
+            <!-- ⑤ チーム管理 Section -->
+            <div class="section-card" id="teamSection">
+                <h3>🎯 チーム管理</h3>
+                <div class="team-create-form">
+                    <input type="text" id="newTeamName" placeholder="新しいチーム名を入力" maxlength="30">
+                    <button onclick="createTeam()">チーム作成</button>
+                </div>
+                <div class="team-list" id="teamList">
+                    <div class="empty-state">チームがありません</div>
+                </div>
+            </div>
+
+            <!-- ⑥ エクスポート/インポート Section -->
+            <div class="section-card" id="exportImportSection">
+                <h3>💾 エクスポート/インポート</h3>
+
+                <!-- User Data -->
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.95rem;">📊 ユーザーデータ</h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.85rem;">
+                        全ユーザーの入力データをJSONファイルとしてバックアップ・復元できます。
+                    </p>
+                    <div class="data-management-row">
+                        <button class="action-btn primary" onclick="exportData()">📤 エクスポート</button>
+                        <button class="action-btn success" onclick="importData()">📥 インポート</button>
                     </div>
-                    <div class="gen-cat-list" id="genCatListUnified">
-                        <span style="color: var(--text-muted);">データを読み込んでいます...</span>
+                </div>
+
+                <!-- Master Data -->
+                <div>
+                    <h4 style="color: var(--text-primary); margin-bottom: 0.5rem; font-size: 0.95rem;">⚔️ 武将マスターデータ</h4>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.85rem;">
+                        武将のカテゴリ、集結上限人数、補足事項をCSVでインポート/エクスポートできます。
+                    </p>
+                    <div class="data-management-row" style="gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="action-btn primary" onclick="exportGeneralMasterCSV()">📤 CSVエクスポート</button>
+                        <button class="action-btn success" onclick="importGeneralMasterCSV()">📥 CSVインポート</button>
+                        <button class="action-btn" onclick="viewGeneralMasterData()" style="background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color);">👁 現在のデータを確認</button>
+                    </div>
+                    <div id="generalMasterPreview" style="margin-top: 1rem; display: none;">
+                        <h4 style="color: var(--accent-gold); margin-bottom: 0.5rem; font-size: 0.95rem;">現在のマスターデータ</h4>
+                        <div id="generalMasterPreviewContent" style="max-height: 300px; overflow-y: auto; background: var(--bg-input); border-radius: 6px; padding: 0.8rem; font-size: 0.85rem;"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- General Master Data Section -->
-            <div class="section-card" id="generalMasterDataSection">
-                <h3>📊 武将マスターデータ管理</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                    CSVファイルから武将のカテゴリ、集結上限人数、補足事項をインポートできます。<br>
-                    既存のユーザーデータ（所持・編成状況）には影響しません。
-                </p>
-                <div class="action-row" style="gap: 0.5rem; flex-wrap: wrap;">
-                    <button class="action-btn primary" onclick="exportGeneralMasterCSV()">📤 CSVエクスポート</button>
-                    <button class="action-btn success" onclick="importGeneralMasterCSV()">📥 CSVインポート</button>
-                    <button class="action-btn secondary" onclick="viewGeneralMasterData()" style="background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color);">👁 現在のデータを確認</button>
-                </div>
-                <div id="generalMasterPreview" style="margin-top: 1rem; display: none;">
-                    <h4 style="color: var(--accent-gold); margin-bottom: 0.5rem; font-size: 0.95rem;">現在のマスターデータ</h4>
-                    <div id="generalMasterPreviewContent" style="max-height: 300px; overflow-y: auto; background: var(--bg-input); border-radius: 6px; padding: 0.8rem; font-size: 0.85rem;"></div>
-                </div>
-            </div>
-
-            <!-- Data Export/Import Section -->
-            <div class="section-card">
-                <h3>💾 データエクスポート/インポート</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                    全ユーザーデータをJSONファイルとしてバックアップ・復元できます。
-                </p>
-                <div class="data-management-row">
-                    <button class="action-btn primary" onclick="exportData()">📤 エクスポート</button>
-                    <button class="action-btn success" onclick="importData()">📥 インポート</button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -3766,6 +4154,529 @@
         document.getElementById('adminPwd').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') verifyPassword();
         });
+
+        // ========== General Management Functions ==========
+
+        // Undo history for generals
+        let generalUndoHistory = [];
+        let generalInitialState = null;
+
+        // Undo history for categories
+        let categoryUndoHistory = [];
+        let categoryInitialState = null;
+
+        // Index editing state
+        let selectedGeneralForIndex = null;
+        let selectedInsertPositions = [];
+
+        // Tab switching
+        function switchGeneralTab(tabId) {
+            document.querySelectorAll('#generalManagementSection .tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('#generalManagementSection .tab-content').forEach(content => content.classList.remove('active'));
+
+            document.querySelector(`#generalManagementSection .tab-btn[onclick*="${tabId}"]`).classList.add('active');
+            document.getElementById(tabId === 'list' ? 'generalTabList' : 'generalTabIndex').classList.add('active');
+
+            if (tabId === 'list') {
+                renderGeneralList();
+            } else {
+                renderIndexGrid();
+            }
+        }
+
+        // Get all generals (default + custom + master)
+        function getAllGeneralsWithData() {
+            const result = [];
+            const masterGenerals = generalMasterData?.generals || {};
+            const allCustomGenerals = [];
+
+            // Collect custom generals
+            for (const [cat, generals] of Object.entries(customGenerals || {})) {
+                for (const g of generals) {
+                    allCustomGenerals.push(g);
+                }
+            }
+
+            // Default generals from categories
+            const defaultGenerals = [];
+            for (const cat of DEFAULT_GENERAL_CATEGORIES) {
+                for (const g of cat.generals) {
+                    defaultGenerals.push(g);
+                }
+            }
+
+            // Combine all unique generals
+            const allNames = new Set([...defaultGenerals, ...allCustomGenerals, ...Object.keys(masterGenerals)]);
+
+            for (const name of allNames) {
+                const masterData = masterGenerals[name] || {};
+                let category = masterData.category || '';
+
+                // If no category in master data, check customGenerals or default categories
+                if (!category) {
+                    // Check customGenerals
+                    for (const [cat, generals] of Object.entries(customGenerals || {})) {
+                        if (generals.includes(name) && cat !== '_default') {
+                            category = cat;
+                            break;
+                        }
+                    }
+                }
+                if (!category) {
+                    // Check default categories
+                    for (const cat of DEFAULT_GENERAL_CATEGORIES) {
+                        if (cat.generals.includes(name)) {
+                            category = cat.title;
+                            break;
+                        }
+                    }
+                }
+
+                result.push({
+                    name,
+                    category: category || '',
+                    rallyLimit: masterData.rallyLimit || '',
+                    notes: masterData.notes || '',
+                    indexNo: masterData.indexNo,
+                    isCustom: allCustomGenerals.includes(name) && !defaultGenerals.includes(name),
+                    isDefault: defaultGenerals.includes(name)
+                });
+            }
+
+            return result.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+        }
+
+        // Render general list with search/filter
+        function renderGeneralList() {
+            const container = document.getElementById('generalListContainer');
+            const searchInput = document.getElementById('generalSearchInput');
+            const categoryFilter = document.getElementById('generalCategoryFilter');
+            const categorySelect = document.getElementById('newGeneralCategory');
+
+            const allGenerals = getAllGeneralsWithData();
+
+            // Populate category filter and select
+            const categories = [...new Set(allGenerals.map(g => g.category).filter(c => c))];
+            categories.sort((a, b) => a.localeCompare(b, 'ja'));
+
+            categoryFilter.innerHTML = '<option value="">全カテゴリ</option>' +
+                categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+            categorySelect.innerHTML = '<option value="">（未分類）</option>' +
+                categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+            // Filter
+            const searchTerm = (searchInput?.value || '').toLowerCase();
+            const selectedCategory = categoryFilter?.value || '';
+
+            const filtered = allGenerals.filter(g => {
+                if (searchTerm && !g.name.toLowerCase().includes(searchTerm)) return false;
+                if (selectedCategory && g.category !== selectedCategory) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state">該当する武将がありません</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(g => `
+                <div class="general-list-item">
+                    <span class="name">${escapeHtml(g.name)}</span>
+                    ${g.indexNo !== undefined ? `<span class="index-no">#${g.indexNo}</span>` : ''}
+                    <span class="category-badge">${g.category ? escapeHtml(g.category) : '未分類'}</span>
+                    ${g.rallyLimit ? `<span style="color: var(--text-muted); font-size: 0.75rem;">上限:${g.rallyLimit}</span>` : ''}
+                    <div class="item-actions">
+                        <button class="btn-sm edit" onclick="editGeneral('${escapeHtml(g.name)}')">編集</button>
+                        ${!g.isDefault ? `<button class="btn-sm delete" onclick="deleteGeneral('${escapeHtml(g.name)}')">削除</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterGeneralList() {
+            renderGeneralList();
+        }
+
+        // Add new general
+        async function addGeneral() {
+            const name = document.getElementById('newGeneralName').value.trim();
+            const category = document.getElementById('newGeneralCategory').value;
+            const rallyLimit = document.getElementById('newGeneralRallyLimit').value.trim();
+            const notes = document.getElementById('newGeneralNotes').value.trim();
+
+            if (!name) {
+                showToast('武将名を入力してください', 'error');
+                return;
+            }
+
+            // Check if already exists
+            const allGenerals = getAllGeneralsWithData();
+            if (allGenerals.some(g => g.name === name)) {
+                showToast('この武将は既に登録されています', 'error');
+                return;
+            }
+
+            try {
+                const { database, ref, get, set } = window.firebaseDB;
+
+                // Save undo state
+                saveGeneralUndoState();
+
+                // Add to customGenerals
+                const catKey = category || '_default';
+                const currentList = customGenerals[catKey] || [];
+                await set(ref(database, `customGenerals/${catKey}`), [...currentList, name]);
+
+                // Add to generalMasterData
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                const masterData = snap.exists() ? snap.val() : { generals: {}, categories: {} };
+                masterData.generals = masterData.generals || {};
+                masterData.generals[name] = {
+                    category: category || '',
+                    rallyLimit: rallyLimit,
+                    notes: notes,
+                    indexNo: undefined
+                };
+                masterData.updatedAt = new Date().toISOString();
+                await set(ref(database, 'settings/generalMasterData'), masterData);
+
+                // Clear form
+                document.getElementById('newGeneralName').value = '';
+                document.getElementById('newGeneralCategory').value = '';
+                document.getElementById('newGeneralRallyLimit').value = '';
+                document.getElementById('newGeneralNotes').value = '';
+
+                showToast(`${name}を追加しました`, 'success');
+            } catch (error) {
+                console.error('Add general error:', error);
+                showToast('追加に失敗しました', 'error');
+            }
+        }
+
+        // Edit general (show modal or inline edit)
+        function editGeneral(name) {
+            const allGenerals = getAllGeneralsWithData();
+            const general = allGenerals.find(g => g.name === name);
+            if (!general) return;
+
+            const newCategory = prompt(`${name}のカテゴリを入力:`, general.category);
+            if (newCategory === null) return;
+
+            const newRallyLimit = prompt(`${name}の集結上限人数:`, general.rallyLimit);
+            if (newRallyLimit === null) return;
+
+            const newNotes = prompt(`${name}の補足事項:`, general.notes);
+            if (newNotes === null) return;
+
+            updateGeneralData(name, {
+                category: newCategory,
+                rallyLimit: newRallyLimit,
+                notes: newNotes
+            });
+        }
+
+        async function updateGeneralData(name, data) {
+            try {
+                const { database, ref, get, set } = window.firebaseDB;
+
+                saveGeneralUndoState();
+
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                const masterData = snap.exists() ? snap.val() : { generals: {}, categories: {} };
+                masterData.generals = masterData.generals || {};
+                masterData.generals[name] = {
+                    ...masterData.generals[name],
+                    ...data
+                };
+                masterData.updatedAt = new Date().toISOString();
+                await set(ref(database, 'settings/generalMasterData'), masterData);
+
+                showToast(`${name}を更新しました`, 'success');
+            } catch (error) {
+                console.error('Update general error:', error);
+                showToast('更新に失敗しました', 'error');
+            }
+        }
+
+        // Delete general
+        async function deleteGeneral(name) {
+            if (!confirm(`${name}を削除しますか？`)) return;
+
+            try {
+                const { database, ref, get, set } = window.firebaseDB;
+
+                saveGeneralUndoState();
+
+                // Remove from customGenerals
+                for (const [cat, generals] of Object.entries(customGenerals || {})) {
+                    if (generals.includes(name)) {
+                        const newList = generals.filter(g => g !== name);
+                        if (newList.length === 0) {
+                            await set(ref(database, `customGenerals/${cat}`), null);
+                        } else {
+                            await set(ref(database, `customGenerals/${cat}`), newList);
+                        }
+                    }
+                }
+
+                // Remove from generalMasterData
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                const masterData = snap.exists() ? snap.val() : { generals: {}, categories: {} };
+                if (masterData.generals && masterData.generals[name]) {
+                    delete masterData.generals[name];
+                    masterData.updatedAt = new Date().toISOString();
+                    await set(ref(database, 'settings/generalMasterData'), masterData);
+                }
+
+                showToast(`${name}を削除しました`, 'success');
+            } catch (error) {
+                console.error('Delete general error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // ========== Index Number Editing ==========
+
+        function renderIndexGrid() {
+            const grid = document.getElementById('indexGrid');
+            const unassignedList = document.getElementById('unassignedGeneralsList');
+
+            const allGenerals = getAllGeneralsWithData();
+            const withIndex = allGenerals.filter(g => g.indexNo !== undefined).sort((a, b) => a.indexNo - b.indexNo);
+            const withoutIndex = allGenerals.filter(g => g.indexNo === undefined);
+
+            // Render unassigned
+            if (withoutIndex.length === 0) {
+                unassignedList.innerHTML = '<span style="color: var(--text-muted);">すべての武将に番号が設定されています</span>';
+            } else {
+                unassignedList.innerHTML = withoutIndex.map(g => `
+                    <div class="unassigned-item" onclick="selectGeneralForIndex('${escapeHtml(g.name)}')"
+                         ${selectedGeneralForIndex === g.name ? 'style="background: var(--accent-gold); color: var(--bg-primary);"' : ''}>
+                        ${escapeHtml(g.name)}
+                    </div>
+                `).join('');
+            }
+
+            // Render index grid
+            if (withIndex.length === 0) {
+                grid.innerHTML = '<span style="color: var(--text-muted);">図鑑番号が設定された武将がありません</span>';
+                return;
+            }
+
+            grid.innerHTML = withIndex.map((g, idx) => `
+                <div class="index-grid-item ${selectedInsertPositions.includes(idx) ? 'selected' : ''}"
+                     onclick="selectInsertPosition(${idx})">
+                    <span class="idx-no">${g.indexNo}</span>
+                    <span class="idx-name">${escapeHtml(g.name)}</span>
+                </div>
+            `).join('');
+
+            // Update confirm button
+            document.getElementById('confirmIndexBtn').disabled = !selectedGeneralForIndex || selectedInsertPositions.length !== 2;
+        }
+
+        function selectGeneralForIndex(name) {
+            selectedGeneralForIndex = name;
+            selectedInsertPositions = [];
+            renderIndexGrid();
+        }
+
+        function selectInsertPosition(idx) {
+            if (!selectedGeneralForIndex) {
+                showToast('先に挿入する武将を選択してください', 'error');
+                return;
+            }
+
+            if (selectedInsertPositions.includes(idx)) {
+                selectedInsertPositions = selectedInsertPositions.filter(i => i !== idx);
+            } else {
+                if (selectedInsertPositions.length >= 2) {
+                    selectedInsertPositions = [idx];
+                } else {
+                    selectedInsertPositions.push(idx);
+                    selectedInsertPositions.sort((a, b) => a - b);
+                }
+            }
+
+            renderIndexGrid();
+        }
+
+        async function confirmIndexAssignment() {
+            if (!selectedGeneralForIndex || selectedInsertPositions.length !== 2) return;
+
+            const allGenerals = getAllGeneralsWithData();
+            const withIndex = allGenerals.filter(g => g.indexNo !== undefined).sort((a, b) => a.indexNo - b.indexNo);
+
+            const pos1 = selectedInsertPositions[0];
+            const pos2 = selectedInsertPositions[1];
+
+            if (pos2 - pos1 !== 1) {
+                showToast('連続した2つの武将を選択してください', 'error');
+                return;
+            }
+
+            const insertAfterIndexNo = withIndex[pos1].indexNo;
+
+            try {
+                const { database, ref, get, set } = window.firebaseDB;
+
+                saveGeneralUndoState();
+
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                const masterData = snap.exists() ? snap.val() : { generals: {}, categories: {} };
+                masterData.generals = masterData.generals || {};
+
+                // Shift all generals with indexNo > insertAfterIndexNo
+                for (const [name, data] of Object.entries(masterData.generals)) {
+                    if (data.indexNo !== undefined && data.indexNo > insertAfterIndexNo) {
+                        masterData.generals[name].indexNo = data.indexNo + 1;
+                    }
+                }
+
+                // Assign new index
+                masterData.generals[selectedGeneralForIndex] = {
+                    ...masterData.generals[selectedGeneralForIndex],
+                    indexNo: insertAfterIndexNo + 1
+                };
+
+                masterData.updatedAt = new Date().toISOString();
+                await set(ref(database, 'settings/generalMasterData'), masterData);
+
+                showToast(`${selectedGeneralForIndex}を#${insertAfterIndexNo + 1}に挿入しました`, 'success');
+
+                // Reset selection
+                selectedGeneralForIndex = null;
+                selectedInsertPositions = [];
+                renderIndexGrid();
+            } catch (error) {
+                console.error('Index assignment error:', error);
+                showToast('番号の設定に失敗しました', 'error');
+            }
+        }
+
+        function cancelIndexSelection() {
+            selectedGeneralForIndex = null;
+            selectedInsertPositions = [];
+            renderIndexGrid();
+        }
+
+        // ========== Undo Functions ==========
+
+        function saveGeneralUndoState() {
+            const state = {
+                customGenerals: JSON.parse(JSON.stringify(customGenerals || {})),
+                masterData: JSON.parse(JSON.stringify(generalMasterData || { generals: {}, categories: {} }))
+            };
+            generalUndoHistory.push(state);
+            if (generalUndoHistory.length > 20) generalUndoHistory.shift();
+            document.getElementById('generalUndoBtn').disabled = false;
+        }
+
+        async function undoGeneralAction() {
+            if (generalUndoHistory.length === 0) return;
+
+            const state = generalUndoHistory.pop();
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, 'customGenerals'), state.customGenerals);
+                await set(ref(database, 'settings/generalMasterData'), state.masterData);
+                showToast('元に戻しました', 'success');
+            } catch (error) {
+                console.error('Undo error:', error);
+                showToast('元に戻せませんでした', 'error');
+            }
+
+            document.getElementById('generalUndoBtn').disabled = generalUndoHistory.length === 0;
+        }
+
+        function saveGeneralInitialState() {
+            generalInitialState = {
+                customGenerals: JSON.parse(JSON.stringify(customGenerals || {})),
+                masterData: JSON.parse(JSON.stringify(generalMasterData || { generals: {}, categories: {} }))
+            };
+        }
+
+        async function restoreGeneralInitialState() {
+            if (!generalInitialState) {
+                showToast('初期状態が保存されていません', 'error');
+                return;
+            }
+            if (!confirm('編集前の状態に戻しますか？すべての変更が失われます。')) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, 'customGenerals'), generalInitialState.customGenerals);
+                await set(ref(database, 'settings/generalMasterData'), generalInitialState.masterData);
+                generalUndoHistory = [];
+                document.getElementById('generalUndoBtn').disabled = true;
+                showToast('編集前の状態に戻しました', 'success');
+            } catch (error) {
+                console.error('Restore error:', error);
+                showToast('復元に失敗しました', 'error');
+            }
+        }
+
+        function saveCategoryUndoState() {
+            const state = JSON.parse(JSON.stringify(generalCategories || { order: [], categories: {} }));
+            categoryUndoHistory.push(state);
+            if (categoryUndoHistory.length > 20) categoryUndoHistory.shift();
+            document.getElementById('categoryUndoBtn').disabled = false;
+        }
+
+        async function undoCategoryAction() {
+            if (categoryUndoHistory.length === 0) return;
+
+            const state = categoryUndoHistory.pop();
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, 'settings/generalCategories'), state);
+                showToast('元に戻しました', 'success');
+            } catch (error) {
+                console.error('Undo error:', error);
+                showToast('元に戻せませんでした', 'error');
+            }
+
+            document.getElementById('categoryUndoBtn').disabled = categoryUndoHistory.length === 0;
+        }
+
+        function saveCategoryInitialState() {
+            categoryInitialState = JSON.parse(JSON.stringify(generalCategories || { order: [], categories: {} }));
+        }
+
+        async function restoreCategoryInitialState() {
+            if (!categoryInitialState) {
+                showToast('初期状態が保存されていません', 'error');
+                return;
+            }
+            if (!confirm('編集前の状態に戻しますか？すべての変更が失われます。')) return;
+
+            try {
+                const { database, ref, set } = window.firebaseDB;
+                await set(ref(database, 'settings/generalCategories'), categoryInitialState);
+                categoryUndoHistory = [];
+                document.getElementById('categoryUndoBtn').disabled = true;
+                showToast('編集前の状態に戻しました', 'success');
+            } catch (error) {
+                console.error('Restore error:', error);
+                showToast('復元に失敗しました', 'error');
+            }
+        }
+
+        // ========== Initialize on Login ==========
+
+        const originalVerifyPassword = verifyPassword;
+        verifyPassword = async function() {
+            await originalVerifyPassword();
+            // After successful login, save initial states and render lists
+            setTimeout(() => {
+                if (document.getElementById('adminContent').style.display !== 'none') {
+                    saveGeneralInitialState();
+                    saveCategoryInitialState();
+                    renderGeneralList();
+                }
+            }, 500);
+        };
 
         // Init
         document.addEventListener('firebaseReady', async () => {
