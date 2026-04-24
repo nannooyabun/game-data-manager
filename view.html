@@ -1334,8 +1334,14 @@
         // Scroll to category
         function scrollToCategory(catKey) {
             const th = document.querySelector(`[data-cat-key="${catKey}"]`);
-            if (th) {
-                th.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+            const wrapper = document.getElementById('tableWrapper');
+            if (th && wrapper) {
+                // Calculate position accounting for zoom and sticky columns
+                const thRect = th.getBoundingClientRect();
+                const wrapperRect = wrapper.getBoundingClientRect();
+                const stickyWidth = 220; // Approximate width of sticky columns
+                const targetLeft = wrapper.scrollLeft + (thRect.left - wrapperRect.left) - stickyWidth;
+                wrapper.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
             }
         }
 
@@ -2508,20 +2514,29 @@
 
                 // In simulation mode, all edits go to cellEdits (not Firebase)
                 const editKey = `${username}/${teamName}/${catKey}/${itemId}`;
-                let currentState = cellEdits[editKey];
 
+                // Get original state (before any edits)
+                const originalState = getOriginalCellState(username, teamName, catKey, itemId, isCustomFlag === '1');
+
+                // Don't allow editing cells that are originally 'none'
+                if (originalState === 'none') {
+                    return;
+                }
+
+                let currentState = cellEdits[editKey];
                 if (currentState === undefined) {
-                    currentState = getOriginalCellState(username, teamName, catKey, itemId, isCustomFlag === '1');
+                    currentState = originalState;
                 }
 
                 // Cycle: owned ⇄ equipped (no 'none' state in simulation)
                 let newState;
                 if (currentState === 'equipped') newState = 'owned';
-                else newState = 'equipped';  // none or owned → equipped
+                else newState = 'equipped';
 
                 cellEdits[editKey] = newState;
                 saveSimulationState();
-                showToast(`${itemName || itemId}: ${newState === 'equipped' ? '編成' : newState === 'owned' ? '所持' : '未所持'}`, 'success');
+                saveScrollPosition();
+                showToast(`${itemName || itemId}: ${newState === 'equipped' ? '編成' : '所持'}`, 'success');
                 renderTable();
                 return;
             }
