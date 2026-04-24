@@ -2330,6 +2330,10 @@
             // Get all custom generals
             const allCustomGenerals = customGenerals ? Object.values(customGenerals).flat() : [];
 
+            // Get all generals (default + custom + master data)
+            const masterGenerals = generalMasterData?.generals ? Object.keys(generalMasterData.generals) : [];
+            const allGenerals = new Set([...ALL_DEFAULT_GENERALS, ...allCustomGenerals, ...masterGenerals]);
+
             if (!config || !config.categories) {
                 // No saved config - build from master data or defaults
                 const categories = [];
