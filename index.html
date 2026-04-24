@@ -692,53 +692,164 @@
         .general-level-input {
             display: flex;
             align-items: center;
-            gap: 0.3rem;
+            gap: 0.4rem;
         }
 
-        .general-level-select {
-            width: 50px;
-            padding: 0.25rem;
+        .general-level-slider {
+            width: 80px;
+            height: 20px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-input);
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .general-level-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-gold);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .general-level-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-gold);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .general-level-value {
+            min-width: 24px;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--accent-gold);
+        }
+
+        /* Category bulk action buttons */
+        .category-bulk-actions {
+            display: flex;
+            gap: 0.3rem;
+            margin-left: auto;
+        }
+
+        .category-bulk-btn {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
             background: var(--bg-input);
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            color: var(--text-primary);
-            text-align: center;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-
-        .general-level-presets {
-            display: flex;
-            gap: 2px;
-        }
-
-        .general-level-presets button {
-            width: 22px;
-            height: 22px;
-            padding: 0;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 3px;
             color: var(--text-secondary);
-            font-size: 0.65rem;
             cursor: pointer;
-            transition: all 0.15s ease;
+            white-space: nowrap;
         }
 
-        .general-level-presets button:hover {
+        .category-bulk-btn:hover {
             background: var(--accent-gold-dim);
             color: var(--accent-gold);
             border-color: var(--accent-gold);
         }
 
-        .general-level-presets button:active {
-            transform: scale(0.95);
+        .category-bulk-btn.level-btn {
+            background: var(--accent-gold-dim);
+            color: var(--accent-gold);
         }
 
-        @media (max-width: 480px) {
-            .general-level-presets {
-                display: none;
-            }
+        /* Category title row with actions */
+        .general-category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .general-category-title {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        /* Bulk level popup */
+        .bulk-level-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            display: none;
+        }
+
+        .bulk-level-popup.show {
+            display: block;
+        }
+
+        .bulk-level-popup h4 {
+            margin: 0 0 0.8rem 0;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .bulk-level-popup .level-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.4rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .bulk-level-popup .level-options button {
+            padding: 0.6rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .bulk-level-popup .level-options button:hover {
+            background: var(--accent-gold-dim);
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+        }
+
+        .bulk-level-popup .close-btn {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .bulk-level-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .bulk-level-overlay.show {
+            display: block;
         }
 
         /* ========== Unified Tap-Toggle UI (applies to all item cards) ========== */
@@ -1175,107 +1286,6 @@
         .floating-menu-item:hover {
             background: var(--accent-gold-dim);
             color: var(--accent-gold);
-        }
-
-        /* Floating Bulk Level Panel */
-        .floating-bulk-level {
-            position: fixed;
-            bottom: 5rem;
-            left: 1rem;
-            z-index: 998;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 0.6rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            display: none;
-            flex-direction: column;
-            gap: 0.4rem;
-            touch-action: none;
-            user-select: none;
-        }
-
-        .floating-bulk-level.show {
-            display: flex;
-        }
-
-        .floating-bulk-level.dragging {
-            opacity: 0.8;
-        }
-
-        .floating-bulk-level .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-            padding-bottom: 0.3rem;
-            border-bottom: 1px solid var(--border-color);
-            cursor: move;
-        }
-
-        .floating-bulk-level .panel-title {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-weight: bold;
-        }
-
-        .floating-bulk-level .close-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0;
-            line-height: 1;
-        }
-
-        .floating-bulk-level .close-btn:hover {
-            color: var(--text-primary);
-        }
-
-        .floating-bulk-level .level-presets {
-            display: flex;
-            gap: 0.3rem;
-        }
-
-        .floating-bulk-level .level-presets button {
-            flex: 1;
-            min-width: 36px;
-            padding: 0.5rem 0.3rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--bg-input);
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-
-        .floating-bulk-level .level-presets button:hover {
-            background: var(--accent-gold-dim);
-            color: var(--accent-gold);
-            border-color: var(--accent-gold);
-        }
-
-        .floating-bulk-level .level-presets button:active {
-            transform: scale(0.95);
-        }
-
-        .floating-bulk-level .target-select {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        .floating-bulk-level .target-select select {
-            flex: 1;
-            padding: 0.3rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--bg-input);
-            color: var(--text-primary);
-            font-size: 0.8rem;
         }
 
         /* 3-level hierarchy for comparison */
@@ -1767,15 +1777,12 @@
                     </span>
                 </p>
 
-                <!-- Bulk Select Buttons -->
+                <!-- Bulk Select Buttons (All Generals) -->
                 <div class="bulk-select-bar">
-                    <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'owned')">全員所持ON</button>
-                    <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'clear')">全員クリア</button>
-                    <button class="bulk-btn" onclick="toggleBulkLevelPanel()" style="background: var(--accent-gold-dim); color: var(--accent-gold);">Lv一括入力</button>
-                    <span style="color: var(--text-muted); font-size: 0.75rem; padding: 0.4rem;">|</span>
-                    <span id="categoryBulkButtons">
-                        <!-- Category buttons will be populated by JS -->
-                    </span>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary); margin-right: 0.3rem;">全武将:</span>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'owned')">所持一括ON</button>
+                    <button class="bulk-btn" onclick="showBulkLevelPopup('all')" style="background: var(--accent-gold-dim); color: var(--accent-gold);">守護霊Lv一括設定</button>
+                    <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'clear')" style="color: var(--text-muted);">クリア</button>
                 </div>
 
                 <!-- Display Mode Toggle -->
@@ -2223,24 +2230,26 @@
         <button class="floating-btn" onclick="toggleFloatingMenu()">☰</button>
     </div>
 
-    <!-- Floating Bulk Level Panel -->
-    <div class="floating-bulk-level" id="floatingBulkLevel">
-        <div class="panel-header">
-            <span class="panel-title">守護霊Lv一括入力</span>
-            <button class="close-btn" onclick="toggleBulkLevelPanel()">&times;</button>
+    <!-- Bulk Level Popup -->
+    <div class="bulk-level-overlay" id="bulkLevelOverlay" onclick="closeBulkLevelPopup()"></div>
+    <div class="bulk-level-popup" id="bulkLevelPopup">
+        <h4 id="bulkLevelTitle">守護霊Lv一括設定</h4>
+        <div class="level-options">
+            <button onclick="applyBulkLevelFromPopup(0)">0</button>
+            <button onclick="applyBulkLevelFromPopup(1)">1</button>
+            <button onclick="applyBulkLevelFromPopup(2)">2</button>
+            <button onclick="applyBulkLevelFromPopup(3)">3</button>
+            <button onclick="applyBulkLevelFromPopup(4)">4</button>
+            <button onclick="applyBulkLevelFromPopup(5)">5</button>
+            <button onclick="applyBulkLevelFromPopup(6)">6</button>
+            <button onclick="applyBulkLevelFromPopup(7)">7</button>
+            <button onclick="applyBulkLevelFromPopup(8)">8</button>
+            <button onclick="applyBulkLevelFromPopup(9)">9</button>
+            <button onclick="applyBulkLevelFromPopup(10)">10</button>
+            <button onclick="applyBulkLevelFromPopup(11)">11</button>
+            <button onclick="applyBulkLevelFromPopup(12)">12</button>
         </div>
-        <div class="target-select">
-            <select id="bulkLevelTarget">
-                <option value="all">全武将</option>
-                <!-- Category options will be added by JS -->
-            </select>
-        </div>
-        <div class="level-presets">
-            <button onclick="applyBulkLevel(0)">0</button>
-            <button onclick="applyBulkLevel(10)">10</button>
-            <button onclick="applyBulkLevel(11)">11</button>
-            <button onclick="applyBulkLevel(12)">12</button>
-        </div>
+        <button class="close-btn" onclick="closeBulkLevelPopup()">キャンセル</button>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -4049,7 +4058,6 @@
             let globalIndex = 0;
             let html = '';
 
-            const defaultLevel = 0;
             const generalItemHtml = (g) => {
                 const index = globalIndex++;
                 const indexNo = cachedGeneralMasterData?.generals?.[g]?.indexNo;
@@ -4059,15 +4067,8 @@
                         <span class="general-name" onclick="toggleGeneralState(${index})">${indexLabel}${g}</span>
                         <span class="status-badge"></span>
                         <div class="general-level-input">
-                            <select id="general_${index}" onchange="updateProgress()" class="general-level-select">
-                                ${[0,1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<option value="${v}"${v === defaultLevel ? ' selected' : ''}>${v}</option>`).join('')}
-                            </select>
-                            <div class="general-level-presets">
-                                <button type="button" onclick="setGeneralLevel(${index}, 0)">0</button>
-                                <button type="button" onclick="setGeneralLevel(${index}, 10)">10</button>
-                                <button type="button" onclick="setGeneralLevel(${index}, 11)">11</button>
-                                <button type="button" onclick="setGeneralLevel(${index}, 12)">12</button>
-                            </div>
+                            <input type="range" id="general_${index}" min="0" max="12" value="0" class="general-level-slider" oninput="updateSliderDisplay(${index})" onchange="updateProgress()">
+                            <span id="generalLevelValue_${index}" class="general-level-value">0</span>
                         </div>
                         <input type="hidden" id="generalState_${index}" value="0">
                     </div>
@@ -4079,7 +4080,13 @@
                 const sortedGenerals = getGeneralsInIndexOrder();
                 html = `
                     <div class="general-category">
-                        <div class="general-category-title">●武将図鑑順（${sortedGenerals.length}名）</div>
+                        <div class="general-category-header">
+                            <span class="general-category-title">●武将図鑑順（${sortedGenerals.length}名）</span>
+                            <div class="category-bulk-actions">
+                                <button class="category-bulk-btn" onclick="bulkSelectGenerals('all', 'owned')">所持一括ON</button>
+                                <button class="category-bulk-btn level-btn" onclick="showBulkLevelPopup('all')">守護霊Lv一括設定</button>
+                            </div>
+                        </div>
                         <div class="general-grid">
                             ${sortedGenerals.map(generalItemHtml).join('')}
                         </div>
@@ -4088,11 +4095,17 @@
             } else {
                 // Category mode - grouped by categories
                 const effectiveCategories = getEffectiveGeneralCategories();
-                effectiveCategories.forEach(cat => {
+                effectiveCategories.forEach((cat, catIndex) => {
                     if (cat.generals.length === 0) return;
                     html += `
-                        <div class="general-category">
-                            <div class="general-category-title">●${cat.title}</div>
+                        <div class="general-category" data-category-index="${catIndex}">
+                            <div class="general-category-header">
+                                <span class="general-category-title">●${cat.title}（${cat.generals.length}名）</span>
+                                <div class="category-bulk-actions">
+                                    <button class="category-bulk-btn" onclick="bulkSelectGeneralsByIndex(${catIndex}, 'owned')">所持一括ON</button>
+                                    <button class="category-bulk-btn level-btn" onclick="showBulkLevelPopup(${catIndex})">守護霊Lv一括設定</button>
+                                </div>
+                            </div>
                             <div class="general-grid">
                                 ${cat.generals.map(generalItemHtml).join('')}
                             </div>
@@ -4984,7 +4997,7 @@
                     
                     if (levelEl && generalData) {
                         if (typeof generalData === 'object') {
-                            levelEl.value = generalData.level || 10;
+                            levelEl.value = generalData.level || 0;
                             if (stateEl && itemEl) {
                                 let state = 0;
                                 if (generalData.formed) {
@@ -4994,7 +5007,7 @@
                                 }
                                 stateEl.value = state;
                                 itemEl.dataset.state = state;
-                                
+
                                 itemEl.classList.remove('owned', 'formed');
                                 if (state === 1) {
                                     itemEl.classList.add('owned');
@@ -5005,6 +5018,9 @@
                         } else {
                             levelEl.value = generalData;
                         }
+                        // Update slider display
+                        const displayEl = document.getElementById(`generalLevelValue_${i}`);
+                        if (displayEl) displayEl.textContent = levelEl.value;
                     }
                 }
             }
@@ -5456,71 +5472,72 @@
             }
         }
 
-        // Set general level via preset button
-        function setGeneralLevel(index, level) {
-            const select = document.getElementById(`general_${index}`);
-            if (select) {
-                select.value = level;
-                updateProgress();
+        // ========== Bulk Level Popup ==========
+
+        let currentBulkLevelTarget = 'all';
+
+        // Update slider display value
+        function updateSliderDisplay(index) {
+            const slider = document.getElementById(`general_${index}`);
+            const display = document.getElementById(`generalLevelValue_${index}`);
+            if (slider && display) {
+                display.textContent = slider.value;
             }
         }
 
-        // ========== Bulk Level Input Panel ==========
-
-        // Toggle bulk level panel visibility
-        function toggleBulkLevelPanel() {
-            const panel = document.getElementById('floatingBulkLevel');
-            if (panel) {
-                panel.classList.toggle('show');
-                if (panel.classList.contains('show')) {
-                    populateBulkLevelCategories();
-                }
-            }
-        }
-
-        // Populate category dropdown in bulk level panel
-        function populateBulkLevelCategories() {
-            const select = document.getElementById('bulkLevelTarget');
-            if (!select) return;
-
-            const effectiveCategories = getEffectiveGeneralCategories();
-
-            // Keep "全武将" option and add categories
-            select.innerHTML = '<option value="all">全武将</option>';
-            effectiveCategories.forEach((cat, index) => {
-                const option = document.createElement('option');
-                option.value = `cat_${index}`;
-                option.textContent = cat.title;
-                select.appendChild(option);
-            });
-        }
-
-        // Apply bulk level to selected targets
-        function applyBulkLevel(level) {
-            const select = document.getElementById('bulkLevelTarget');
-            const target = select ? select.value : 'all';
-            const effectiveCategories = getEffectiveGeneralCategories();
-
-            let startIndex = 0;
-            let endIndex = 0;
+        // Show bulk level popup
+        function showBulkLevelPopup(target) {
+            currentBulkLevelTarget = target;
+            const popup = document.getElementById('bulkLevelPopup');
+            const overlay = document.getElementById('bulkLevelOverlay');
+            const title = document.getElementById('bulkLevelTitle');
 
             if (target === 'all') {
-                // All generals
+                title.textContent = '全武将 - 守護霊Lv一括設定';
+            } else {
+                const effectiveCategories = getEffectiveGeneralCategories();
+                const cat = effectiveCategories[target];
+                title.textContent = `${cat?.title || ''} - 守護霊Lv一括設定`;
+            }
+
+            popup.classList.add('show');
+            overlay.classList.add('show');
+        }
+
+        // Close bulk level popup
+        function closeBulkLevelPopup() {
+            const popup = document.getElementById('bulkLevelPopup');
+            const overlay = document.getElementById('bulkLevelOverlay');
+            popup.classList.remove('show');
+            overlay.classList.remove('show');
+        }
+
+        // Apply bulk level from popup
+        function applyBulkLevelFromPopup(level) {
+            const effectiveCategories = getEffectiveGeneralCategories();
+            let startIndex = 0;
+            let endIndex = 0;
+            let targetName = '';
+
+            if (currentBulkLevelTarget === 'all') {
                 endIndex = effectiveCategories.reduce((sum, cat) => sum + cat.generals.length, 0);
-            } else if (target.startsWith('cat_')) {
-                // Specific category
-                const catIndex = parseInt(target.replace('cat_', ''));
+                targetName = '全武将';
+            } else {
+                const catIndex = currentBulkLevelTarget;
                 for (let i = 0; i < catIndex; i++) {
                     startIndex += effectiveCategories[i].generals.length;
                 }
                 endIndex = startIndex + effectiveCategories[catIndex].generals.length;
+                targetName = effectiveCategories[catIndex].title;
             }
 
-            // Apply level to all generals in range
+            // Apply level to all generals in range (using slider now)
             for (let i = startIndex; i < endIndex; i++) {
-                const levelSelect = document.getElementById(`general_${i}`);
-                if (levelSelect) {
-                    levelSelect.value = level;
+                const slider = document.getElementById(`general_${i}`);
+                const display = document.getElementById(`generalLevelValue_${i}`);
+                if (slider) {
+                    slider.value = level;
+                    if (display) display.textContent = level;
                 }
             }
 
@@ -5528,96 +5545,9 @@
             updateSummary();
             updateFormationCount();
 
-            const targetName = target === 'all' ? '全武将' : effectiveCategories[parseInt(target.replace('cat_', ''))].title;
+            closeBulkLevelPopup();
             showToast(`${targetName}のLvを${level}に設定しました`, 'success');
         }
-
-        // Initialize bulk level panel (drag functionality)
-        function initBulkLevelPanel() {
-            const panel = document.getElementById('floatingBulkLevel');
-            if (!panel) return;
-
-            const header = panel.querySelector('.panel-header');
-            if (!header) return;
-
-            let isDragging = false;
-            let startX, startY, startLeft, startBottom;
-
-            const onStart = (e) => {
-                if (e.target.closest('.close-btn')) return;
-                isDragging = true;
-                panel.classList.add('dragging');
-
-                const touch = e.touches ? e.touches[0] : e;
-                startX = touch.clientX;
-                startY = touch.clientY;
-
-                const rect = panel.getBoundingClientRect();
-                startLeft = rect.left;
-                startBottom = window.innerHeight - rect.bottom;
-
-                e.preventDefault();
-            };
-
-            const onMove = (e) => {
-                if (!isDragging) return;
-
-                const touch = e.touches ? e.touches[0] : e;
-                const dx = touch.clientX - startX;
-                const dy = touch.clientY - startY;
-
-                let newLeft = startLeft + dx;
-                let newBottom = startBottom - dy;
-
-                // Keep within viewport
-                const maxLeft = window.innerWidth - panel.offsetWidth;
-                const maxBottom = window.innerHeight - panel.offsetHeight;
-                newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-                newBottom = Math.max(0, Math.min(newBottom, maxBottom));
-
-                panel.style.left = newLeft + 'px';
-                panel.style.bottom = newBottom + 'px';
-                panel.style.right = 'auto';
-
-                e.preventDefault();
-            };
-
-            const onEnd = () => {
-                if (!isDragging) return;
-                isDragging = false;
-                panel.classList.remove('dragging');
-
-                // Save position
-                localStorage.setItem('bulkLevelPanelPosition', JSON.stringify({
-                    left: panel.style.left,
-                    bottom: panel.style.bottom
-                }));
-            };
-
-            // Mouse events
-            header.addEventListener('mousedown', onStart);
-            document.addEventListener('mousemove', onMove);
-            document.addEventListener('mouseup', onEnd);
-
-            // Touch events
-            header.addEventListener('touchstart', onStart, { passive: false });
-            document.addEventListener('touchmove', onMove, { passive: false });
-            document.addEventListener('touchend', onEnd);
-
-            // Restore saved position
-            const savedPos = localStorage.getItem('bulkLevelPanelPosition');
-            if (savedPos) {
-                try {
-                    const pos = JSON.parse(savedPos);
-                    panel.style.left = pos.left;
-                    panel.style.bottom = pos.bottom;
-                    panel.style.right = 'auto';
-                } catch (e) {}
-            }
-        }
-
-        // Initialize on DOM ready
-        document.addEventListener('DOMContentLoaded', initBulkLevelPanel);
 
         // Bulk select generals by category index (for dynamic category buttons)
         function bulkSelectGeneralsByIndex(categoryIndex, action) {
