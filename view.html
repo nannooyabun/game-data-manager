@@ -1215,6 +1215,7 @@
         let collapsedCategories = new Set();
         let categoriesViewConfig = null;  // Custom category config for view.html
         let generalMasterData = null;  // General master data with rally limits, notes, categories
+        let hiddenUsers = {};  // Users hidden from searches and lists
 
         // Simulation mode (集結検討モード)
         let simulationModeActive = false;
@@ -1428,6 +1429,16 @@
                 generalMasterData = snap.exists() ? snap.val() : null;
                 renderPreview();
             });
+            onValue(ref(database, 'settings/hiddenUsers'), (snap) => {
+                hiddenUsers = snap.exists() ? snap.val() : {};
+                refreshUserCheckboxGrid();
+                renderPreview();
+            });
+        }
+
+        // Check if a user is hidden
+        function isUserHidden(username) {
+            return hiddenUsers[username] === true;
         }
 
         function populateTeamFilter() {
@@ -1453,7 +1464,7 @@
 
         function getVisibleUsernames() {
             const filter = document.getElementById('teamFilter').value;
-            const allUsers = Object.keys(gameData);
+            const allUsers = Object.keys(gameData).filter(u => !isUserHidden(u));
             if (filter === '__all__') return allUsers.sort();
             const team = teams[filter];
             if (!team) return [];
@@ -1461,7 +1472,7 @@
             const unique = new Set();
             members.forEach(e => {
                 const p = parseMemberEntry(e);
-                if (p.username && gameData[p.username]) unique.add(p.username);
+                if (p.username && gameData[p.username] && !isUserHidden(p.username)) unique.add(p.username);
             });
             return Array.from(unique).sort();
         }
@@ -1598,7 +1609,8 @@
             const matchingUsers = allUsers.filter(u =>
                 u.toLowerCase().includes(query) &&
                 !currentMembers.has(u) &&
-                !virtualUsernames.has(u)
+                !virtualUsernames.has(u) &&
+                !isUserHidden(u)
             ).sort().slice(0, 10);
 
             if (matchingUsers.length === 0) {
@@ -2238,7 +2250,10 @@
                         if (!sp) return null;
                         const ideology = sp.ideology || '';
                         const skill = sp.skill || '';
-                        const stage = sp.deputyStage || '';
+                        const stageNum = sp.deputyStage || '';
+                        // Convert stage number to alphabet: 0=C, 1=B, 2=A, 3=S
+                        const stageMap = { '0': 'C', '1': 'B', '2': 'A', '3': 'S' };
+                        const stage = stageMap[stageNum] || stageNum || '';
                         if (!ideology && !skill && !stage) return null;
                         return `${ideology || '-'}/${skill || '-'}/${stage || '-'}`;
                     }
@@ -3056,7 +3071,7 @@
 
         function refreshUserCheckboxGrid() {
             const grid = document.getElementById('userCheckboxGrid');
-            const allUsers = Object.keys(gameData).sort();
+            const allUsers = Object.keys(gameData).filter(u => !isUserHidden(u)).sort();
 
             if (allUsers.length === 0) {
                 grid.innerHTML = '<span style="color: var(--text-muted);">保存されたユーザーがありません</span>';

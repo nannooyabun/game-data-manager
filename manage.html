@@ -273,24 +273,36 @@
             filter: brightness(1.1);
         }
 
+        /* Data table container with scroll */
+        .data-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
         /* Data table */
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .data-table th,
         .data-table td {
-            padding: 0.8rem;
+            padding: 0.5rem 0.6rem;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
         }
 
         .data-table th {
             background: var(--bg-secondary);
             color: var(--accent-gold);
             font-weight: 500;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
 
         .data-table tr:hover td {
@@ -300,6 +312,11 @@
         .data-table .actions {
             display: flex;
             gap: 0.3rem;
+        }
+
+        .data-table .completion {
+            text-align: right;
+            font-weight: 500;
         }
 
         .data-table .btn-edit {
@@ -371,14 +388,17 @@
         .team-list {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.8rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
         }
 
         .team-card {
             background: var(--bg-input);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 1rem;
+            padding: 0.8rem;
         }
 
         .team-card-header {
@@ -1180,6 +1200,160 @@
             flex-wrap: wrap;
         }
 
+        /* Backup management */
+        .backup-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .backup-list-container {
+            margin-top: 1rem;
+        }
+        .backup-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-input);
+        }
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .backup-item:last-child {
+            border-bottom: none;
+        }
+        .backup-item:hover {
+            background: var(--bg-hover);
+        }
+        .backup-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .backup-info .date {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        .backup-info .type {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .backup-info .auto-badge {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            background: var(--accent-blue);
+            color: white;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            margin-left: 0.3rem;
+        }
+        .backup-actions-btns {
+            display: flex;
+            gap: 0.3rem;
+        }
+        .backup-actions-btns button {
+            padding: 0.3rem 0.6rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .backup-actions-btns .btn-restore {
+            background: var(--accent-green);
+            color: white;
+        }
+        .backup-actions-btns .btn-download {
+            background: var(--accent-blue);
+            color: white;
+        }
+        .backup-actions-btns .btn-delete {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        /* Hidden users management */
+        .hidden-users-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .hidden-users-add {
+            position: relative;
+        }
+        .hidden-users-add input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+        .hidden-user-candidates {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        .hidden-user-candidates.show {
+            display: block;
+        }
+        .hidden-user-candidate {
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .hidden-user-candidate:hover {
+            background: var(--bg-hover);
+        }
+        .hidden-user-candidate .add-btn {
+            padding: 0.2rem 0.5rem;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .hidden-users-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-input);
+        }
+        .hidden-user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .hidden-user-item:last-child {
+            border-bottom: none;
+        }
+        .hidden-user-item .remove-btn {
+            padding: 0.2rem 0.5rem;
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
         /* Toast notification */
         .toast {
             position: fixed;
@@ -1747,15 +1921,15 @@
                 <div class="action-row">
                     <button class="action-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
                 </div>
-                <div style="overflow-x: auto;">
+                <div class="data-table-container">
                     <table class="data-table" id="dataTable">
                         <thead>
                             <tr>
-                                <th>ユーザー名</th>
+                                <th>ユーザー</th>
                                 <th>軍団</th>
                                 <th>兵種</th>
-                                <th>更新日時</th>
-                                <th>完成度</th>
+                                <th>更新</th>
+                                <th>%</th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -1763,6 +1937,24 @@
                             <tr><td colspan="6" class="empty-state">データを読み込んでいます...</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- ④-2 非表示ユーザー管理 Section -->
+            <div class="section-card" id="hiddenUsersSection">
+                <h3>🙈 非表示ユーザー管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.85rem;">
+                    使わなくなったユーザーを非表示にします。非表示ユーザーは検索や一覧に表示されません。
+                </p>
+                <div class="hidden-users-container">
+                    <div class="hidden-users-add">
+                        <input type="text" id="hiddenUserSearch" placeholder="ユーザー名を検索" oninput="filterHiddenUserCandidates()">
+                        <div class="hidden-user-candidates" id="hiddenUserCandidates"></div>
+                    </div>
+                    <h4 style="color: var(--accent-gold); margin: 1rem 0 0.5rem; font-size: 0.9rem;">現在非表示のユーザー</h4>
+                    <div class="hidden-users-list" id="hiddenUsersList">
+                        <div class="empty-state">非表示ユーザーはいません</div>
+                    </div>
                 </div>
             </div>
 
@@ -1808,6 +2000,24 @@
                     <div id="generalMasterPreview" style="margin-top: 1rem; display: none;">
                         <h4 style="color: var(--accent-gold); margin-bottom: 0.5rem; font-size: 0.95rem;">現在のマスターデータ</h4>
                         <div id="generalMasterPreviewContent" style="max-height: 300px; overflow-y: auto; background: var(--bg-input); border-radius: 6px; padding: 0.8rem; font-size: 0.85rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑦ バックアップ管理 Section -->
+            <div class="section-card" id="backupSection">
+                <h3>🔄 バックアップ管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.85rem;">
+                    データの自動バックアップ（毎日）と手動バックアップを管理します。不要な変更を加えた場合に復元できます。
+                </p>
+                <div class="backup-actions">
+                    <button class="action-btn primary" onclick="createManualBackup('gameData')">📦 ユーザーデータをバックアップ</button>
+                    <button class="action-btn primary" onclick="createManualBackup('generalMasterData')">📦 武将データをバックアップ</button>
+                </div>
+                <div class="backup-list-container">
+                    <h4 style="color: var(--accent-gold); margin: 1rem 0 0.5rem; font-size: 0.9rem;">📋 バックアップ一覧</h4>
+                    <div class="backup-list" id="backupList">
+                        <div class="empty-state">バックアップを読み込んでいます...</div>
                     </div>
                 </div>
             </div>
@@ -2127,20 +2337,26 @@
 
             tbody.innerHTML = rows.map(({ name, team, data }) => {
                 const completion = calculateCompletion(data);
-                const date = data.timestamp ? new Date(data.timestamp).toLocaleString('ja-JP') : '-';
+                // Format date as YY/MM/DD
+                let dateStr = '-';
+                if (data.timestamp) {
+                    const d = new Date(data.timestamp);
+                    const yy = String(d.getFullYear()).slice(-2);
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    dateStr = `${yy}/${mm}/${dd}`;
+                }
                 const troop = troopMap[data.troopType] || data.troopType || '-';
+                const isHidden = isUserHidden(name);
+                const hiddenBadge = isHidden ? '<span style="background: var(--accent-red); color: white; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.65rem; margin-left: 0.3rem;">非表示</span>' : '';
+                const rowStyle = isHidden ? ' style="opacity: 0.6;"' : '';
                 return `
-                    <tr>
-                        <td>${escapeHtml(name)}</td>
+                    <tr${rowStyle}>
+                        <td>${escapeHtml(name)}${hiddenBadge}</td>
                         <td>${escapeHtml(team)}</td>
                         <td>${escapeHtml(troop)}</td>
-                        <td>${date}</td>
-                        <td>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${completion}%"></div>
-                            </div>
-                            <span>${completion}%</span>
-                        </td>
+                        <td>${dateStr}</td>
+                        <td class="completion">${completion}%</td>
                         <td class="actions">
                             <button class="btn-edit" onclick="editUser('${escapeHtml(name)}', '${escapeHtml(team)}')">編集</button>
                             <button class="btn-delete" onclick="confirmDeleteUser('${escapeHtml(name)}', '${escapeHtml(team)}')">削除</button>
@@ -3865,6 +4081,358 @@
             input.click();
         }
 
+        // ========== Backup Management ==========
+
+        let backups = {};
+
+        // Load backup list from Firebase
+        async function loadBackupList() {
+            if (!window.firebaseReady) return;
+            const { database, ref, get } = window.firebaseDB;
+            try {
+                const snap = await get(ref(database, 'backups'));
+                backups = snap.exists() ? snap.val() : {};
+                renderBackupList();
+            } catch (error) {
+                console.error('Failed to load backups:', error);
+            }
+        }
+
+        // Subscribe to backup changes
+        function subscribeBackups() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+            onValue(ref(database, 'backups'), (snap) => {
+                backups = snap.exists() ? snap.val() : {};
+                renderBackupList();
+            });
+        }
+
+        // Render backup list UI
+        function renderBackupList() {
+            const container = document.getElementById('backupList');
+            const backupArray = Object.entries(backups)
+                .map(([id, data]) => ({ id, ...data }))
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            if (backupArray.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 1rem;">バックアップがありません</div>';
+                return;
+            }
+
+            container.innerHTML = backupArray.map(backup => {
+                const date = new Date(backup.timestamp);
+                const dateStr = date.toLocaleDateString('ja-JP', { year: '2-digit', month: '2-digit', day: '2-digit' });
+                const timeStr = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                const typeLabel = backup.type === 'gameData' ? 'ユーザーデータ' : '武将データ';
+                const autoBadge = backup.auto ? '<span class="auto-badge">自動</span>' : '';
+                const itemCount = backup.itemCount || '-';
+
+                return `
+                    <div class="backup-item">
+                        <div class="backup-info">
+                            <span class="date">${dateStr} ${timeStr}${autoBadge}</span>
+                            <span class="type">${typeLabel} (${itemCount}件)</span>
+                        </div>
+                        <div class="backup-actions-btns">
+                            <button class="btn-restore" onclick="restoreBackup('${backup.id}')">復元</button>
+                            <button class="btn-download" onclick="downloadBackup('${backup.id}')">DL</button>
+                            <button class="btn-delete" onclick="deleteBackup('${backup.id}')">削除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Create manual backup
+        async function createManualBackup(type) {
+            await createBackup(type, false);
+        }
+
+        // Create backup (type: 'gameData' or 'generalMasterData', auto: boolean)
+        async function createBackup(type, auto = false) {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, get, set } = window.firebaseDB;
+
+            try {
+                // Get data to backup
+                let data, itemCount;
+                if (type === 'gameData') {
+                    const snap = await get(ref(database, 'gameData'));
+                    data = snap.exists() ? snap.val() : {};
+                    itemCount = Object.keys(data).length;
+                } else if (type === 'generalMasterData') {
+                    const snap = await get(ref(database, 'settings/generalMasterData'));
+                    data = snap.exists() ? snap.val() : {};
+                    itemCount = data.generals ? Object.keys(data.generals).length : 0;
+                } else {
+                    return;
+                }
+
+                // Create backup entry
+                const backupId = `backup_${Date.now()}`;
+                const backup = {
+                    type,
+                    timestamp: new Date().toISOString(),
+                    auto,
+                    itemCount,
+                    data
+                };
+
+                await set(ref(database, `backups/${backupId}`), backup);
+                showToast(`バックアップを作成しました (${type === 'gameData' ? 'ユーザー' : '武将'}データ)`, 'success');
+
+                // Clean old backups (keep last 7 days for auto, unlimited for manual)
+                if (auto) {
+                    await cleanOldBackups();
+                }
+            } catch (error) {
+                console.error('Backup error:', error);
+                showToast('バックアップの作成に失敗しました', 'error');
+            }
+        }
+
+        // Restore from backup
+        async function restoreBackup(backupId) {
+            const backup = backups[backupId];
+            if (!backup) {
+                showToast('バックアップが見つかりません', 'error');
+                return;
+            }
+
+            const typeLabel = backup.type === 'gameData' ? 'ユーザーデータ' : '武将データ';
+            if (!confirm(`${typeLabel}を復元しますか？\n\n現在のデータは上書きされます。`)) {
+                return;
+            }
+
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, set } = window.firebaseDB;
+
+            try {
+                // Create backup of current data before restoring
+                await createBackup(backup.type, false);
+
+                // Restore data
+                const path = backup.type === 'gameData' ? 'gameData' : 'settings/generalMasterData';
+                await set(ref(database, path), backup.data);
+
+                showToast(`${typeLabel}を復元しました`, 'success');
+            } catch (error) {
+                console.error('Restore error:', error);
+                showToast('復元に失敗しました', 'error');
+            }
+        }
+
+        // Download backup as JSON file
+        function downloadBackup(backupId) {
+            const backup = backups[backupId];
+            if (!backup) {
+                showToast('バックアップが見つかりません', 'error');
+                return;
+            }
+
+            const filename = `backup_${backup.type}_${backup.timestamp.replace(/[:.]/g, '-')}.json`;
+            const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Delete backup
+        async function deleteBackup(backupId) {
+            if (!confirm('このバックアップを削除しますか？')) return;
+
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, remove } = window.firebaseDB;
+
+            try {
+                await remove(ref(database, `backups/${backupId}`));
+                showToast('バックアップを削除しました', 'success');
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // Clean old auto backups (keep last 7 days)
+        async function cleanOldBackups() {
+            if (!window.firebaseReady) return;
+            const { database, ref, remove } = window.firebaseDB;
+
+            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+
+            for (const [id, backup] of Object.entries(backups)) {
+                if (backup.auto && new Date(backup.timestamp).getTime() < sevenDaysAgo) {
+                    try {
+                        await remove(ref(database, `backups/${id}`));
+                    } catch (error) {
+                        console.error('Failed to delete old backup:', error);
+                    }
+                }
+            }
+        }
+
+        // Check and create daily auto backup
+        async function checkAutoBackup() {
+            const lastBackupKey = 'lastAutoBackupDate';
+            const today = new Date().toISOString().split('T')[0];
+            const lastBackup = localStorage.getItem(lastBackupKey);
+
+            if (lastBackup !== today) {
+                // Create daily auto backups
+                await createBackup('gameData', true);
+                await createBackup('generalMasterData', true);
+                localStorage.setItem(lastBackupKey, today);
+            }
+        }
+
+        // ========== Hidden Users Management ==========
+
+        let hiddenUsers = {};
+
+        // Load hidden users from Firebase
+        async function loadHiddenUsers() {
+            if (!window.firebaseReady) return;
+            const { database, ref, get } = window.firebaseDB;
+            try {
+                const snap = await get(ref(database, 'settings/hiddenUsers'));
+                hiddenUsers = snap.exists() ? snap.val() : {};
+                renderHiddenUsersList();
+            } catch (error) {
+                console.error('Failed to load hidden users:', error);
+            }
+        }
+
+        // Subscribe to hidden users changes
+        function subscribeHiddenUsers() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+            onValue(ref(database, 'settings/hiddenUsers'), (snap) => {
+                hiddenUsers = snap.exists() ? snap.val() : {};
+                renderHiddenUsersList();
+                // Also refresh data table to reflect hidden status
+                refreshDataTable();
+            });
+        }
+
+        // Check if user is hidden
+        function isUserHidden(username) {
+            return hiddenUsers[username] === true;
+        }
+
+        // Get visible users (excluding hidden)
+        function getVisibleUsers() {
+            if (!gameData) return [];
+            return Object.keys(gameData).filter(username => !isUserHidden(username));
+        }
+
+        // Filter hidden user candidates (for adding to hidden list)
+        function filterHiddenUserCandidates() {
+            const input = document.getElementById('hiddenUserSearch');
+            const container = document.getElementById('hiddenUserCandidates');
+            const query = (input.value || '').toLowerCase().trim();
+
+            if (query.length === 0) {
+                container.classList.remove('show');
+                return;
+            }
+
+            // Get users that are NOT hidden and match the query
+            const candidates = Object.keys(gameData || {})
+                .filter(username =>
+                    !isUserHidden(username) &&
+                    username.toLowerCase().includes(query)
+                )
+                .slice(0, 10);
+
+            if (candidates.length === 0) {
+                container.innerHTML = '<div style="padding: 0.5rem; color: var(--text-muted);">該当なし</div>';
+            } else {
+                container.innerHTML = candidates.map(username => `
+                    <div class="hidden-user-candidate">
+                        <span>${escapeHtml(username)}</span>
+                        <button class="add-btn" onclick="addHiddenUser('${escapeHtml(username)}')">非表示にする</button>
+                    </div>
+                `).join('');
+            }
+            container.classList.add('show');
+        }
+
+        // Add user to hidden list
+        async function addHiddenUser(username) {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, set } = window.firebaseDB;
+
+            try {
+                await set(ref(database, `settings/hiddenUsers/${username}`), true);
+                document.getElementById('hiddenUserSearch').value = '';
+                document.getElementById('hiddenUserCandidates').classList.remove('show');
+                showToast(`${username} を非表示にしました`, 'success');
+            } catch (error) {
+                console.error('Failed to hide user:', error);
+                showToast('非表示設定に失敗しました', 'error');
+            }
+        }
+
+        // Remove user from hidden list
+        async function removeHiddenUser(username) {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, remove } = window.firebaseDB;
+
+            try {
+                await remove(ref(database, `settings/hiddenUsers/${username}`));
+                showToast(`${username} を再表示しました`, 'success');
+            } catch (error) {
+                console.error('Failed to unhide user:', error);
+                showToast('再表示設定に失敗しました', 'error');
+            }
+        }
+
+        // Render hidden users list
+        function renderHiddenUsersList() {
+            const container = document.getElementById('hiddenUsersList');
+            const hiddenList = Object.keys(hiddenUsers).filter(u => hiddenUsers[u] === true).sort();
+
+            if (hiddenList.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 0.8rem;">非表示ユーザーはいません</div>';
+                return;
+            }
+
+            container.innerHTML = hiddenList.map(username => `
+                <div class="hidden-user-item">
+                    <span>${escapeHtml(username)}</span>
+                    <button class="remove-btn" onclick="removeHiddenUser('${escapeHtml(username)}')">再表示</button>
+                </div>
+            `).join('');
+        }
+
+        // Close candidates dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('hiddenUserCandidates');
+            const input = document.getElementById('hiddenUserSearch');
+            if (container && input && !container.contains(e.target) && e.target !== input) {
+                container.classList.remove('show');
+            }
+        });
+
         // ========== General Master Data CSV Import/Export ==========
 
         let generalMasterData = null;  // { generals: { name: { rallyLimit, notes, category, categoryNotes }}, categories: { name: { notes }}}
@@ -4893,11 +5461,25 @@
             await loadPasswords();
             await loadGameData();
             subscribeRealtime();
+            await loadBackupList();
+            subscribeBackups();
+            await loadHiddenUsers();
+            subscribeHiddenUsers();
+            await checkAutoBackup();
         });
 
         if (window.firebaseReady) {
             loadPasswords().then(() => {
-                loadGameData().then(subscribeRealtime);
+                loadGameData().then(() => {
+                    subscribeRealtime();
+                    loadBackupList().then(() => {
+                        subscribeBackups();
+                        loadHiddenUsers().then(() => {
+                            subscribeHiddenUsers();
+                            checkAutoBackup();
+                        });
+                    });
+                });
             });
         }
     </script>
