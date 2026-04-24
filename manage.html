@@ -3079,6 +3079,24 @@
             generalCategoriesView = config;
 
             await saveCategoryConfig(configType);
+
+            // Sync category change to generalMasterData
+            try {
+                const { database, ref, get, set } = window.firebaseDB;
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                if (snap.exists()) {
+                    const masterData = snap.val();
+                    if (masterData.generals && masterData.generals[generalName]) {
+                        const newCategory = (toCatId === '_unassigned') ? '' : (toCat?.title || '');
+                        masterData.generals[generalName].category = newCategory;
+                        masterData.updatedAt = new Date().toISOString();
+                        await set(ref(database, 'settings/generalMasterData'), masterData);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to sync category to masterData:', error);
+            }
+
             renderGenCatList(configType);
         }
 
