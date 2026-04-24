@@ -2495,6 +2495,7 @@
         let cachedTeams = {};  // teams keyed by team.id (for manage-screen team membership)
         let cachedCategoriesIndex = null;  // Custom category config for index.html
         let cachedGeneralMasterData = null;  // General master data with rally limits, notes, categories
+        let cachedHiddenUsers = {};  // Users hidden from searches and lists
         let showByIndexOrder = false;  // Toggle for index order display
 
         // Toggle between category view and index order view
@@ -3281,7 +3282,7 @@
             }
 
             const allUsers = Object.keys(cachedGameData || {});
-            const matchingUsers = allUsers.filter(u => u.toLowerCase().includes(query)).sort();
+            const matchingUsers = allUsers.filter(u => u.toLowerCase().includes(query) && !isUserHidden(u)).sort();
 
             if (matchingUsers.length === 0) {
                 dropdown.style.display = 'none';
@@ -3491,7 +3492,7 @@
 
             const q = (query || '').toLowerCase().trim();
             const allUsers = Object.keys(cachedGameData || {});
-            const users = allUsers.filter(u => !q || u.toLowerCase().includes(q)).sort();
+            const users = allUsers.filter(u => (!q || u.toLowerCase().includes(q)) && !isUserHidden(u)).sort();
 
             if (allUsers.length === 0) {
                 listEl.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 1rem;">保存されたデータがありません</div>';
@@ -3764,6 +3765,16 @@
                 cachedTeams = snapshot.exists() ? snapshot.val() : {};
                 renderTeamTagField();
             });
+
+            // Listen for hidden users changes
+            onValue(ref(database, 'settings/hiddenUsers'), (snapshot) => {
+                cachedHiddenUsers = snapshot.exists() ? snapshot.val() : {};
+            });
+        }
+
+        // Check if a user is hidden
+        function isUserHidden(username) {
+            return cachedHiddenUsers[username] === true;
         }
 
         // ========== Team Tag Field (A-1/A-2/A-3) ==========

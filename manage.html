@@ -1275,6 +1275,85 @@
             color: white;
         }
 
+        /* Hidden users management */
+        .hidden-users-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .hidden-users-add {
+            position: relative;
+        }
+        .hidden-users-add input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+        }
+        .hidden-user-candidates {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        .hidden-user-candidates.show {
+            display: block;
+        }
+        .hidden-user-candidate {
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .hidden-user-candidate:hover {
+            background: var(--bg-hover);
+        }
+        .hidden-user-candidate .add-btn {
+            padding: 0.2rem 0.5rem;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .hidden-users-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-input);
+        }
+        .hidden-user-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .hidden-user-item:last-child {
+            border-bottom: none;
+        }
+        .hidden-user-item .remove-btn {
+            padding: 0.2rem 0.5rem;
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
         /* Toast notification */
         .toast {
             position: fixed;
@@ -1861,6 +1940,24 @@
                 </div>
             </div>
 
+            <!-- ④-2 非表示ユーザー管理 Section -->
+            <div class="section-card" id="hiddenUsersSection">
+                <h3>🙈 非表示ユーザー管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.85rem;">
+                    使わなくなったユーザーを非表示にします。非表示ユーザーは検索や一覧に表示されません。
+                </p>
+                <div class="hidden-users-container">
+                    <div class="hidden-users-add">
+                        <input type="text" id="hiddenUserSearch" placeholder="ユーザー名を検索" oninput="filterHiddenUserCandidates()">
+                        <div class="hidden-user-candidates" id="hiddenUserCandidates"></div>
+                    </div>
+                    <h4 style="color: var(--accent-gold); margin: 1rem 0 0.5rem; font-size: 0.9rem;">現在非表示のユーザー</h4>
+                    <div class="hidden-users-list" id="hiddenUsersList">
+                        <div class="empty-state">非表示ユーザーはいません</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ⑤ チーム管理 Section -->
             <div class="section-card" id="teamSection">
                 <h3>🎯 チーム管理</h3>
@@ -2250,9 +2347,12 @@
                     dateStr = `${yy}/${mm}/${dd}`;
                 }
                 const troop = troopMap[data.troopType] || data.troopType || '-';
+                const isHidden = isUserHidden(name);
+                const hiddenBadge = isHidden ? '<span style="background: var(--accent-red); color: white; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.65rem; margin-left: 0.3rem;">非表示</span>' : '';
+                const rowStyle = isHidden ? ' style="opacity: 0.6;"' : '';
                 return `
-                    <tr>
-                        <td>${escapeHtml(name)}</td>
+                    <tr${rowStyle}>
+                        <td>${escapeHtml(name)}${hiddenBadge}</td>
                         <td>${escapeHtml(team)}</td>
                         <td>${escapeHtml(troop)}</td>
                         <td>${dateStr}</td>
@@ -4198,6 +4298,141 @@
             }
         }
 
+        // ========== Hidden Users Management ==========
+
+        let hiddenUsers = {};
+
+        // Load hidden users from Firebase
+        async function loadHiddenUsers() {
+            if (!window.firebaseReady) return;
+            const { database, ref, get } = window.firebaseDB;
+            try {
+                const snap = await get(ref(database, 'settings/hiddenUsers'));
+                hiddenUsers = snap.exists() ? snap.val() : {};
+                renderHiddenUsersList();
+            } catch (error) {
+                console.error('Failed to load hidden users:', error);
+            }
+        }
+
+        // Subscribe to hidden users changes
+        function subscribeHiddenUsers() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+            onValue(ref(database, 'settings/hiddenUsers'), (snap) => {
+                hiddenUsers = snap.exists() ? snap.val() : {};
+                renderHiddenUsersList();
+                // Also refresh data table to reflect hidden status
+                refreshDataTable();
+            });
+        }
+
+        // Check if user is hidden
+        function isUserHidden(username) {
+            return hiddenUsers[username] === true;
+        }
+
+        // Get visible users (excluding hidden)
+        function getVisibleUsers() {
+            if (!gameData) return [];
+            return Object.keys(gameData).filter(username => !isUserHidden(username));
+        }
+
+        // Filter hidden user candidates (for adding to hidden list)
+        function filterHiddenUserCandidates() {
+            const input = document.getElementById('hiddenUserSearch');
+            const container = document.getElementById('hiddenUserCandidates');
+            const query = (input.value || '').toLowerCase().trim();
+
+            if (query.length === 0) {
+                container.classList.remove('show');
+                return;
+            }
+
+            // Get users that are NOT hidden and match the query
+            const candidates = Object.keys(gameData || {})
+                .filter(username =>
+                    !isUserHidden(username) &&
+                    username.toLowerCase().includes(query)
+                )
+                .slice(0, 10);
+
+            if (candidates.length === 0) {
+                container.innerHTML = '<div style="padding: 0.5rem; color: var(--text-muted);">該当なし</div>';
+            } else {
+                container.innerHTML = candidates.map(username => `
+                    <div class="hidden-user-candidate">
+                        <span>${escapeHtml(username)}</span>
+                        <button class="add-btn" onclick="addHiddenUser('${escapeHtml(username)}')">非表示にする</button>
+                    </div>
+                `).join('');
+            }
+            container.classList.add('show');
+        }
+
+        // Add user to hidden list
+        async function addHiddenUser(username) {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, set } = window.firebaseDB;
+
+            try {
+                await set(ref(database, `settings/hiddenUsers/${username}`), true);
+                document.getElementById('hiddenUserSearch').value = '';
+                document.getElementById('hiddenUserCandidates').classList.remove('show');
+                showToast(`${username} を非表示にしました`, 'success');
+            } catch (error) {
+                console.error('Failed to hide user:', error);
+                showToast('非表示設定に失敗しました', 'error');
+            }
+        }
+
+        // Remove user from hidden list
+        async function removeHiddenUser(username) {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, remove } = window.firebaseDB;
+
+            try {
+                await remove(ref(database, `settings/hiddenUsers/${username}`));
+                showToast(`${username} を再表示しました`, 'success');
+            } catch (error) {
+                console.error('Failed to unhide user:', error);
+                showToast('再表示設定に失敗しました', 'error');
+            }
+        }
+
+        // Render hidden users list
+        function renderHiddenUsersList() {
+            const container = document.getElementById('hiddenUsersList');
+            const hiddenList = Object.keys(hiddenUsers).filter(u => hiddenUsers[u] === true).sort();
+
+            if (hiddenList.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 0.8rem;">非表示ユーザーはいません</div>';
+                return;
+            }
+
+            container.innerHTML = hiddenList.map(username => `
+                <div class="hidden-user-item">
+                    <span>${escapeHtml(username)}</span>
+                    <button class="remove-btn" onclick="removeHiddenUser('${escapeHtml(username)}')">再表示</button>
+                </div>
+            `).join('');
+        }
+
+        // Close candidates dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('hiddenUserCandidates');
+            const input = document.getElementById('hiddenUserSearch');
+            if (container && input && !container.contains(e.target) && e.target !== input) {
+                container.classList.remove('show');
+            }
+        });
+
         // ========== General Master Data CSV Import/Export ==========
 
         let generalMasterData = null;  // { generals: { name: { rallyLimit, notes, category, categoryNotes }}, categories: { name: { notes }}}
@@ -5228,6 +5463,8 @@
             subscribeRealtime();
             await loadBackupList();
             subscribeBackups();
+            await loadHiddenUsers();
+            subscribeHiddenUsers();
             await checkAutoBackup();
         });
 
@@ -5237,7 +5474,10 @@
                     subscribeRealtime();
                     loadBackupList().then(() => {
                         subscribeBackups();
-                        checkAutoBackup();
+                        loadHiddenUsers().then(() => {
+                            subscribeHiddenUsers();
+                            checkAutoBackup();
+                        });
                     });
                 });
             });
