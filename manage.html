@@ -1200,6 +1200,81 @@
             flex-wrap: wrap;
         }
 
+        /* Backup management */
+        .backup-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .backup-list-container {
+            margin-top: 1rem;
+        }
+        .backup-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-input);
+        }
+        .backup-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .backup-item:last-child {
+            border-bottom: none;
+        }
+        .backup-item:hover {
+            background: var(--bg-hover);
+        }
+        .backup-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .backup-info .date {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        .backup-info .type {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .backup-info .auto-badge {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            background: var(--accent-blue);
+            color: white;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            margin-left: 0.3rem;
+        }
+        .backup-actions-btns {
+            display: flex;
+            gap: 0.3rem;
+        }
+        .backup-actions-btns button {
+            padding: 0.3rem 0.6rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .backup-actions-btns .btn-restore {
+            background: var(--accent-green);
+            color: white;
+        }
+        .backup-actions-btns .btn-download {
+            background: var(--accent-blue);
+            color: white;
+        }
+        .backup-actions-btns .btn-delete {
+            background: var(--accent-red);
+            color: white;
+        }
+
         /* Toast notification */
         .toast {
             position: fixed;
@@ -1828,6 +1903,24 @@
                     <div id="generalMasterPreview" style="margin-top: 1rem; display: none;">
                         <h4 style="color: var(--accent-gold); margin-bottom: 0.5rem; font-size: 0.95rem;">現在のマスターデータ</h4>
                         <div id="generalMasterPreviewContent" style="max-height: 300px; overflow-y: auto; background: var(--bg-input); border-radius: 6px; padding: 0.8rem; font-size: 0.85rem;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑦ バックアップ管理 Section -->
+            <div class="section-card" id="backupSection">
+                <h3>🔄 バックアップ管理</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.85rem;">
+                    データの自動バックアップ（毎日）と手動バックアップを管理します。不要な変更を加えた場合に復元できます。
+                </p>
+                <div class="backup-actions">
+                    <button class="action-btn primary" onclick="createManualBackup('gameData')">📦 ユーザーデータをバックアップ</button>
+                    <button class="action-btn primary" onclick="createManualBackup('generalMasterData')">📦 武将データをバックアップ</button>
+                </div>
+                <div class="backup-list-container">
+                    <h4 style="color: var(--accent-gold); margin: 1rem 0 0.5rem; font-size: 0.9rem;">📋 バックアップ一覧</h4>
+                    <div class="backup-list" id="backupList">
+                        <div class="empty-state">バックアップを読み込んでいます...</div>
                     </div>
                 </div>
             </div>
@@ -3888,6 +3981,223 @@
             input.click();
         }
 
+        // ========== Backup Management ==========
+
+        let backups = {};
+
+        // Load backup list from Firebase
+        async function loadBackupList() {
+            if (!window.firebaseReady) return;
+            const { database, ref, get } = window.firebaseDB;
+            try {
+                const snap = await get(ref(database, 'backups'));
+                backups = snap.exists() ? snap.val() : {};
+                renderBackupList();
+            } catch (error) {
+                console.error('Failed to load backups:', error);
+            }
+        }
+
+        // Subscribe to backup changes
+        function subscribeBackups() {
+            if (!window.firebaseReady) return;
+            const { database, ref, onValue } = window.firebaseDB;
+            onValue(ref(database, 'backups'), (snap) => {
+                backups = snap.exists() ? snap.val() : {};
+                renderBackupList();
+            });
+        }
+
+        // Render backup list UI
+        function renderBackupList() {
+            const container = document.getElementById('backupList');
+            const backupArray = Object.entries(backups)
+                .map(([id, data]) => ({ id, ...data }))
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            if (backupArray.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 1rem;">バックアップがありません</div>';
+                return;
+            }
+
+            container.innerHTML = backupArray.map(backup => {
+                const date = new Date(backup.timestamp);
+                const dateStr = date.toLocaleDateString('ja-JP', { year: '2-digit', month: '2-digit', day: '2-digit' });
+                const timeStr = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+                const typeLabel = backup.type === 'gameData' ? 'ユーザーデータ' : '武将データ';
+                const autoBadge = backup.auto ? '<span class="auto-badge">自動</span>' : '';
+                const itemCount = backup.itemCount || '-';
+
+                return `
+                    <div class="backup-item">
+                        <div class="backup-info">
+                            <span class="date">${dateStr} ${timeStr}${autoBadge}</span>
+                            <span class="type">${typeLabel} (${itemCount}件)</span>
+                        </div>
+                        <div class="backup-actions-btns">
+                            <button class="btn-restore" onclick="restoreBackup('${backup.id}')">復元</button>
+                            <button class="btn-download" onclick="downloadBackup('${backup.id}')">DL</button>
+                            <button class="btn-delete" onclick="deleteBackup('${backup.id}')">削除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Create manual backup
+        async function createManualBackup(type) {
+            await createBackup(type, false);
+        }
+
+        // Create backup (type: 'gameData' or 'generalMasterData', auto: boolean)
+        async function createBackup(type, auto = false) {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, get, set } = window.firebaseDB;
+
+            try {
+                // Get data to backup
+                let data, itemCount;
+                if (type === 'gameData') {
+                    const snap = await get(ref(database, 'gameData'));
+                    data = snap.exists() ? snap.val() : {};
+                    itemCount = Object.keys(data).length;
+                } else if (type === 'generalMasterData') {
+                    const snap = await get(ref(database, 'settings/generalMasterData'));
+                    data = snap.exists() ? snap.val() : {};
+                    itemCount = data.generals ? Object.keys(data.generals).length : 0;
+                } else {
+                    return;
+                }
+
+                // Create backup entry
+                const backupId = `backup_${Date.now()}`;
+                const backup = {
+                    type,
+                    timestamp: new Date().toISOString(),
+                    auto,
+                    itemCount,
+                    data
+                };
+
+                await set(ref(database, `backups/${backupId}`), backup);
+                showToast(`バックアップを作成しました (${type === 'gameData' ? 'ユーザー' : '武将'}データ)`, 'success');
+
+                // Clean old backups (keep last 7 days for auto, unlimited for manual)
+                if (auto) {
+                    await cleanOldBackups();
+                }
+            } catch (error) {
+                console.error('Backup error:', error);
+                showToast('バックアップの作成に失敗しました', 'error');
+            }
+        }
+
+        // Restore from backup
+        async function restoreBackup(backupId) {
+            const backup = backups[backupId];
+            if (!backup) {
+                showToast('バックアップが見つかりません', 'error');
+                return;
+            }
+
+            const typeLabel = backup.type === 'gameData' ? 'ユーザーデータ' : '武将データ';
+            if (!confirm(`${typeLabel}を復元しますか？\n\n現在のデータは上書きされます。`)) {
+                return;
+            }
+
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, set } = window.firebaseDB;
+
+            try {
+                // Create backup of current data before restoring
+                await createBackup(backup.type, false);
+
+                // Restore data
+                const path = backup.type === 'gameData' ? 'gameData' : 'settings/generalMasterData';
+                await set(ref(database, path), backup.data);
+
+                showToast(`${typeLabel}を復元しました`, 'success');
+            } catch (error) {
+                console.error('Restore error:', error);
+                showToast('復元に失敗しました', 'error');
+            }
+        }
+
+        // Download backup as JSON file
+        function downloadBackup(backupId) {
+            const backup = backups[backupId];
+            if (!backup) {
+                showToast('バックアップが見つかりません', 'error');
+                return;
+            }
+
+            const filename = `backup_${backup.type}_${backup.timestamp.replace(/[:.]/g, '-')}.json`;
+            const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Delete backup
+        async function deleteBackup(backupId) {
+            if (!confirm('このバックアップを削除しますか？')) return;
+
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, remove } = window.firebaseDB;
+
+            try {
+                await remove(ref(database, `backups/${backupId}`));
+                showToast('バックアップを削除しました', 'success');
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // Clean old auto backups (keep last 7 days)
+        async function cleanOldBackups() {
+            if (!window.firebaseReady) return;
+            const { database, ref, remove } = window.firebaseDB;
+
+            const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+
+            for (const [id, backup] of Object.entries(backups)) {
+                if (backup.auto && new Date(backup.timestamp).getTime() < sevenDaysAgo) {
+                    try {
+                        await remove(ref(database, `backups/${id}`));
+                    } catch (error) {
+                        console.error('Failed to delete old backup:', error);
+                    }
+                }
+            }
+        }
+
+        // Check and create daily auto backup
+        async function checkAutoBackup() {
+            const lastBackupKey = 'lastAutoBackupDate';
+            const today = new Date().toISOString().split('T')[0];
+            const lastBackup = localStorage.getItem(lastBackupKey);
+
+            if (lastBackup !== today) {
+                // Create daily auto backups
+                await createBackup('gameData', true);
+                await createBackup('generalMasterData', true);
+                localStorage.setItem(lastBackupKey, today);
+            }
+        }
+
         // ========== General Master Data CSV Import/Export ==========
 
         let generalMasterData = null;  // { generals: { name: { rallyLimit, notes, category, categoryNotes }}, categories: { name: { notes }}}
@@ -4916,11 +5226,20 @@
             await loadPasswords();
             await loadGameData();
             subscribeRealtime();
+            await loadBackupList();
+            subscribeBackups();
+            await checkAutoBackup();
         });
 
         if (window.firebaseReady) {
             loadPasswords().then(() => {
-                loadGameData().then(subscribeRealtime);
+                loadGameData().then(() => {
+                    subscribeRealtime();
+                    loadBackupList().then(() => {
+                        subscribeBackups();
+                        checkAutoBackup();
+                    });
+                });
             });
         }
     </script>
