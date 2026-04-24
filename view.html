@@ -1795,6 +1795,20 @@
                         if (sp.formed) return 'equipped';
                         if (sp.owned) return 'owned';
                         return 'none';
+                    },
+                    getCellValue: (user, item) => {
+                        let sp;
+                        if (item.isCustom) {
+                            sp = user.customItems?.spGenerals?.[item.id];
+                        } else {
+                            sp = user.spGenerals?.[item.id];
+                        }
+                        if (!sp) return null;
+                        const ideology = sp.ideology || '';
+                        const skill = sp.skill || '';
+                        const stage = sp.deputyStage || '';
+                        if (!ideology && !skill && !stage) return null;
+                        return `${ideology || '-'}/${skill || '-'}/${stage || '-'}`;
                     }
                 },
                 // Generals will be inserted here dynamically
