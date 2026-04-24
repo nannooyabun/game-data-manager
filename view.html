@@ -541,25 +541,6 @@
             font-size: 0.75rem;
             white-space: nowrap;
         }
-        /* Scroll position indicator */
-        .scroll-indicator {
-            color: var(--accent-gold);
-        }
-        .scroll-indicator-item {
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            opacity: 0.5;
-            transition: opacity 0.2s;
-        }
-        .scroll-indicator-item:hover {
-            opacity: 0.8;
-        }
-        .scroll-indicator-item.active {
-            opacity: 1;
-            font-weight: 600;
-        }
 
         /* Legend */
         .legend {
@@ -1231,6 +1212,14 @@
             const th = document.querySelector(`[data-cat-key="${catKey}"]`);
             if (th) {
                 th.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+            }
+        }
+
+        // Jump to selected category from dropdown
+        function jumpToSelectedCategory() {
+            const select = document.getElementById('categoryJumpSelect');
+            if (select && select.value) {
+                scrollToCategory(select.value);
             }
         }
 
@@ -2330,10 +2319,9 @@
             // Get all categories including dynamic generals
             const allCats = getAllCategories();
 
-            // Build scroll indicator
-            const scrollIndicator = allCats.map(cat => {
-                const shortTitle = cat.title.replace(/^②-2\s*/, '').substring(0, 8);
-                return `<span class="scroll-indicator-item ${cat.colorClass}" onclick="scrollToCategory('${cat.key}')" data-cat-indicator="${cat.key}">${escapeHtml(shortTitle)}</span>`;
+            // Build scroll indicator dropdown
+            const scrollIndicatorOptions = allCats.map(cat => {
+                return `<option value="${cat.key}">${escapeHtml(cat.title)}</option>`;
             }).join('');
 
             // Build category header row
@@ -2435,9 +2423,12 @@
                             <button class="segment-btn${isNumeric ? ' active' : ''}" onclick="setNumericMode(true)">数値</button>
                         </div>
                     </div>
-                    <div class="view-controls-row scroll-indicator">
+                    <div class="view-controls-row">
                         <span class="control-label">📍 ジャンプ:</span>
-                        ${scrollIndicator}
+                        <select id="categoryJumpSelect" style="flex: 1; max-width: 200px; padding: 0.3rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary);">
+                            ${scrollIndicatorOptions}
+                        </select>
+                        <button onclick="jumpToSelectedCategory()" style="margin-left: 0.5rem; padding: 0.3rem 0.8rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--primary-color); color: white; cursor: pointer;">移動</button>
                     </div>
                 </div>
                 <div class="table-wrapper" id="tableWrapper">
@@ -2483,9 +2474,11 @@
                     }
                 });
 
-                document.querySelectorAll('.scroll-indicator-item').forEach(el => {
-                    el.classList.toggle('active', el.dataset.catIndicator === activeKey);
-                });
+                // Sync dropdown with current scroll position
+                const select = document.getElementById('categoryJumpSelect');
+                if (select && activeKey && select.value !== activeKey) {
+                    select.value = activeKey;
+                }
             });
         }
 
