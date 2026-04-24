@@ -1593,12 +1593,9 @@
                     <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'owned')">全員所持ON</button>
                     <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'clear')">全員クリア</button>
                     <span style="color: var(--text-muted); font-size: 0.75rem; padding: 0.4rem;">|</span>
-                    <button class="bulk-btn" onclick="bulkSelectGenerals('want', 'owned')">欲しい武将ON</button>
-                    <button class="bulk-btn" onclick="bulkSelectGenerals('gather', 'owned')">集結武将ON</button>
-                    <button class="bulk-btn" onclick="bulkSelectGenerals('alltype', 'owned')">全兵種ON</button>
-                    <button class="bulk-btn" onclick="bulkSelectGenerals('horse', 'owned')">馬用ON</button>
-                    <button class="bulk-btn" onclick="bulkSelectGenerals('infantry', 'owned')">歩用ON</button>
-                    <button class="bulk-btn" onclick="bulkSelectGenerals('bow', 'owned')">弓用ON</button>
+                    <span id="categoryBulkButtons">
+                        <!-- Category buttons will be populated by JS -->
+                    </span>
                 </div>
 
                 <!-- Display Mode Toggle -->
@@ -2265,25 +2262,33 @@
                 const result = [];
                 const assignedGenerals = new Set();
 
-                // If master data exists (CSV was imported), use master data categories only
-                if (cachedGeneralMasterData?.categories && Object.keys(cachedGeneralMasterData.categories).length > 0) {
-                    // Build categories from master data
-                    for (const catName of Object.keys(cachedGeneralMasterData.categories)) {
+                // Check if master data exists (CSV was imported)
+                const hasMasterData = cachedGeneralMasterData?.generals && Object.keys(cachedGeneralMasterData.generals).length > 0;
+
+                if (hasMasterData) {
+                    // Build categories from master data generals
+                    const categorySet = new Set();
+                    for (const [genName, genData] of Object.entries(cachedGeneralMasterData.generals)) {
+                        if (genData.category) {
+                            categorySet.add(genData.category);
+                        }
+                    }
+
+                    // Create category objects
+                    for (const catName of categorySet) {
                         result.push({
                             title: catName,
                             generals: []
                         });
                     }
 
-                    // Assign generals to their categories based on master data
-                    if (cachedGeneralMasterData?.generals) {
-                        for (const [genName, genData] of Object.entries(cachedGeneralMasterData.generals)) {
-                            if (genData.category && !isHiddenGeneral(genName)) {
-                                const cat = result.find(c => c.title === genData.category);
-                                if (cat && !cat.generals.includes(genName)) {
-                                    cat.generals.push(genName);
-                                    assignedGenerals.add(genName);
-                                }
+                    // Assign generals to their categories
+                    for (const [genName, genData] of Object.entries(cachedGeneralMasterData.generals)) {
+                        if (genData.category && !isHiddenGeneral(genName)) {
+                            const cat = result.find(c => c.title === genData.category);
+                            if (cat && !cat.generals.includes(genName)) {
+                                cat.generals.push(genName);
+                                assignedGenerals.add(genName);
                             }
                         }
                     }
@@ -3884,6 +3889,29 @@
             }
 
             grid.innerHTML = html;
+
+            // Also update the category bulk select buttons
+            renderCategoryBulkButtons();
+        }
+
+        // Render dynamic category bulk select buttons
+        function renderCategoryBulkButtons() {
+            const container = document.getElementById('categoryBulkButtons');
+            if (!container) return;
+
+            const effectiveCategories = getEffectiveGeneralCategories();
+
+            // Generate buttons for each category
+            const buttons = effectiveCategories.map((cat, idx) => {
+                // Shorten long category names for button display
+                let displayName = cat.title;
+                if (displayName.length > 8) {
+                    displayName = displayName.substring(0, 8) + '...';
+                }
+                return `<button class="bulk-btn" onclick="bulkSelectGeneralsByIndex(${idx}, 'owned')" title="${cat.title}">${displayName}ON</button>`;
+            }).join('');
+
+            container.innerHTML = buttons;
         }
 
         // Get all generals including custom ones (matches display order in initGeneralGrid)
@@ -5213,6 +5241,29 @@
                 if (state === 1) item.classList.add('owned');
                 else if (state === 2) item.classList.add('formed');
             }
+        }
+
+        // Bulk select generals by category index (for dynamic category buttons)
+        function bulkSelectGeneralsByIndex(categoryIndex, action) {
+            const effectiveCategories = getEffectiveGeneralCategories();
+            if (categoryIndex < 0 || categoryIndex >= effectiveCategories.length) return;
+
+            const targetCat = effectiveCategories[categoryIndex];
+            let startIndex = 0;
+
+            // Find the start index for this category
+            for (let i = 0; i < categoryIndex; i++) {
+                startIndex += effectiveCategories[i].generals.length;
+            }
+
+            // Select all generals in this category
+            for (let i = startIndex; i < startIndex + targetCat.generals.length; i++) {
+                setGeneralState(i, action === 'owned' ? 1 : 0);
+            }
+
+            updateProgress();
+            updateSummary();
+            updateFormationCount();
         }
 
         function bulkSelectAcademy(action) {
