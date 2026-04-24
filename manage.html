@@ -3088,8 +3088,10 @@
                     const masterData = snap.val();
                     if (masterData.generals && masterData.generals[generalName]) {
                         const newCategory = (toCatId === '_unassigned') ? '' : (toCat?.title || '');
+                        const now = new Date().toISOString();
                         masterData.generals[generalName].category = newCategory;
-                        masterData.updatedAt = new Date().toISOString();
+                        masterData.generals[generalName].updatedAt = now;
+                        masterData.updatedAt = now;
                         await set(ref(database, 'settings/generalMasterData'), masterData);
                     }
                 }
@@ -4387,12 +4389,14 @@
                 const snap = await get(ref(database, 'settings/generalMasterData'));
                 const masterData = snap.exists() ? snap.val() : { generals: {}, categories: {} };
                 masterData.generals = masterData.generals || {};
+                const now = new Date().toISOString();
                 masterData.generals[name] = {
                     category: category || '',
                     rallyLimit: rallyLimit,
-                    notes: notes
+                    notes: notes,
+                    updatedAt: now
                 };
-                masterData.updatedAt = new Date().toISOString();
+                masterData.updatedAt = now;
                 await set(ref(database, 'settings/generalMasterData'), masterData);
 
                 // Clear form
@@ -4494,11 +4498,13 @@
                 const snap = await get(ref(database, 'settings/generalMasterData'));
                 const masterData = snap.exists() ? snap.val() : { generals: {}, categories: {} };
                 masterData.generals = masterData.generals || {};
+                const now = new Date().toISOString();
                 masterData.generals[name] = {
                     ...masterData.generals[name],
-                    ...data
+                    ...data,
+                    updatedAt: now
                 };
-                masterData.updatedAt = new Date().toISOString();
+                masterData.updatedAt = now;
                 await set(ref(database, 'settings/generalMasterData'), masterData);
 
                 showToast(`${name}を更新しました`, 'success');

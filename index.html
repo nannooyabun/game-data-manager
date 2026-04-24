@@ -1381,6 +1381,41 @@
             color: var(--accent-gold);
             background: var(--bg-hover, #2a2a2a);
         }
+        /* Update info section */
+        .update-info-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+        .update-info-header {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .update-info-link {
+            color: var(--link-color, #6ea8fe);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .update-info-link:hover {
+            color: var(--primary-color);
+        }
+        .update-info-toggle {
+            margin-left: 0.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .update-info-toggle:hover {
+            color: var(--primary-color);
+        }
+        .update-info-more {
+            margin-top: 0.3rem;
+            padding-top: 0.3rem;
+            border-top: 1px solid var(--border-color);
+        }
     </style>
 </head>
 <body>
@@ -1768,6 +1803,12 @@
 
                 <div class="general-list">
                     <h4>編成武将リスト</h4>
+                    <div id="updateInfo" class="update-info-section" style="display:none;">
+                        <span class="update-info-header">📢 最近の更新:</span>
+                        <span id="updateInfoLatest"></span>
+                        <span id="updateInfoToggle" class="update-info-toggle" style="display:none;"></span>
+                        <div id="updateInfoMore" class="update-info-more" style="display:none;"></div>
+                    </div>
                     <div class="general-categories" id="generalGrid">
                         <!-- Will be populated by JS -->
                     </div>
@@ -2468,11 +2509,140 @@
                 }
             }
 
+            // Sort by generalCategories.order if available
+            if (cachedCategoriesIndex?.order && cachedCategoriesIndex?.categories) {
+                const titleToOrder = {};
+                cachedCategoriesIndex.order.forEach((catId, index) => {
+                    const cat = cachedCategoriesIndex.categories[catId];
+                    if (cat?.title) {
+                        titleToOrder[cat.title] = index;
+                    }
+                });
+                filteredResult.sort((a, b) => {
+                    const orderA = titleToOrder[a.title] ?? 9999;
+                    const orderB = titleToOrder[b.title] ?? 9999;
+                    return orderA - orderB;
+                });
+            }
+
             return filteredResult;
         }
 
+        // ========== Update Info Functions ==========
+
+        // Get recent updates (last 5)
+        function getRecentUpdates() {
+            if (!cachedGeneralMasterData?.generals) return [];
+
+            const updates = [];
+            for (const [name, data] of Object.entries(cachedGeneralMasterData.generals)) {
+                if (data.updatedAt && data.category) {
+                    updates.push({
+                        name,
+                        category: data.category,
+                        updatedAt: data.updatedAt
+                    });
+                }
+            }
+            return updates.sort((a, b) =>
+                new Date(b.updatedAt) - new Date(a.updatedAt)
+            ).slice(0, 5);
+        }
+
+        // Check if batch update (6+ updates within 10 seconds)
+        function isBatchUpdate() {
+            if (!cachedGeneralMasterData?.generals) return false;
+
+            const updates = [];
+            for (const [name, data] of Object.entries(cachedGeneralMasterData.generals)) {
+                if (data.updatedAt) {
+                    updates.push(new Date(data.updatedAt).getTime());
+                }
+            }
+            if (updates.length < 6) return false;
+
+            updates.sort((a, b) => b - a);
+            const latest = updates[0];
+            const withinWindow = updates.filter(t => latest - t < 10000).length;
+
+            return withinWindow >= 6;
+        }
+
+        // Render update info section
+        function renderUpdateInfo() {
+            const section = document.getElementById('updateInfo');
+            const latest = document.getElementById('updateInfoLatest');
+            const toggle = document.getElementById('updateInfoToggle');
+            const more = document.getElementById('updateInfoMore');
+
+            if (!section || !latest || !toggle || !more) return;
+
+            // Batch update: simple notification only
+            if (isBatchUpdate()) {
+                latest.innerHTML = '武将データが一括更新されました';
+                toggle.style.display = 'none';
+                more.style.display = 'none';
+                section.style.display = 'block';
+                return;
+            }
+
+            const updates = getRecentUpdates();
+
+            if (updates.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            // Show latest 1 always
+            const first = updates[0];
+            const firstCatId = `category-${first.category.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            latest.innerHTML = `<span class="update-info-link" onclick="jumpToCategory('${firstCatId}')">${first.name} (${first.category})</span>`;
+
+            // Show rest in collapsible
+            if (updates.length > 1) {
+                const rest = updates.slice(1);
+                toggle.innerHTML = `[他${rest.length}件 ▼]`;
+                toggle.style.display = 'inline';
+                toggle.onclick = () => toggleUpdateInfo();
+
+                const restHtml = rest.map(u => {
+                    const catId = `category-${u.category.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    return `<span class="update-info-link" onclick="jumpToCategory('${catId}')">${u.name} (${u.category})</span>`;
+                }).join(' / ');
+                more.innerHTML = restHtml + ' <span class="update-info-toggle" onclick="toggleUpdateInfo()">[閉じる ▲]</span>';
+            } else {
+                toggle.style.display = 'none';
+                more.style.display = 'none';
+            }
+
+            section.style.display = 'block';
+        }
+
+        // Toggle collapsible
+        function toggleUpdateInfo() {
+            const toggle = document.getElementById('updateInfoToggle');
+            const more = document.getElementById('updateInfoMore');
+            const isOpen = more.style.display !== 'none';
+
+            if (isOpen) {
+                more.style.display = 'none';
+                toggle.innerHTML = toggle.innerHTML.replace('▲', '▼');
+            } else {
+                more.style.display = 'block';
+                toggle.innerHTML = toggle.innerHTML.replace('▼', '▲');
+            }
+        }
+
+        // Jump to category
+        function jumpToCategory(catId) {
+            const el = document.getElementById(catId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
         // ========== Firebase Database Functions ==========
-        
+
         // Get all game data
         async function getGameData() {
             if (!window.firebaseReady) {
@@ -3993,7 +4163,7 @@
                 effectiveCategories.forEach((cat, catIndex) => {
                     if (cat.generals.length === 0) return;
                     html += `
-                        <div class="general-category" data-category-index="${catIndex}">
+                        <div class="general-category" data-category-index="${catIndex}" id="category-${cat.title.replace(/[^a-zA-Z0-9]/g, '_')}">
                             <div class="general-category-header">
                                 <span class="general-category-title">●${cat.title}（${cat.generals.length}名）</span>
                                 <div class="category-bulk-actions">
@@ -4013,6 +4183,9 @@
 
             // Also update the category bulk select buttons
             renderCategoryBulkButtons();
+
+            // Render update info section
+            renderUpdateInfo();
         }
 
         // Render dynamic category bulk select buttons
