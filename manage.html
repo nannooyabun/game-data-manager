@@ -1912,8 +1912,8 @@
                 document.getElementById('adminContent').classList.add('show');
                 refreshDataTable();
                 renderTeamList();
-                renderCustomGenerals();
-                updateGeneralSubcategorySelect();
+                renderGeneralList();
+                populateCategoryDropdowns();
                 renderCustomItems();
                 updateCategorySelect();
                 renderGenCatList('unified');  // カテゴリ一覧を表示
@@ -2020,8 +2020,8 @@
                     customGenerals = data;
                 }
                 if (document.getElementById('adminContent').classList.contains('show')) {
-                    renderCustomGenerals();
-                    updateGeneralSubcategorySelect();
+                    renderGeneralList();
+                    populateCategoryDropdowns();
                     // Also refresh category list since it depends on custom generals
                     renderGenCatList('unified');
                 }
@@ -2036,7 +2036,7 @@
                 generalCategoriesView = generalCategories;
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderGenCatList('unified');
-                    updateGeneralSubcategorySelect();  // Update dropdown when categories change
+                    populateCategoryDropdowns();  // Update dropdown when categories change
                 }
                 tryInitialStateSave();
             });
@@ -3182,6 +3182,7 @@
         function onGeneralSubcategorySelectChange() {
             const select = document.getElementById('generalSubcategorySelect');
             const newRow = document.getElementById('newGeneralSubcategoryRow');
+            if (!select || !newRow) return;  // Elements don't exist in new structure
 
             if (select.value === '__new__') {
                 newRow.classList.add('show');
@@ -3193,6 +3194,7 @@
 
         function updateGeneralSubcategorySelect() {
             const select = document.getElementById('generalSubcategorySelect');
+            if (!select) return;  // Element doesn't exist in new structure
             const currentValue = select.value;
             const customSubcategories = getGeneralSubcategories();
 
@@ -3246,6 +3248,7 @@
 
         function renderCustomGenerals() {
             const container = document.getElementById('customGeneralList');
+            if (!container) return;  // Element doesn't exist in new structure
 
             if (!customGenerals || typeof customGenerals !== 'object') {
                 container.innerHTML = '<span style="color: var(--text-muted);">追加された武将はありません</span>';
@@ -3311,6 +3314,7 @@
             const subcatSelect = document.getElementById('generalSubcategorySelect');
             const nameInput = document.getElementById('newGeneralName');
             const newSubcatInput = document.getElementById('newGeneralSubcategoryName');
+            if (!subcatSelect) return;  // Legacy function, element doesn't exist
 
             let subcategory = subcatSelect.value;
             const name = nameInput.value.trim();
@@ -4098,7 +4102,8 @@
 
                     // Refresh UI
                     renderGenCatList('unified');
-                    updateGeneralSubcategorySelect();
+                    populateCategoryDropdowns();
+                    renderGeneralList();
 
                 } catch (error) {
                     console.error('CSV import error:', error);
