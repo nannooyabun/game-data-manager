@@ -2238,7 +2238,10 @@
                         if (!sp) return null;
                         const ideology = sp.ideology || '';
                         const skill = sp.skill || '';
-                        const stage = sp.deputyStage || '';
+                        const stageNum = sp.deputyStage || '';
+                        // Convert stage number to alphabet: 0=C, 1=B, 2=A, 3=S
+                        const stageMap = { '0': 'C', '1': 'B', '2': 'A', '3': 'S' };
+                        const stage = stageMap[stageNum] || stageNum || '';
                         if (!ideology && !skill && !stage) return null;
                         return `${ideology || '-'}/${skill || '-'}/${stage || '-'}`;
                     }
