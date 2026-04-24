@@ -360,6 +360,47 @@
             text-align: center;
         }
 
+        /* Username suggest dropdown */
+        .username-suggest-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+            margin-top: 2px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        .username-suggest-item {
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .username-suggest-item:last-child {
+            border-bottom: none;
+        }
+        .username-suggest-item:hover {
+            background: var(--bg-input);
+            color: var(--accent-gold);
+        }
+        .username-suggest-item.new-army {
+            color: var(--accent-gold);
+            font-style: italic;
+        }
+        .username-suggest-header {
+            padding: 0.3rem 0.8rem;
+            background: var(--bg-primary);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
         /* Checkbox & Radio Styles */
         .checkbox-group {
             display: flex;
@@ -1490,8 +1531,11 @@
                 <div class="form-row">
                     <div class="form-group" style="flex: 2;">
                         <label>ユーザー名 *</label>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <input type="text" id="username" placeholder="ユーザー名を入力" onchange="updateProgress()" style="flex: 1;">
+                        <div style="display: flex; gap: 0.5rem; position: relative;">
+                            <div style="flex: 1; position: relative;">
+                                <input type="text" id="username" placeholder="獅子でのユーザー名を入力" oninput="onUsernameInput()" onfocus="onUsernameInput()" onblur="setTimeout(closeUsernameSuggest, 200)" onchange="updateProgress()" autocomplete="off" style="width: 100%;">
+                                <div id="usernameSuggestDropdown" class="username-suggest-dropdown" style="display: none;"></div>
+                            </div>
                             <button type="button" class="bulk-btn" onclick="openLoadDataModal()" style="white-space: nowrap;">🔍 既存データ呼び出し</button>
                         </div>
                     </div>
@@ -1519,11 +1563,11 @@
                     </div>
                     <div class="form-group" id="customTeamGroup" style="display: none;">
                         <label>カスタム軍団名 *</label>
-                        <input type="text" id="customTeamName" placeholder="軍団名を入力" onchange="updateProgress()">
+                        <input type="text" id="customTeamName" placeholder="軍団名を選択/入力" onchange="updateProgress()">
                     </div>
                     <div class="form-group">
                         <label>卒兵数</label>
-                        <input type="number" id="soldierCount" placeholder="卒兵数" min="0" onchange="updateProgress()">
+                        <input type="number" id="soldierCount" placeholder="卒兵数（調整済みの場合はその兵数）" min="0" onchange="updateProgress()">
                     </div>
                 </div>
                 <div class="form-row">
@@ -1532,7 +1576,7 @@
                         <div id="teamTagField" class="team-tag-field">
                             <div id="teamTagChips" class="team-tag-chips"></div>
                             <div class="team-tag-input-row">
-                                <input type="text" id="teamTagSearch" class="team-tag-search" placeholder="🔍 チーム名で検索..." oninput="onTeamTagSearchInput()" onfocus="onTeamTagSearchInput()" onblur="setTimeout(closeTeamTagDropdown, 150)">
+                                <input type="text" id="teamTagSearch" class="team-tag-search" placeholder="チーム名で検索：攻撃隊1など" oninput="onTeamTagSearchInput()" onfocus="onTeamTagSearchInput()" onblur="setTimeout(closeTeamTagDropdown, 150)">
                                 <button type="button" class="team-tag-new-btn" onclick="createNewTeamFromTag()">+ 新規作成</button>
                             </div>
                             <div id="teamTagDropdown" class="team-tag-dropdown" style="display: none;"></div>
@@ -1546,7 +1590,7 @@
                     </div>
                     <div class="form-group">
                         <label>援軍数上限</label>
-                        <input type="number" id="reinforcementLimit" placeholder="援軍数上限" min="0" onchange="updateProgress()">
+                        <input type="number" id="reinforcementLimit" placeholder="援軍数上限（主城、または砦で確認）" min="0" onchange="updateProgress()">
                     </div>
                 </div>
 
@@ -1554,15 +1598,15 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>2時間（個）</label>
-                        <input type="number" id="healSpeed2h" placeholder="0" min="0" value="0" onchange="updateHealSpeedTotal()">
+                        <input type="number" id="healSpeed2h" placeholder="アイテム個数を入力" min="0" value="0" onchange="updateHealSpeedTotal()">
                     </div>
                     <div class="form-group">
                         <label>1時間（個）</label>
-                        <input type="number" id="healSpeed1h" placeholder="0" min="0" value="0" onchange="updateHealSpeedTotal()">
+                        <input type="number" id="healSpeed1h" placeholder="アイテム個数を入力" min="0" value="0" onchange="updateHealSpeedTotal()">
                     </div>
                     <div class="form-group">
                         <label>6分（個）</label>
-                        <input type="number" id="healSpeed6m" placeholder="0" min="0" value="0" onchange="updateHealSpeedTotal()">
+                        <input type="number" id="healSpeed6m" placeholder="アイテム個数を入力" min="0" value="0" onchange="updateHealSpeedTotal()">
                     </div>
                     <div class="form-group">
                         <label>トータル</label>
@@ -1574,15 +1618,15 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>2時間（個）</label>
-                        <input type="number" id="commonSpeed2h" placeholder="0" min="0" value="0" onchange="updateCommonSpeedTotal()">
+                        <input type="number" id="commonSpeed2h" placeholder="アイテム個数を入力" min="0" value="0" onchange="updateCommonSpeedTotal()">
                     </div>
                     <div class="form-group">
                         <label>1時間（個）</label>
-                        <input type="number" id="commonSpeed1h" placeholder="0" min="0" value="0" onchange="updateCommonSpeedTotal()">
+                        <input type="number" id="commonSpeed1h" placeholder="アイテム個数を入力" min="0" value="0" onchange="updateCommonSpeedTotal()">
                     </div>
                     <div class="form-group">
                         <label>6分（個）</label>
-                        <input type="number" id="commonSpeed6m" placeholder="0" min="0" value="0" onchange="updateCommonSpeedTotal()">
+                        <input type="number" id="commonSpeed6m" placeholder="アイテム個数を入力" min="0" value="0" onchange="updateCommonSpeedTotal()">
                     </div>
                     <div class="form-group">
                         <label>トータル</label>
@@ -1602,7 +1646,7 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label>ユーザー名検索</label>
-                        <input type="text" id="loadSearchInput" placeholder="ユーザー名を入力" oninput="filterLoadUserList()">
+                        <input type="text" id="loadSearchInput" placeholder="獅子でのユーザー名を入力" oninput="filterLoadUserList()">
                     </div>
                     <div id="loadUserList" style="max-height: 400px; overflow-y: auto; margin-top: 1rem;"></div>
                 </div>
@@ -3222,6 +3266,194 @@
             const totalEl = document.getElementById('commonSpeedTotal');
             if (totalEl) totalEl.value = formatSpeedTotal(h2, h1, m6);
             updateProgress();
+        }
+
+        // ========== Username Autocomplete ==========
+        function onUsernameInput() {
+            const input = document.getElementById('username');
+            const dropdown = document.getElementById('usernameSuggestDropdown');
+            if (!input || !dropdown) return;
+
+            const query = (input.value || '').toLowerCase().trim();
+            if (query.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            const allUsers = Object.keys(cachedGameData || {});
+            const matchingUsers = allUsers.filter(u => u.toLowerCase().includes(query)).sort();
+
+            if (matchingUsers.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            // Build dropdown items
+            let html = '';
+            matchingUsers.forEach(username => {
+                const userData = cachedGameData[username] || {};
+                const teams = getUserTeams(userData);
+
+                html += `<div class="username-suggest-header">${escapeHtmlText(username)}</div>`;
+                teams.forEach(team => {
+                    html += `<div class="username-suggest-item" onclick="selectUsernameSuggest('${escapeHtmlText(username)}', '${escapeHtmlText(team)}', false)">${escapeHtmlText(username)} / ${escapeHtmlText(team)}</div>`;
+                });
+                html += `<div class="username-suggest-item new-army" onclick="selectUsernameSuggest('${escapeHtmlText(username)}', null, true)">+ ${escapeHtmlText(username)} / 新規軍団作成</div>`;
+            });
+
+            dropdown.innerHTML = html;
+            dropdown.style.display = 'block';
+        }
+
+        function closeUsernameSuggest() {
+            const dropdown = document.getElementById('usernameSuggestDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+
+        async function selectUsernameSuggest(username, teamName, isNewArmy) {
+            closeUsernameSuggest();
+
+            document.getElementById('username').value = username;
+
+            if (isNewArmy) {
+                // New army: load from existing army but convert 編成 to 所持
+                const userData = cachedGameData[username];
+                if (!userData) return;
+
+                const existingTeams = getUserTeams(userData);
+                if (existingTeams.length === 0) return;
+
+                // Get data from first existing team
+                const sourceTeam = existingTeams[0];
+                const sourceData = getUserTeamData(userData, sourceTeam);
+                if (!sourceData) return;
+
+                // Deep copy and convert 編成 to 所持
+                const newData = JSON.parse(JSON.stringify(sourceData));
+                convertFormedToOwned(newData);
+
+                // Set team selector to next available team
+                const nextTeam = getNextAvailableTeam(existingTeams);
+                setCurrentTeam(nextTeam);
+
+                // Load the converted data
+                loadDataToForm(newData);
+                showToast(`${username} の新規軍団として ${nextTeam} を作成します（編成→所持に変換）`, 'info');
+            } else {
+                // Existing army: load directly
+                setCurrentTeam(teamName);
+                await loadUserTeamData(username, teamName);
+            }
+
+            updateProgress();
+        }
+
+        function convertFormedToOwned(data) {
+            // Convert SP generals: formed → owned only
+            if (data.spGenerals) {
+                Object.values(data.spGenerals).forEach(sp => {
+                    if (sp.formed) {
+                        sp.formed = false;
+                        sp.owned = true;
+                    }
+                });
+            }
+            // Convert generals: formed → owned only
+            if (data.generals) {
+                Object.values(data.generals).forEach(g => {
+                    if (typeof g === 'object' && g.formed) {
+                        g.formed = false;
+                        g.owned = true;
+                    }
+                });
+            }
+            // Convert weapons: equipped → owned
+            if (data.weapons) {
+                Object.values(data.weapons).forEach(w => {
+                    if (w.status === 'equipped') {
+                        w.status = 'owned';
+                    }
+                });
+            }
+            // Convert academy heiho
+            if (data.academy?.heiho) {
+                Object.values(data.academy.heiho).forEach(h => {
+                    if (h.equipped) {
+                        h.equipped = false;
+                        h.owned = true;
+                    }
+                });
+            }
+            // Convert armor masks
+            if (data.armor?.masks) {
+                Object.values(data.armor.masks).forEach(m => {
+                    if (m.equipped) {
+                        m.equipped = false;
+                        m.owned = true;
+                    }
+                });
+            }
+            // Convert flowers
+            if (data.flowers) {
+                Object.values(data.flowers).forEach(f => {
+                    if (f.equipped) {
+                        f.equipped = false;
+                        f.owned = true;
+                    }
+                });
+            }
+            // Convert tactics
+            if (data.tactics) {
+                Object.values(data.tactics).forEach(t => {
+                    if (t.equipped) {
+                        t.equipped = false;
+                        t.owned = true;
+                    }
+                });
+            }
+            // Convert custom items
+            if (data.customItems) {
+                if (data.customItems.spGenerals) {
+                    Object.values(data.customItems.spGenerals).forEach(sp => {
+                        if (sp.formed) { sp.formed = false; sp.owned = true; }
+                    });
+                }
+                if (data.customItems.weapons) {
+                    Object.values(data.customItems.weapons).forEach(w => {
+                        if (w.status === 'equipped') { w.status = 'owned'; }
+                    });
+                }
+                if (data.customItems.academy) {
+                    Object.values(data.customItems.academy).forEach(a => {
+                        if (a.equipped) { a.equipped = false; a.owned = true; }
+                    });
+                }
+                if (data.customItems.masks) {
+                    Object.values(data.customItems.masks).forEach(m => {
+                        if (m.equipped) { m.equipped = false; m.owned = true; }
+                    });
+                }
+                if (data.customItems.flowers) {
+                    Object.values(data.customItems.flowers).forEach(f => {
+                        if (f.equipped) { f.equipped = false; f.owned = true; }
+                    });
+                }
+                if (data.customItems.tactics) {
+                    Object.values(data.customItems.tactics).forEach(t => {
+                        if (t.equipped) { t.equipped = false; t.owned = true; }
+                    });
+                }
+            }
+        }
+
+        function getNextAvailableTeam(existingTeams) {
+            const allTeams = ['1軍', '2軍', '3軍', '4軍', '5軍'];
+            for (const team of allTeams) {
+                if (!existingTeams.includes(team)) {
+                    return team;
+                }
+            }
+            return `${existingTeams.length + 1}軍`;
         }
 
         // ========== Load Data Modal ==========
