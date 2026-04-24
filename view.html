@@ -1722,6 +1722,13 @@
                     const state = JSON.parse(saved);
                     virtualMembers = state.virtualMembers || [];
                     cellEdits = state.cellEdits || {};
+                    // Auto-enable simulation mode if there are virtual members or edits
+                    if (virtualMembers.length > 0 || Object.keys(cellEdits).length > 0) {
+                        simulationModeActive = true;
+                    }
+                } else {
+                    virtualMembers = [];
+                    cellEdits = {};
                 }
             } catch (_) {
                 virtualMembers = [];
