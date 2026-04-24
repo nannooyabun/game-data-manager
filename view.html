@@ -111,8 +111,7 @@
             font-size: 0.85rem;
             color: var(--text-primary);
             white-space: nowrap;
-            transform: scale(var(--table-scale, 0.8));
-            transform-origin: top left;
+            zoom: 0.8;
         }
         .table-wrapper {
             overflow: auto;
@@ -1722,6 +1721,13 @@
                     const state = JSON.parse(saved);
                     virtualMembers = state.virtualMembers || [];
                     cellEdits = state.cellEdits || {};
+                    // Auto-enable simulation mode if there are virtual members or edits
+                    if (virtualMembers.length > 0 || Object.keys(cellEdits).length > 0) {
+                        simulationModeActive = true;
+                    }
+                } else {
+                    virtualMembers = [];
+                    cellEdits = {};
                 }
             } catch (_) {
                 virtualMembers = [];
@@ -1755,7 +1761,7 @@
         function getOriginalCellState(username, team, catKey, itemId, isCustom) {
             // Find the user data
             let userData;
-            const virtualMember = virtualMembers.find(vm => vm.username === username);
+            const virtualMember = virtualMembers.find(vm => vm.username === username && vm.team === team);
             if (virtualMember) {
                 userData = virtualMember.data;
             } else {
@@ -1765,9 +1771,77 @@
             }
             if (!userData) return 'none';
 
-            // Get state based on category
-            // This is simplified - in practice we'd need to match the exact logic from renderTable
-            return 'none';
+            // Get state based on category key
+            switch (catKey) {
+                case 'weapon': {
+                    const w = isCustom ? userData.customItems?.weapons?.[itemId] : userData.weapons?.[itemId];
+                    if (!w) return 'none';
+                    if (w.status === 'equipped') return 'equipped';
+                    if (w.status === 'owned') return 'owned';
+                    return 'none';
+                }
+                case 'spGeneral': {
+                    const sp = isCustom ? userData.customItems?.spGenerals?.[itemId] : userData.spGenerals?.[itemId];
+                    if (!sp) return 'none';
+                    if (sp.formed) return 'equipped';
+                    if (sp.owned) return 'owned';
+                    return 'none';
+                }
+                case 'academy': {
+                    const h = isCustom ? userData.customItems?.academy?.[itemId] : userData.academy?.heiho?.[itemId];
+                    if (!h) return 'none';
+                    if (h.equipped) return 'equipped';
+                    if (h.owned) return 'owned';
+                    return 'none';
+                }
+                case 'asura': {
+                    if (isCustom) {
+                        const a = userData.customItems?.asura?.[itemId];
+                        return a?.checked ? 'equipped' : 'none';
+                    }
+                    // For non-custom asura, itemId format is "asuraLEVEL_INDEX"
+                    const match = itemId.match(/asura(\d+)_(\d+)/);
+                    if (!match) return 'none';
+                    const level = match[1];
+                    const idx = parseInt(match[2]);
+                    const skills = userData.asura?.[level];
+                    return (skills && skills[idx]) ? 'equipped' : 'none';
+                }
+                case 'armor': {
+                    const m = isCustom ? userData.customItems?.masks?.[itemId] : userData.armor?.masks?.[itemId];
+                    if (!m) return 'none';
+                    if (m.equipped) return 'equipped';
+                    if (m.owned) return 'owned';
+                    return 'none';
+                }
+                case 'flower': {
+                    const f = isCustom ? userData.customItems?.flowers?.[itemId] : userData.flowers?.[itemId];
+                    if (!f) return 'none';
+                    if (f.equipped) return 'equipped';
+                    if (f.owned) return 'owned';
+                    return 'none';
+                }
+                case 'tactic': {
+                    const t = isCustom ? userData.customItems?.tactics?.[itemId] : userData.tactics?.[itemId];
+                    if (!t) return 'none';
+                    if (t.equipped) return 'equipped';
+                    if (t.owned) return 'owned';
+                    return 'none';
+                }
+                default: {
+                    // General categories (cat_X format)
+                    if (catKey.startsWith('cat_')) {
+                        const g = userData.generals?.[itemId];
+                        if (!g) return 'none';
+                        if (typeof g === 'object') {
+                            if (g.formed) return 'equipped';
+                            if (g.owned) return 'owned';
+                        }
+                        return 'none';
+                    }
+                    return 'none';
+                }
+            }
         }
 
         function getEffectiveCellState(username, team, catKey, itemId, originalState) {
