@@ -1037,6 +1037,27 @@
             min-height: 40px;
         }
 
+        .gen-cat-card-notes {
+            padding: 0 1rem 0.5rem 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .gen-cat-card-notes input {
+            width: 100%;
+            padding: 0.3rem 0.5rem;
+            font-size: 0.75rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            margin-top: 0.5rem;
+        }
+
+        .gen-cat-card-notes input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
         .gen-cat-general-tag {
             display: flex;
             align-items: center;
@@ -2868,6 +2889,7 @@
                 const canMoveUp = idx > 0 && !isUnassigned;
                 const canMoveDown = idx < categories.length - 1 && categories[idx + 1].id !== '_unassigned';
 
+                const categoryNotes = getCategoryNotesFromMaster(cat.title);
                 return `
                     <div class="gen-cat-card ${isUnassigned ? 'unassigned' : ''}" data-cat-id="${cat.id}">
                         <div class="gen-cat-card-header">
@@ -2886,6 +2908,13 @@
                                 ${!isUnassigned ? `<button class="danger" onclick="deleteCategory('${configType}', '${cat.id}')">🗑</button>` : ''}
                             </div>
                         </div>
+                        ${!isUnassigned ? `
+                        <div class="gen-cat-card-notes">
+                            <input type="text" placeholder="カテゴリ補足事項" value="${escapeHtml(categoryNotes)}"
+                                onchange="updateCategoryNotes('${escapeHtml(cat.title)}', this.value)"
+                                onkeydown="if(event.key==='Enter')this.blur()">
+                        </div>
+                        ` : ''}
                         <div class="gen-cat-card-body"
                             ondragover="onGeneralDragOver(event)"
                             ondragleave="onGeneralDragLeave(event)"
@@ -2956,6 +2985,38 @@
             }
 
             await saveCategoryConfig(configType);
+        }
+
+        // Get category notes from generalMasterData
+        function getCategoryNotesFromMaster(categoryTitle) {
+            if (!generalMasterData?.categories) return '';
+            return generalMasterData.categories[categoryTitle]?.notes || '';
+        }
+
+        // Update category notes in generalMasterData
+        async function updateCategoryNotes(categoryTitle, notes) {
+            try {
+                const { database, ref, get, set } = window.firebaseDB;
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                const masterData = snap.exists() ? snap.val() : { generals: {}, categories: {} };
+
+                if (!masterData.categories) {
+                    masterData.categories = {};
+                }
+                if (!masterData.categories[categoryTitle]) {
+                    masterData.categories[categoryTitle] = {};
+                }
+                masterData.categories[categoryTitle].notes = notes;
+                masterData.updatedAt = new Date().toISOString();
+
+                await set(ref(database, 'settings/generalMasterData'), masterData);
+                generalMasterData = masterData;
+
+                showToast('カテゴリ補足を更新しました', 'success');
+            } catch (error) {
+                console.error('Failed to update category notes:', error);
+                showToast('更新に失敗しました', 'error');
+            }
         }
 
         // Move category order
