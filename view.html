@@ -299,10 +299,14 @@
         .val-high { opacity: 1; }
 
         /* Numeric mode: show value prominently */
-        body.numeric-mode .cell-value .cell-equipped,
         body.numeric-mode .cell-value .cell-owned {
             opacity: 0.3;
             font-size: 0.8rem;
+        }
+        body.numeric-mode .cell-value .cell-equipped {
+            opacity: 0.6;
+            font-size: 0.8rem;
+            text-shadow: 0 0 4px var(--accent-green), 0 0 8px var(--accent-green);
         }
 
         body.numeric-mode .cell-value .val-num {
@@ -2510,11 +2514,10 @@
                     currentState = getOriginalCellState(username, teamName, catKey, itemId, isCustomFlag === '1');
                 }
 
-                // Cycle: none → owned → equipped → none
+                // Cycle: owned ⇄ equipped (no 'none' state in simulation)
                 let newState;
-                if (currentState === 'none') newState = 'owned';
-                else if (currentState === 'owned') newState = 'equipped';
-                else newState = 'none';
+                if (currentState === 'equipped') newState = 'owned';
+                else newState = 'equipped';  // none or owned → equipped
 
                 cellEdits[editKey] = newState;
                 saveSimulationState();
