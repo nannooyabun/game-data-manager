@@ -1899,23 +1899,43 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>剣</label>
-                            <input type="number" id="gokudenSword" min="0" placeholder="0" onchange="updateProgress()">
+                            <select id="gokudenSword" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>体</label>
-                            <input type="number" id="gokudenBody" min="0" placeholder="0" onchange="updateProgress()">
+                            <select id="gokudenBody" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>技</label>
-                            <input type="number" id="gokudenTech" min="0" placeholder="0" onchange="updateProgress()">
+                            <select id="gokudenTech" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>心１</label>
-                            <input type="number" id="gokudenHeart1" min="0" placeholder="0" onchange="updateProgress()">
+                            <select id="gokudenHeart1" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>心２</label>
-                            <input type="number" id="gokudenHeart2" min="0" placeholder="0" onchange="updateProgress()">
+                            <select id="gokudenHeart2" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -3751,12 +3771,33 @@
                     <input type="checkbox" id="${safeId(item.name)}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                     <div class="form-row">
                         <div class="form-group">
-                            <label>足跡レベル</label>
-                            <input type="text" id="${safeId(item.name)}_footprint" placeholder="レベルを入力" onchange="updateProgress()">
+                            <label>主義Lv</label>
+                            <select id="${safeId(item.name)}_ideology" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>スキルLv</label>
+                            <select id="${safeId(item.name)}_skill" onchange="updateProgress()">
+                                <option value="">-</option>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>副将段階</label>
+                            <select id="${safeId(item.name)}_deputyStage" onchange="updateProgress()">
+                                <option value="0">未開放</option>
+                                <option value="1">軍馬まで</option>
+                                <option value="2">守護霊まで</option>
+                                <option value="3">神格衣装</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="${safeId(item.name)}_deputy" placeholder="副将の名前" onchange="updateProgress()">
+                            <input type="text" id="${safeId(item.name)}_deputy" list="generalNameList" placeholder="副将の名前" onchange="updateProgress()">
                         </div>
                     </div>
                 </div>
@@ -4110,17 +4151,24 @@
         function initAcademyGrid() {
             const grid = document.getElementById('academyGrid');
             if (!grid) return;
-            grid.innerHTML = academyHeihoItems.map(h => `
-                <div class="flower-item tap-card" data-state="1" data-two-state="1" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+            // Items 0-3 (紅葉～天狗抄) are NOT owned by default
+            // Items 4-12 (攻撃～障壁) are owned by default
+            grid.innerHTML = academyHeihoItems.map((h, idx) => {
+                const defaultOwned = idx >= 4;
+                return `
+                <div class="flower-item tap-card" data-state="${defaultOwned ? 1 : 0}" data-two-state="1" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
                     <div class="tap-header" style="flex: 1; display: block;">
-                        <div class="name">${h.name}<span class="tap-state-badge">所持</span></div>
+                        <div class="name">${h.name}<span class="tap-state-badge">${defaultOwned ? '所持' : '未所持'}</span></div>
                     </div>
                     <input type="checkbox" id="gokuden${h.id}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
-                    <input type="checkbox" id="gokuden${h.id}_owned" data-role="owned" style="display:none;" checked onchange="updateProgress()">
+                    <input type="checkbox" id="gokuden${h.id}_owned" data-role="owned" style="display:none;" ${defaultOwned ? 'checked' : ''} onchange="updateProgress()">
                 </div>
-            `).join('');
+            `}).join('');
             // Apply initial state classes
-            grid.querySelectorAll('.tap-card').forEach(card => setTapState(card, 1));
+            grid.querySelectorAll('.tap-card').forEach(card => {
+                const state = parseInt(card.dataset.state) || 0;
+                setTapState(card, state);
+            });
         }
 
         // Masks (核心具足) - tap-card style
@@ -4252,6 +4300,18 @@
 
             // Render update info section
             renderUpdateInfo();
+
+            // Populate general name list for SP武将 deputy autocomplete
+            populateGeneralNameList();
+        }
+
+        // Populate datalist with general names for autocomplete
+        function populateGeneralNameList() {
+            const datalist = document.getElementById('generalNameList');
+            if (!datalist || !cachedGeneralMasterData?.generals) return;
+
+            const names = Object.keys(cachedGeneralMasterData.generals);
+            datalist.innerHTML = names.map(name => `<option value="${name}">`).join('');
         }
 
         // Render dynamic category bulk select buttons
@@ -4590,13 +4650,17 @@
                     const id = safeId(item.name);
                     const formedEl = document.getElementById(`${id}_formed`);
                     const ownedEl = document.getElementById(`${id}_owned`);
-                    const footprintEl = document.getElementById(`${id}_footprint`);
+                    const ideologyEl = document.getElementById(`${id}_ideology`);
+                    const skillEl = document.getElementById(`${id}_skill`);
+                    const deputyStageEl = document.getElementById(`${id}_deputyStage`);
                     const deputyEl = document.getElementById(`${id}_deputy`);
                     if (formedEl || ownedEl) {
                         data.customItems.spGenerals[item.name] = {
                             formed: formedEl?.checked || false,
                             owned: ownedEl?.checked || false,
-                            footprint: footprintEl?.value || '',
+                            ideology: ideologyEl?.value || '',
+                            skill: skillEl?.value || '',
+                            deputyStage: deputyStageEl?.value || '0',
                             deputy: deputyEl?.value || ''
                         };
                     }
@@ -4934,7 +4998,9 @@
             ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
                 document.getElementById(`${sp}Formed`).checked = false;
                 document.getElementById(`${sp}Owned`).checked = false;
-                document.getElementById(`${sp}Footprint`).value = '';
+                document.getElementById(`${sp}Ideology`).value = '';
+                document.getElementById(`${sp}Skill`).value = '';
+                document.getElementById(`${sp}DeputyStage`).value = '0';
                 document.getElementById(`${sp}Deputy`).value = '';
             });
 
@@ -5258,11 +5324,15 @@
                         const id = safeId(name);
                         const formedEl = document.getElementById(`${id}_formed`);
                         const ownedEl = document.getElementById(`${id}_owned`);
-                        const footprintEl = document.getElementById(`${id}_footprint`);
+                        const ideologyEl = document.getElementById(`${id}_ideology`);
+                        const skillEl = document.getElementById(`${id}_skill`);
+                        const deputyStageEl = document.getElementById(`${id}_deputyStage`);
                         const deputyEl = document.getElementById(`${id}_deputy`);
                         if (formedEl) formedEl.checked = spData.formed || false;
                         if (ownedEl) ownedEl.checked = spData.owned || false;
-                        if (footprintEl) footprintEl.value = spData.footprint || '';
+                        if (ideologyEl) ideologyEl.value = spData.ideology || '';
+                        if (skillEl) skillEl.value = spData.skill || '';
+                        if (deputyStageEl) deputyStageEl.value = spData.deputyStage || '0';
                         if (deputyEl) deputyEl.value = spData.deputy || '';
                     });
                 }
@@ -5460,7 +5530,8 @@
             ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
                 if (document.getElementById(`${sp}Formed`).checked) hasAny = true;
                 if (document.getElementById(`${sp}Owned`).checked) hasAny = true;
-                if (document.getElementById(`${sp}Footprint`).value) hasAny = true;
+                if (document.getElementById(`${sp}Ideology`).value) hasAny = true;
+                if (document.getElementById(`${sp}Skill`).value) hasAny = true;
             });
             return hasAny ? 'partial' : 'empty';
         }
