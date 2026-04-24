@@ -1363,10 +1363,9 @@
                 <div class="gen-cat-panel" id="genCatPanelUnified">
                     <div class="gen-cat-toolbar">
                         <button class="gen-cat-btn" onclick="addNewCategory('unified')">＋ カテゴリ追加</button>
-                        <button class="gen-cat-btn secondary" onclick="resetCategoryConfig('unified')">🔄 デフォルトに戻す</button>
                     </div>
                     <div class="gen-cat-list" id="genCatListUnified">
-                        <span style="color: var(--text-muted);">読み込み中...</span>
+                        <span style="color: var(--text-muted);">データを読み込んでいます...</span>
                     </div>
                 </div>
             </div>
@@ -1525,6 +1524,7 @@
                 updateGeneralSubcategorySelect();
                 renderCustomItems();
                 updateCategorySelect();
+                renderGenCatList('unified');  // カテゴリ一覧を表示
                 showToast('ログインしました', 'success');
             } else {
                 showToast('パスワードが違います', 'error');
