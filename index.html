@@ -1767,18 +1767,6 @@
                     </span>
                 </p>
 
-                <!-- Default Level Setting -->
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; padding: 0.5rem; background: var(--bg-input); border-radius: 6px; flex-wrap: wrap;">
-                    <span style="font-size: 0.85rem; color: var(--text-secondary);">デフォルトLv:</span>
-                    <select id="defaultGeneralLevel" onchange="saveDefaultGeneralLevel()" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
-                        <option value="0">0</option>
-                        <option value="10" selected>10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                    </select>
-                    <span style="color: var(--text-muted); font-size: 0.75rem;">（新規入力時に適用）</span>
-                </div>
-
                 <!-- Bulk Select Buttons -->
                 <div class="bulk-select-bar">
                     <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'owned')">全員所持ON</button>
@@ -3861,7 +3849,6 @@
             await getCategoriesIndex();
             await getGeneralMasterData();
             initGeneralGrid();
-            initDefaultGeneralLevel();
 
             // Load custom items
             cachedCustomItems = await getCustomItems();
@@ -4062,7 +4049,7 @@
             let globalIndex = 0;
             let html = '';
 
-            const defaultLevel = getDefaultGeneralLevel();
+            const defaultLevel = 0;
             const generalItemHtml = (g) => {
                 const index = globalIndex++;
                 const indexNo = cachedGeneralMasterData?.generals?.[g]?.indexNo;
@@ -5478,28 +5465,6 @@
             }
         }
 
-        // Get default general level from localStorage
-        function getDefaultGeneralLevel() {
-            const saved = localStorage.getItem('defaultGeneralLevel');
-            return saved ? parseInt(saved) : 10;
-        }
-
-        // Save default general level to localStorage
-        function saveDefaultGeneralLevel() {
-            const select = document.getElementById('defaultGeneralLevel');
-            if (select) {
-                localStorage.setItem('defaultGeneralLevel', select.value);
-            }
-        }
-
-        // Initialize default level selector on page load
-        function initDefaultGeneralLevel() {
-            const select = document.getElementById('defaultGeneralLevel');
-            if (select) {
-                select.value = getDefaultGeneralLevel();
-            }
-        }
-
         // ========== Bulk Level Input Panel ==========
 
         // Toggle bulk level panel visibility
@@ -5810,7 +5775,9 @@
             if (!nav) return;
 
             let isDragging = false;
+            let hasMoved = false;
             let startX, startY, startLeft, startTop;
+            const DRAG_THRESHOLD = 10; // pixels to distinguish tap from drag
 
             // Load saved position
             const savedPos = localStorage.getItem('floatingNavPosition');
@@ -5830,7 +5797,7 @@
                 if (target.closest('.floating-menu-item')) return;
 
                 isDragging = true;
-                nav.classList.add('dragging');
+                hasMoved = false;
 
                 const touch = e.touches ? e.touches[0] : e;
                 startX = touch.clientX;
@@ -5839,8 +5806,6 @@
                 const rect = nav.getBoundingClientRect();
                 startLeft = rect.left;
                 startTop = rect.top;
-
-                e.preventDefault();
             }
 
             function onMove(e) {
@@ -5849,6 +5814,14 @@
                 const touch = e.touches ? e.touches[0] : e;
                 const deltaX = touch.clientX - startX;
                 const deltaY = touch.clientY - startY;
+
+                // Check if movement exceeds threshold
+                if (!hasMoved && (Math.abs(deltaX) > DRAG_THRESHOLD || Math.abs(deltaY) > DRAG_THRESHOLD)) {
+                    hasMoved = true;
+                    nav.classList.add('dragging');
+                }
+
+                if (!hasMoved) return;
 
                 let newLeft = startLeft + deltaX;
                 let newTop = startTop + deltaY;
@@ -5867,17 +5840,32 @@
                 e.preventDefault();
             }
 
-            function onEnd() {
+            function onEnd(e) {
                 if (!isDragging) return;
+
+                const wasDrag = hasMoved;
+                const isTouch = !!e.changedTouches;
                 isDragging = false;
+                hasMoved = false;
                 nav.classList.remove('dragging');
 
-                // Save position
-                const rect = nav.getBoundingClientRect();
-                localStorage.setItem('floatingNavPosition', JSON.stringify({
-                    left: rect.left,
-                    top: rect.top
-                }));
+                if (wasDrag) {
+                    // Save position after drag
+                    const rect = nav.getBoundingClientRect();
+                    localStorage.setItem('floatingNavPosition', JSON.stringify({
+                        left: rect.left,
+                        top: rect.top
+                    }));
+                } else if (isTouch) {
+                    // Touch tap (not drag) - toggle menu if tapped on button
+                    // Only for touch events; mouse uses onclick handler
+                    const touch = e.changedTouches[0];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (target && target.closest('.floating-btn')) {
+                        e.preventDefault();
+                        toggleFloatingMenu();
+                    }
+                }
             }
 
             // Mouse events
@@ -5885,8 +5873,8 @@
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onEnd);
 
-            // Touch events
-            nav.addEventListener('touchstart', onStart, { passive: false });
+            // Touch events - use passive: true for start to allow default behavior
+            nav.addEventListener('touchstart', onStart, { passive: true });
             document.addEventListener('touchmove', onMove, { passive: false });
             document.addEventListener('touchend', onEnd);
         })();
