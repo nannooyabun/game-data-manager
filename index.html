@@ -692,47 +692,19 @@
         .general-level-input {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
+            gap: 0.3rem;
         }
 
-        .general-level-slider {
-            width: 80px;
-            height: 20px;
-            -webkit-appearance: none;
-            appearance: none;
+        .general-level-select {
+            width: 50px;
+            padding: 0.25rem;
             background: var(--bg-input);
-            border-radius: 10px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .general-level-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: var(--accent-gold);
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .general-level-slider::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: var(--accent-gold);
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .general-level-value {
-            min-width: 24px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
             text-align: center;
             font-size: 0.85rem;
-            font-weight: bold;
-            color: var(--accent-gold);
+            cursor: pointer;
         }
 
         /* Category bulk action buttons */
@@ -4067,8 +4039,9 @@
                         <span class="general-name" onclick="toggleGeneralState(${index})">${indexLabel}${g}</span>
                         <span class="status-badge"></span>
                         <div class="general-level-input">
-                            <input type="range" id="general_${index}" min="0" max="12" value="0" class="general-level-slider" oninput="updateSliderDisplay(${index})" onchange="updateProgress()">
-                            <span id="generalLevelValue_${index}" class="general-level-value">0</span>
+                            <select id="general_${index}" onchange="updateProgress()" class="general-level-select">
+                                ${[0,1,2,3,4,5,6,7,8,9,10,11,12].map(v => `<option value="${v}">${v}</option>`).join('')}
+                            </select>
                         </div>
                         <input type="hidden" id="generalState_${index}" value="0">
                     </div>
@@ -5018,9 +4991,6 @@
                         } else {
                             levelEl.value = generalData;
                         }
-                        // Update slider display
-                        const displayEl = document.getElementById(`generalLevelValue_${i}`);
-                        if (displayEl) displayEl.textContent = levelEl.value;
                     }
                 }
             }
@@ -5476,15 +5446,6 @@
 
         let currentBulkLevelTarget = 'all';
 
-        // Update slider display value
-        function updateSliderDisplay(index) {
-            const slider = document.getElementById(`general_${index}`);
-            const display = document.getElementById(`generalLevelValue_${index}`);
-            if (slider && display) {
-                display.textContent = slider.value;
-            }
-        }
-
         // Show bulk level popup
         function showBulkLevelPopup(target) {
             currentBulkLevelTarget = target;
@@ -5531,13 +5492,11 @@
                 targetName = effectiveCategories[catIndex].title;
             }
 
-            // Apply level to all generals in range (using slider now)
+            // Apply level to all generals in range
             for (let i = startIndex; i < endIndex; i++) {
-                const slider = document.getElementById(`general_${i}`);
-                const display = document.getElementById(`generalLevelValue_${i}`);
-                if (slider) {
-                    slider.value = level;
-                    if (display) display.textContent = level;
+                const select = document.getElementById(`general_${i}`);
+                if (select) {
+                    select.value = level;
                 }
             }
 
