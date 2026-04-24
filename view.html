@@ -1610,11 +1610,50 @@
             return generalMasterData.categories[categoryTitle]?.notes || '';
         }
 
+        // Calculate general summary stats for a user
+        function calculateGeneralSummary(user) {
+            if (!user || !user.generals) return { ownedCount: 0, spiritLevelSum: 0 };
+
+            let ownedCount = 0;
+            let spiritLevelSum = 0;
+
+            for (const [name, g] of Object.entries(user.generals)) {
+                if (g && (g.owned || g.formed)) {
+                    ownedCount++;
+                    if (g.level && typeof g.level === 'number') {
+                        spiritLevelSum += g.level;
+                    }
+                }
+            }
+
+            return { ownedCount, spiritLevelSum };
+        }
+
         // Build general categories dynamically using effective view config
         function buildGeneralCategories() {
             const effectiveCategories = getEffectiveViewCategories();
 
-            return effectiveCategories.map((cat, i) => {
+            // Summary category at the beginning
+            const summaryCategory = {
+                key: 'generalSummary',
+                title: '②-2 武将集計',
+                colorClass: 'cat-general',
+                isTextCategory: true,
+                items: [
+                    { id: 'ownedCount', name: '所持数' },
+                    { id: 'spiritLevelSum', name: '守護霊Lv' }
+                ],
+                getCellState: () => 'none',
+                getCellText: (user, item) => {
+                    if (!user) return '';
+                    const summary = calculateGeneralSummary(user);
+                    if (item.id === 'ownedCount') return summary.ownedCount > 0 ? summary.ownedCount : '';
+                    if (item.id === 'spiritLevelSum') return summary.spiritLevelSum > 0 ? summary.spiritLevelSum : '';
+                    return '';
+                }
+            };
+
+            const genCats = effectiveCategories.map((cat, i) => {
                 if (cat.generals.length === 0) return null;  // Skip empty categories
                 const categoryNotes = getCategoryNotes(cat.title);
                 return {
@@ -1635,6 +1674,8 @@
                     getCellValue: (user, item) => getGeneralCellValue(user, item.id)
                 };
             }).filter(Boolean);  // Remove nulls
+
+            return [summaryCategory, ...genCats];
         }
 
         // Get flattened list of custom items for a category
@@ -1871,8 +1912,8 @@
             const tableCategories = buildTableCategories();
 
             const result = [...tableCategories];
-            // Insert general categories after SP武将 (index 1)
-            result.splice(2, 0, ...genCats);
+            // Insert general categories after SP武将 (index 2 in tableCategories = index 3 after basicInfo, weapon, spGeneral)
+            result.splice(3, 0, ...genCats);
 
             return result;
         }
