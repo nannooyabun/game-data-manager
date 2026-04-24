@@ -1736,7 +1736,11 @@
         }
 
         function toggleCellState(username, team, catKey, itemId, isCustom, itemName) {
-            if (!simulationModeActive) return;
+            console.log('toggleCellState called:', { username, team, catKey, itemId, isCustom, itemName, simulationModeActive });
+            if (!simulationModeActive) {
+                console.log('simulationModeActive is false, returning');
+                return;
+            }
 
             const editKey = `${username}/${team}/${catKey}/${itemId}`;
 
@@ -2857,6 +2861,10 @@
                         const clickHandler = (simulationModeActive && !cat.isTextCategory)
                             ? ` onclick="toggleCellState('${escapeJs(username)}', '${escapeJs(team)}', '${cat.key}', '${escapeJs(itemIdStr)}', '${isCustomStr}', '${escapeJs(itemNameStr)}')"`
                             : (isClickable ? ` onclick="toggleCellState('${escapeJs(username)}', '${escapeJs(team)}', '${cat.key}', '${escapeJs(itemIdStr)}', '${isCustomStr}', '${escapeJs(itemNameStr)}')"` : '');
+                        // Debug: log first virtual member cell
+                        if (isVirtual && cat.items.indexOf(item) === 0 && catIdx === 0) {
+                            console.log('Virtual member cell debug:', { username, team, isVirtual, simulationModeActive, clickHandler: clickHandler.substring(0, 100) });
+                        }
                         return `<td class="${cat.colorClass}${borderClass}${clickClass}"${clickHandler}>${stateSymbol(state, value)}</td>`;
                     });
                 }).join('');
