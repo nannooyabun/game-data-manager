@@ -2595,7 +2595,10 @@
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = 'toast ' + type + ' show';
-            setTimeout(() => { toast.className = 'toast'; }, 2500);
+            // Display duration based on type
+            const durations = { success: 3000, info: 4000, error: 5000 };
+            const duration = durations[type] || 3000;
+            setTimeout(() => { toast.className = 'toast'; }, duration);
         }
 
         // Scroll position preservation
@@ -3872,13 +3875,13 @@
                 let usersToExport = [];
 
                 if (teamFilterValue === '__all__') {
-                    usersToExport = Object.entries(gameDataCache || {}).map(([name, data]) => ({ name, ...data }));
+                    usersToExport = Object.entries(gameData || {}).map(([name, data]) => ({ name, ...data }));
                 } else {
-                    const team = teamsCache?.find(t => t.id === teamFilterValue);
+                    const team = Object.values(teams || {}).find(t => t.id === teamFilterValue);
                     if (team && team.members) {
                         usersToExport = team.members
-                            .filter(m => gameDataCache?.[m])
-                            .map(m => ({ name: m, ...gameDataCache[m] }));
+                            .filter(m => gameData?.[m])
+                            .map(m => ({ name: m, ...gameData[m] }));
                     }
                 }
 
@@ -4054,7 +4057,7 @@
                 const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
                 let teamName = '';
                 if (teamFilterValue !== '__all__') {
-                    const team = teamsCache?.find(t => t.id === teamFilterValue);
+                    const team = Object.values(teams || {}).find(t => t.id === teamFilterValue);
                     teamName = team?.name ? `_${team.name}` : '';
                 }
                 const filename = `武将データ_${dateStr}${teamName}.xlsx`;

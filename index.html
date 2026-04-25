@@ -6761,9 +6761,12 @@
             const toast = document.getElementById('toast');
             toast.textContent = message;
             toast.className = 'toast show ' + type;
+            // Display duration based on type
+            const durations = { success: 3000, info: 4000, error: 5000 };
+            const duration = durations[type] || 3000;
             setTimeout(() => {
                 toast.classList.remove('show');
-            }, 3000);
+            }, duration);
         }
     </script>
 </body>
