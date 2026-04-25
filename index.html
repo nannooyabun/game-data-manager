@@ -5431,11 +5431,14 @@
                 const formedCb = card.querySelector('input[type="checkbox"][data-role="formed"]');
                 const equippedCb = card.querySelector('input[type="checkbox"][data-role="equipped"]');
                 const statusSelect = card.querySelector('select[data-role="status"]');
+                // For academy items, check slot selection for equipped state
+                const academySlotSelect = card.querySelector('.academy-slot-select');
                 if (statusSelect) {
                     const v = statusSelect.value;
                     state = v === 'equipped' ? 2 : (v === 'owned' ? 1 : 0);
                 } else if (formedCb && formedCb.checked) state = 2;
                 else if (equippedCb && equippedCb.checked) state = 2;
+                else if (academySlotSelect && academySlotSelect.value) state = 2; // Academy: slot selected = equipped
                 else if (ownedCb && ownedCb.checked) state = 1;
                 // For 2-state cards, minimum state is 1 (never show 未所持)
                 if (card.dataset.twoState === '1' && state === 0) state = 1;
