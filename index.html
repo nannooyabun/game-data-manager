@@ -2188,7 +2188,7 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="nobunagaDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('nobunagaDeputy'); updateDeputyStates()">
+                            <input type="text" id="nobunagaDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" oninput="updateProgress(); validateDeputyName('nobunagaDeputy'); updateDeputyStates()" onchange="updateProgress(); validateDeputyName('nobunagaDeputy'); updateDeputyStates()">
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -2226,7 +2226,7 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="hideyoshiDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('hideyoshiDeputy'); updateDeputyStates()">
+                            <input type="text" id="hideyoshiDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" oninput="updateProgress(); validateDeputyName('hideyoshiDeputy'); updateDeputyStates()" onchange="updateProgress(); validateDeputyName('hideyoshiDeputy'); updateDeputyStates()">
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -2264,7 +2264,7 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="ieyasuDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('ieyasuDeputy'); updateDeputyStates()">
+                            <input type="text" id="ieyasuDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" oninput="updateProgress(); validateDeputyName('ieyasuDeputy'); updateDeputyStates()" onchange="updateProgress(); validateDeputyName('ieyasuDeputy'); updateDeputyStates()">
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -4481,7 +4481,7 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="${safeId(item.name)}_deputy" class="deputy-name-input" list="generalNameList" placeholder="副将の名前" onchange="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy'); updateDeputyStates()">
+                            <input type="text" id="${safeId(item.name)}_deputy" class="deputy-name-input" list="generalNameList" placeholder="副将の名前" oninput="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy'); updateDeputyStates()" onchange="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy'); updateDeputyStates()">
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
