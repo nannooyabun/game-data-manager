@@ -507,6 +507,39 @@
         .deputy-name-input.invalid + .deputy-warning {
             display: block;
         }
+        .deputy-input-wrapper {
+            position: relative;
+        }
+        .deputy-suggest-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 200;
+            margin-top: 2px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            display: none;
+        }
+        .deputy-suggest-item {
+            padding: 0.6rem 0.8rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .deputy-suggest-item:last-child {
+            border-bottom: none;
+        }
+        .deputy-suggest-item:active,
+        .deputy-suggest-item:hover {
+            background: var(--bg-input);
+            color: var(--accent-gold);
+        }
 
         /* Skill Grid */
         .skill-grid {
@@ -2188,7 +2221,10 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="nobunagaDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" oninput="updateProgress(); validateDeputyName('nobunagaDeputy'); updateDeputyStates()" onchange="updateProgress(); validateDeputyName('nobunagaDeputy'); updateDeputyStates()">
+                            <div class="deputy-input-wrapper">
+                                <input type="text" id="nobunagaDeputy" class="deputy-name-input" placeholder="副将の名前" autocomplete="off" oninput="onDeputyInput('nobunagaDeputy')" onfocus="onDeputyInput('nobunagaDeputy')" onblur="setTimeout(() => closeDeputySuggest('nobunagaDeputy'), 200)" onchange="updateProgress(); validateDeputyName('nobunagaDeputy'); updateDeputyStates()">
+                                <div id="nobunagaDeputy_suggest" class="deputy-suggest-dropdown"></div>
+                            </div>
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -2226,7 +2262,10 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="hideyoshiDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" oninput="updateProgress(); validateDeputyName('hideyoshiDeputy'); updateDeputyStates()" onchange="updateProgress(); validateDeputyName('hideyoshiDeputy'); updateDeputyStates()">
+                            <div class="deputy-input-wrapper">
+                                <input type="text" id="hideyoshiDeputy" class="deputy-name-input" placeholder="副将の名前" autocomplete="off" oninput="onDeputyInput('hideyoshiDeputy')" onfocus="onDeputyInput('hideyoshiDeputy')" onblur="setTimeout(() => closeDeputySuggest('hideyoshiDeputy'), 200)" onchange="updateProgress(); validateDeputyName('hideyoshiDeputy'); updateDeputyStates()">
+                                <div id="hideyoshiDeputy_suggest" class="deputy-suggest-dropdown"></div>
+                            </div>
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -2264,14 +2303,15 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="ieyasuDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" oninput="updateProgress(); validateDeputyName('ieyasuDeputy'); updateDeputyStates()" onchange="updateProgress(); validateDeputyName('ieyasuDeputy'); updateDeputyStates()">
+                            <div class="deputy-input-wrapper">
+                                <input type="text" id="ieyasuDeputy" class="deputy-name-input" placeholder="副将の名前" autocomplete="off" oninput="onDeputyInput('ieyasuDeputy')" onfocus="onDeputyInput('ieyasuDeputy')" onblur="setTimeout(() => closeDeputySuggest('ieyasuDeputy'), 200)" onchange="updateProgress(); validateDeputyName('ieyasuDeputy'); updateDeputyStates()">
+                                <div id="ieyasuDeputy_suggest" class="deputy-suggest-dropdown"></div>
+                            </div>
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- General name datalist for autocomplete -->
-                <datalist id="generalNameList"></datalist>
 
                 <!-- Custom SP Generals -->
                 <div id="customSpGeneralsContainer"></div>
@@ -4481,7 +4521,10 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="${safeId(item.name)}_deputy" class="deputy-name-input" list="generalNameList" placeholder="副将の名前" oninput="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy'); updateDeputyStates()" onchange="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy'); updateDeputyStates()">
+                            <div class="deputy-input-wrapper">
+                                <input type="text" id="${safeId(item.name)}_deputy" class="deputy-name-input" placeholder="副将の名前" autocomplete="off" oninput="onDeputyInput('${safeId(item.name)}_deputy')" onfocus="onDeputyInput('${safeId(item.name)}_deputy')" onblur="setTimeout(() => closeDeputySuggest('${safeId(item.name)}_deputy'), 200)" onchange="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy'); updateDeputyStates()">
+                                <div id="${safeId(item.name)}_deputy_suggest" class="deputy-suggest-dropdown"></div>
+                            </div>
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -4974,6 +5017,51 @@
             updateProgress();
         }
 
+        // ========== Deputy Name Autocomplete ==========
+        function onDeputyInput(inputId) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(inputId + '_suggest');
+            if (!input || !dropdown) return;
+
+            const query = (input.value || '').toLowerCase().trim();
+            if (query.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            // Get general names from master data
+            const allNames = cachedGeneralMasterData?.generals ? Object.keys(cachedGeneralMasterData.generals) : [];
+            const matchingNames = allNames.filter(name => name.toLowerCase().includes(query)).slice(0, 20);
+
+            if (matchingNames.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            // Build dropdown items
+            dropdown.innerHTML = matchingNames.map(name =>
+                `<div class="deputy-suggest-item" onclick="selectDeputySuggest('${inputId}', '${escapeHtmlText(name)}')">${escapeHtmlText(name)}</div>`
+            ).join('');
+            dropdown.style.display = 'block';
+        }
+
+        function closeDeputySuggest(inputId) {
+            const dropdown = document.getElementById(inputId + '_suggest');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+
+        function selectDeputySuggest(inputId, name) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = name;
+                // Trigger validation and deputy state update
+                validateDeputyName(inputId);
+                updateDeputyStates();
+                updateProgress();
+            }
+            closeDeputySuggest(inputId);
+        }
+
         // Validate deputy name against general list
         function validateDeputyName(inputId) {
             const input = document.getElementById(inputId);
@@ -4984,14 +5072,8 @@
                 input.classList.remove('invalid');
                 return;
             }
-            // Get all general names from datalist
-            const datalist = document.getElementById('generalNameList');
-            const validNames = new Set();
-            if (datalist) {
-                datalist.querySelectorAll('option').forEach(opt => {
-                    validNames.add(opt.value);
-                });
-            }
+            // Get all general names from master data
+            const validNames = new Set(cachedGeneralMasterData?.generals ? Object.keys(cachedGeneralMasterData.generals) : []);
             // Also check master data if available
             if (cachedGeneralMasterData?.generals) {
                 Object.keys(cachedGeneralMasterData.generals).forEach(n => validNames.add(n));
@@ -5133,18 +5215,6 @@
 
             // Render update info section
             renderUpdateInfo();
-
-            // Populate general name list for SP武将 deputy autocomplete
-            populateGeneralNameList();
-        }
-
-        // Populate datalist with general names for autocomplete
-        function populateGeneralNameList() {
-            const datalist = document.getElementById('generalNameList');
-            if (!datalist || !cachedGeneralMasterData?.generals) return;
-
-            const names = Object.keys(cachedGeneralMasterData.generals);
-            datalist.innerHTML = names.map(name => `<option value="${name}">`).join('');
         }
 
         // Render dynamic category bulk select buttons
