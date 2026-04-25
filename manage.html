@@ -305,6 +305,14 @@
             z-index: 1;
         }
 
+        .data-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+        .data-table th.sortable:hover {
+            background: var(--bg-input);
+        }
+
         .data-table tr:hover td {
             background: var(--bg-input);
         }
@@ -1936,15 +1944,29 @@
                 <div class="action-row">
                     <button class="action-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
                 </div>
+                <div class="user-data-filters" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="userSearchInput" placeholder="🔍 名前で検索..." oninput="refreshDataTable()" style="flex: 1; min-width: 120px; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
+                    <select id="userTroopFilter" onchange="refreshDataTable()" style="padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
+                        <option value="">兵種: 全て</option>
+                        <option value="horse">馬</option>
+                        <option value="infantry">歩</option>
+                        <option value="bow">弓</option>
+                    </select>
+                    <select id="userStatusFilter" onchange="refreshDataTable()" style="padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
+                        <option value="">状態: 全て</option>
+                        <option value="visible">通常のみ</option>
+                        <option value="hidden">非表示のみ</option>
+                    </select>
+                </div>
                 <div class="data-table-container">
                     <table class="data-table" id="dataTable">
                         <thead>
                             <tr>
-                                <th>ユーザー</th>
+                                <th class="sortable" onclick="setUserSort('name')">ユーザー <span id="sortIcon_name">▲</span></th>
                                 <th>軍団</th>
                                 <th>兵種</th>
-                                <th>更新</th>
-                                <th>%</th>
+                                <th class="sortable" onclick="setUserSort('updatedAt')">更新 <span id="sortIcon_updatedAt"></span></th>
+                                <th class="sortable" onclick="setUserSort('completion')">% <span id="sortIcon_completion"></span></th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -2332,6 +2354,31 @@
         }
 
         // Refresh data table
+        // User table sort state
+        let userSortKey = 'name';
+        let userSortAsc = true;
+
+        function setUserSort(key) {
+            if (userSortKey === key) {
+                userSortAsc = !userSortAsc;
+            } else {
+                userSortKey = key;
+                userSortAsc = true;
+            }
+            // Update sort icons
+            ['name', 'updatedAt', 'completion'].forEach(k => {
+                const icon = document.getElementById(`sortIcon_${k}`);
+                if (icon) {
+                    if (k === userSortKey) {
+                        icon.textContent = userSortAsc ? '▲' : '▼';
+                    } else {
+                        icon.textContent = '';
+                    }
+                }
+            });
+            refreshDataTable();
+        }
+
         function refreshDataTable() {
             const tbody = document.getElementById('dataTableBody');
 
@@ -2340,30 +2387,65 @@
                 return;
             }
 
+            // Get filter values
+            const searchQuery = (document.getElementById('userSearchInput')?.value || '').toLowerCase().trim();
+            const troopFilter = document.getElementById('userTroopFilter')?.value || '';
+            const statusFilter = document.getElementById('userStatusFilter')?.value || '';
+
             const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓', 'horse_infantry': '馬歩', 'horse_bow': '馬弓', 'infantry_bow': '歩弓', 'horse_infantry_bow': '馬歩弓' };
 
             // Flatten: each (user, team) becomes a row
-            const rows = [];
+            let rows = [];
             Object.entries(gameData).forEach(([name, userData]) => {
                 const teams = getUserTeams(userData);
                 teams.forEach(team => {
                     const teamData = getUserTeamData(userData, team);
-                    if (teamData) rows.push({ name, team, data: teamData });
+                    if (teamData) {
+                        const completion = calculateCompletion(teamData);
+                        rows.push({ name, team, data: teamData, completion });
+                    }
                 });
             });
 
+            // Apply filters
+            rows = rows.filter(row => {
+                // Search filter
+                if (searchQuery && !row.name.toLowerCase().includes(searchQuery)) return false;
+                // Troop filter
+                if (troopFilter && row.data.troopType !== troopFilter) return false;
+                // Status filter
+                const hidden = isUserHidden(row.name);
+                if (statusFilter === 'visible' && hidden) return false;
+                if (statusFilter === 'hidden' && !hidden) return false;
+                return true;
+            });
+
             if (rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">保存されたデータがありません</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">該当するデータがありません</td></tr>';
                 return;
             }
 
+            // Sort rows
             rows.sort((a, b) => {
-                if (a.name !== b.name) return a.name.localeCompare(b.name);
-                return a.team.localeCompare(b.team);
+                let cmp = 0;
+                switch (userSortKey) {
+                    case 'name':
+                        cmp = a.name.localeCompare(b.name);
+                        if (cmp === 0) cmp = a.team.localeCompare(b.team);
+                        break;
+                    case 'updatedAt':
+                        const dateA = new Date(a.data.timestamp || 0).getTime();
+                        const dateB = new Date(b.data.timestamp || 0).getTime();
+                        cmp = dateA - dateB;
+                        break;
+                    case 'completion':
+                        cmp = a.completion - b.completion;
+                        break;
+                }
+                return userSortAsc ? cmp : -cmp;
             });
 
-            tbody.innerHTML = rows.map(({ name, team, data }) => {
-                const completion = calculateCompletion(data);
+            tbody.innerHTML = rows.map(({ name, team, data, completion }) => {
                 // Format date as YY/MM/DD
                 let dateStr = '-';
                 if (data.timestamp) {
