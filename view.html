@@ -127,27 +127,72 @@
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 0.8rem;
+            padding: 0;
             z-index: 1000;
             flex-direction: column;
-            gap: 0.8rem;
-            min-width: 200px;
+            min-width: 220px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
         .settings-menu.show {
             display: flex;
         }
 
-        .settings-checkbox {
+        .settings-section {
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+        .settings-section-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .settings-select {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        .settings-checkbox,
+        .settings-radio {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             font-size: 0.85rem;
             color: var(--text-primary);
             cursor: pointer;
+            padding: 0.3rem 0;
         }
-        .settings-checkbox input {
+        .settings-checkbox input,
+        .settings-radio input {
             cursor: pointer;
+        }
+        .settings-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .help-export-btn {
+            padding: 0.5rem 1rem;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .help-export-btn:hover {
+            background: #1976D2;
         }
 
         /* Mobile responsive */
@@ -1160,23 +1205,6 @@
         }
 
         /* Help Chat */
-        .help-btn-float {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            background: var(--accent-blue);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.2rem;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
-        }
-        .help-btn-float:hover {
-            background: #1976D2;
-        }
         .help-chat-overlay {
             position: fixed;
             top: 0;
@@ -1293,21 +1321,38 @@
             <h1>武将データ一覧</h1>
             <div class="header-actions">
                 <a href="index.html">← 入力画面へ</a>
-                <select id="teamFilter">
-                    <option value="__all__">チーム</option>
-                </select>
                 <div class="settings-menu-wrapper">
                     <button class="settings-btn" onclick="toggleSettingsMenu()">⚙</button>
                     <div class="settings-menu" id="settingsMenu">
-                        <button onclick="exportToExcel(); toggleSettingsMenu();" class="excel-export-btn">📊 Excel出力</button>
-                        <label class="settings-checkbox">
-                            <input type="checkbox" id="includeInactiveTeams" onchange="populateTeamFilter(); populateComparisonTeamSelect();">
-                            無効チーム含む
-                        </label>
-                        <label class="settings-checkbox">
-                            <input type="checkbox" id="filterOwnedOnly" onchange="applyRowFilter()">
-                            所持/編成中のみ表示
-                        </label>
+                        <div class="settings-section">
+                            <div class="settings-section-title">📋 チーム</div>
+                            <select id="teamFilter" class="settings-select">
+                                <option value="__all__">すべて表示</option>
+                            </select>
+                            <label class="settings-checkbox">
+                                <input type="checkbox" id="includeInactiveTeams" onchange="populateTeamFilter(); populateComparisonTeamSelect();">
+                                無効チーム含む
+                            </label>
+                        </div>
+                        <div class="settings-section">
+                            <div class="settings-section-title">🔍 列フィルタ</div>
+                            <label class="settings-radio">
+                                <input type="radio" name="columnFilter" value="all" checked onchange="applyColumnFilter()">
+                                すべて表示
+                            </label>
+                            <label class="settings-radio">
+                                <input type="radio" name="columnFilter" value="owned" onchange="applyColumnFilter()">
+                                所持/編成中を表示
+                            </label>
+                            <label class="settings-radio">
+                                <input type="radio" name="columnFilter" value="equipped" onchange="applyColumnFilter()">
+                                編成中のみ表示
+                            </label>
+                        </div>
+                        <div class="settings-section settings-actions">
+                            <button onclick="exportToExcel(); toggleSettingsMenu();" class="excel-export-btn">📊 Excel出力</button>
+                            <button onclick="openHelpChat(); toggleSettingsMenu();" class="help-export-btn">❓ ヘルプ</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1712,88 +1757,55 @@
             }
         });
 
-        // Row filter state
-        let filterOwnedOnly = false;
+        // Column filter state: 'all', 'owned', 'equipped'
+        let columnFilterMode = 'all';
 
-        function applyRowFilter() {
-            filterOwnedOnly = document.getElementById('filterOwnedOnly')?.checked || false;
+        function applyColumnFilter() {
+            const selected = document.querySelector('input[name="columnFilter"]:checked');
+            columnFilterMode = selected ? selected.value : 'all';
             renderTable();
         }
 
-        function hasOwnedOrEquippedItems(userData) {
-            if (!userData) return false;
-            // Check weapons
-            if (userData.weapons) {
-                for (const w of Object.values(userData.weapons)) {
-                    if (w.status === 'owned' || w.status === 'equipped') return true;
+        // Check if any user has this item in the specified state
+        // Returns: 'equipped', 'owned', or 'none'
+        function getItemMaxState(entries, cat, item) {
+            let hasEquipped = false;
+            let hasOwned = false;
+
+            for (const entry of entries) {
+                const state = cat.getCellState(entry.data, item);
+                if (state === 'equipped') {
+                    hasEquipped = true;
+                    break; // Can't get higher than equipped
+                } else if (state === 'owned') {
+                    hasOwned = true;
                 }
             }
-            // Check SP generals
-            if (userData.spGenerals) {
-                for (const sp of Object.values(userData.spGenerals)) {
-                    if (sp.owned || sp.formed) return true;
-                }
+
+            if (hasEquipped) return 'equipped';
+            if (hasOwned) return 'owned';
+            return 'none';
+        }
+
+        // Check if item should be shown based on column filter
+        function shouldShowColumn(entries, cat, item) {
+            if (columnFilterMode === 'all') return true;
+
+            const maxState = getItemMaxState(entries, cat, item);
+
+            if (columnFilterMode === 'equipped') {
+                return maxState === 'equipped';
+            } else if (columnFilterMode === 'owned') {
+                return maxState === 'equipped' || maxState === 'owned';
             }
-            // Check generals (by category)
-            if (userData.generals) {
-                for (const cat of Object.values(userData.generals)) {
-                    for (const g of Object.values(cat || {})) {
-                        if (typeof g === 'object' && (g.owned || g.formed)) return true;
-                    }
-                }
-            }
-            // Check armor
-            if (userData.armor) {
-                for (const a of Object.values(userData.armor)) {
-                    if (a.owned || a.equipped) return true;
-                }
-            }
-            // Check horse
-            if (userData.horse) {
-                for (const h of Object.values(userData.horse)) {
-                    if (h.owned || h.equipped) return true;
-                }
-            }
-            // Check flower
-            if (userData.flower) {
-                for (const f of Object.values(userData.flower)) {
-                    if (f.owned || f.equipped) return true;
-                }
-            }
-            // Check tactics
-            if (userData.tactics) {
-                for (const t of Object.values(userData.tactics)) {
-                    if (t.owned || t.equipped) return true;
-                }
-            }
-            // Check academy
-            if (userData.academy) {
-                for (const a of Object.values(userData.academy)) {
-                    if (a.checked || a.equipped) return true;
-                }
-            }
-            // Check asura skills
-            if (userData.asuraSkills) {
-                for (const lvl of Object.values(userData.asuraSkills)) {
-                    if (Array.isArray(lvl) && lvl.some(v => v)) return true;
-                }
-            }
-            // Check custom items
-            if (userData.customItems) {
-                for (const cat of Object.values(userData.customItems)) {
-                    for (const item of Object.values(cat || {})) {
-                        if (item.owned || item.formed || item.equipped || item.status === 'owned' || item.status === 'equipped') return true;
-                    }
-                }
-            }
-            return false;
+            return true;
         }
 
         function populateTeamFilter() {
             const sel = document.getElementById('teamFilter');
             const current = sel.value || '__all__';
             const includeInactive = document.getElementById('includeInactiveTeams')?.checked || false;
-            sel.innerHTML = '<option value="__all__">チーム</option>';
+            sel.innerHTML = '<option value="__all__">すべて表示</option>';
             Object.values(teams)
                 .filter(t => includeInactive || isTeamActive(t))
                 .forEach(t => {
@@ -2246,10 +2258,6 @@
                     if (!memberFilter(username, team)) return;
                     const teamData = getUserTeamData(userData, team);
                     if (teamData) {
-                        // Apply owned/equipped filter if active
-                        if (filterOwnedOnly && !hasOwnedOrEquippedItems(teamData)) {
-                            return;
-                        }
                         entries.push({ username, team, data: teamData, isVirtual: false });
                     }
                 });
@@ -2257,10 +2265,6 @@
             // Add virtual members only when simulation mode is active
             if (simulationModeActive) {
                 virtualMembers.forEach(vm => {
-                    // Apply filter to virtual members too
-                    if (filterOwnedOnly && !hasOwnedOrEquippedItems(vm.data)) {
-                        return;
-                    }
                     entries.push({
                         username: vm.username,
                         team: vm.team,
@@ -4352,7 +4356,6 @@
     <div class="toast" id="toast"></div>
 
     <!-- Help Button -->
-    <button class="help-btn-float" onclick="openHelpChat()">❓ ヘルプ</button>
 
     <!-- Help Chat Modal -->
     <div class="help-chat-overlay" id="helpChatOverlay" onclick="closeHelpChat()"></div>
