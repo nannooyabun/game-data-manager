@@ -414,6 +414,28 @@
             background: #25253a;
         }
 
+        /* Selected row for editing */
+        .view-table tbody tr.row-selected td {
+            background: #1a2a1a;
+        }
+        .view-table tbody tr.row-selected td.sticky-col {
+            background: #1a3a1a;
+            cursor: pointer;
+        }
+        .view-table tbody tr.row-selected td.sticky-col::before {
+            content: '✓ ';
+            color: var(--accent-green);
+        }
+        /* Non-selected rows: sticky cols are clickable to select */
+        .view-table tbody tr:not(.row-selected) td.sticky-col {
+            cursor: pointer;
+        }
+        /* Non-selected rows: data cells are not clickable */
+        .view-table tbody tr:not(.row-selected) td:not(.sticky-col).cell-clickable {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
         /* Cell state symbols: ● equipped, ○ owned, blank none */
         .cell-equipped {
             color: var(--accent-green);
@@ -1522,6 +1544,40 @@
         let simulationModeActive = false;
         let virtualMembers = [];  // Array of { username, team, data, isVirtual: true }
         let cellEdits = {};  // { "username/team/catKey/itemId": newState }
+
+        // Row selection for tap-safe editing
+        let selectedRowKey = null;  // "username/team" or null
+
+        function selectRow(username, team) {
+            const newKey = `${username}/${team}`;
+            const table = document.querySelector('.view-table tbody');
+            if (!table) return;
+
+            // Deselect previous row
+            table.querySelectorAll('tr.row-selected').forEach(tr => {
+                tr.classList.remove('row-selected');
+            });
+
+            // If clicking same row, deselect (toggle off)
+            if (selectedRowKey === newKey) {
+                selectedRowKey = null;
+                return;
+            }
+
+            // Select new row
+            selectedRowKey = newKey;
+            table.querySelectorAll('tr').forEach(tr => {
+                const usernameCell = tr.querySelector('.col-username');
+                const teamCell = tr.querySelector('.col-team');
+                if (usernameCell && teamCell) {
+                    const rowUsername = usernameCell.getAttribute('data-tooltip') || '';
+                    const rowTeam = teamCell.getAttribute('data-tooltip') || '';
+                    if (rowUsername === username && rowTeam === team) {
+                        tr.classList.add('row-selected');
+                    }
+                }
+            });
+        }
 
         // Flatten generals (for all generals list)
         const allDefaultGenerals = generalCategories.flatMap(cat => cat.generals);
@@ -2998,6 +3054,15 @@
 
         // Toggle cell state between equipped ⇄ owned
         async function toggleCellState(username, teamName, catKey, itemId, isCustomFlag, itemName) {
+            // In normal mode, require row to be selected first (tap-safe editing)
+            if (!simulationModeActive) {
+                const rowKey = `${username}/${teamName}`;
+                if (selectedRowKey !== rowKey) {
+                    // Row not selected - do nothing (CSS should prevent this, but double-check)
+                    return;
+                }
+            }
+
             // Handle simulation mode editing (virtual members or any cell when simulation is active)
             if (simulationModeActive) {
                 const isVirtual = virtualMembers.some(vm => vm.username === username && vm.team === teamName);
@@ -3287,6 +3352,9 @@
         }
 
         function renderTable() {
+            // Reset row selection when table is re-rendered
+            selectedRowKey = null;
+
             const main = document.getElementById('mainContent');
             const entries = getVisibleEntries();
             if (entries.length === 0) {
@@ -3393,11 +3461,12 @@
                 const usernameShort = username ? username.charAt(0) : '';
                 const teamShort = team ? team.charAt(0) : '';
                 const troopShort = troop && troop !== '-' ? troop.charAt(0) : '-';
+                const rowSelectHandler = `onclick="selectRow('${escapeJsAttr(username)}', '${escapeJsAttr(team)}')"`;
                 return `
                     <tr class="${virtualRowClass}">
-                        <td class="sticky-col col-username" data-tooltip="${escapeHtml(username)}" tabindex="0"><span class="cell-wrap">${virtualIcon}<span class="full-text">${escapeHtml(username)}</span><span class="short-text">${escapeHtml(usernameShort)}</span></span></td>
-                        <td class="sticky-col sticky-col-2 col-team" data-tooltip="${escapeHtml(team)}" tabindex="0"><span class="cell-wrap"><span class="full-text">${escapeHtml(team)}</span><span class="short-text">${escapeHtml(teamShort)}</span></span></td>
-                        <td class="sticky-col sticky-col-3 col-troop" data-tooltip="${escapeHtml(troop)}" tabindex="0"><span class="cell-wrap"><span class="full-text">${escapeHtml(troop)}</span><span class="short-text">${escapeHtml(troopShort)}</span></span></td>
+                        <td class="sticky-col col-username" data-tooltip="${escapeHtml(username)}" tabindex="0" ${rowSelectHandler}><span class="cell-wrap">${virtualIcon}<span class="full-text">${escapeHtml(username)}</span><span class="short-text">${escapeHtml(usernameShort)}</span></span></td>
+                        <td class="sticky-col sticky-col-2 col-team" data-tooltip="${escapeHtml(team)}" tabindex="0" ${rowSelectHandler}><span class="cell-wrap"><span class="full-text">${escapeHtml(team)}</span><span class="short-text">${escapeHtml(teamShort)}</span></span></td>
+                        <td class="sticky-col sticky-col-3 col-troop" data-tooltip="${escapeHtml(troop)}" tabindex="0" ${rowSelectHandler}><span class="cell-wrap"><span class="full-text">${escapeHtml(troop)}</span><span class="short-text">${escapeHtml(troopShort)}</span></span></td>
                         ${dataCells}
                     </tr>
                 `;
