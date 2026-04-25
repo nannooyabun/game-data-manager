@@ -7261,18 +7261,32 @@
 
         // ========== Floating Formation Counter ==========
 
+        // Track which sections are visible
+        const visibleSections = { sp: false, general: false };
+
         function initFloatingFormation() {
             const spSection = document.getElementById('spGeneralSection');
             const genSection = document.getElementById('generalSection');
             if (!spSection || !genSection) return;
 
+            const floating = document.getElementById('floatingFormation');
+            if (!floating) return;
+
+            const updateVisibility = () => {
+                const shouldShow = visibleSections.sp || visibleSections.general;
+                floating.classList.toggle('visible', shouldShow);
+            };
+
             const observer = new IntersectionObserver((entries) => {
-                const floating = document.getElementById('floatingFormation');
-                if (!floating) return;
-                // Show when either SP general or general section is visible
-                const anyVisible = entries.some(e => e.isIntersecting);
-                floating.classList.toggle('visible', anyVisible);
-            }, { threshold: 0.1 });
+                entries.forEach(entry => {
+                    if (entry.target.id === 'spGeneralSection') {
+                        visibleSections.sp = entry.isIntersecting;
+                    } else if (entry.target.id === 'generalSection') {
+                        visibleSections.general = entry.isIntersecting;
+                    }
+                });
+                updateVisibility();
+            }, { threshold: 0.05 }); // Lower threshold for better mobile detection
 
             observer.observe(spSection);
             observer.observe(genSection);
