@@ -6643,15 +6643,24 @@
             let startX, startY, startLeft, startTop;
             const DRAG_THRESHOLD = 10; // pixels to distinguish tap from drag
 
-            // Load saved position
+            // Load saved position (with viewport boundary check)
             const savedPos = localStorage.getItem('floatingNavPosition');
             if (savedPos) {
                 try {
                     const pos = JSON.parse(savedPos);
-                    nav.style.right = 'auto';
-                    nav.style.bottom = 'auto';
-                    nav.style.left = pos.left + 'px';
-                    nav.style.top = pos.top + 'px';
+                    // Validate position is within current viewport
+                    const maxLeft = window.innerWidth - nav.offsetWidth;
+                    const maxTop = window.innerHeight - nav.offsetHeight;
+                    const safeLeft = Math.max(0, Math.min(pos.left, maxLeft));
+                    const safeTop = Math.max(0, Math.min(pos.top, maxTop));
+
+                    // Only apply if position is valid
+                    if (safeLeft >= 0 && safeTop >= 0) {
+                        nav.style.right = 'auto';
+                        nav.style.bottom = 'auto';
+                        nav.style.left = safeLeft + 'px';
+                        nav.style.top = safeTop + 'px';
+                    }
                 } catch (e) {}
             }
 
@@ -6747,6 +6756,21 @@
             nav.addEventListener('touchstart', onStart, { passive: true });
             document.addEventListener('touchmove', onMove, { passive: false });
             document.addEventListener('touchend', onEnd);
+
+            // Keep nav within viewport on resize
+            window.addEventListener('resize', () => {
+                // Only adjust if using left/top positioning (was dragged before)
+                if (nav.style.left && nav.style.left !== 'auto') {
+                    const rect = nav.getBoundingClientRect();
+                    const maxLeft = window.innerWidth - nav.offsetWidth;
+                    const maxTop = window.innerHeight - nav.offsetHeight;
+
+                    if (rect.left > maxLeft || rect.top > maxTop) {
+                        nav.style.left = Math.max(0, Math.min(rect.left, maxLeft)) + 'px';
+                        nav.style.top = Math.max(0, Math.min(rect.top, maxTop)) + 'px';
+                    }
+                }
+            });
         })();
 
         function resetFloatingNavPosition() {
