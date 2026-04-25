@@ -5194,9 +5194,10 @@
                 }
             }
             // Check custom SP generals
-            if (cachedCustomSpGenerals) {
-                for (const spName of cachedCustomSpGenerals) {
-                    const id = safeId(spName);
+            const customSpGenerals = getCustomItemsForCategory('SP武将');
+            if (customSpGenerals && customSpGenerals.length > 0) {
+                for (const item of customSpGenerals) {
+                    const id = safeId(item.name);
                     const formedCb = document.getElementById(`${id}_formed`);
                     const deputyInput = document.getElementById(`${id}_deputy`);
                     if (formedCb?.checked && deputyInput?.value === generalName) {
