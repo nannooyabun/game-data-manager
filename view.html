@@ -3764,12 +3764,14 @@
             }
         };
 
+        let helpInitialized = false;
+
         function openHelpChat() {
             document.getElementById('helpChatOverlay').classList.add('show');
             document.getElementById('helpChat').classList.add('show');
-            // Only show content if body is empty (first open)
-            const body = document.getElementById('helpChatBody');
-            if (!body.innerHTML.trim()) {
+            // Show initial content only on first open
+            if (!helpInitialized) {
+                helpInitialized = true;
                 showHelpContent('main');
             }
         }
