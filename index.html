@@ -129,6 +129,11 @@
             background: var(--status-partial);
         }
 
+        .progress-item.good {
+            border-color: #4fc3f7;
+            background: rgba(79, 195, 247, 0.15);
+        }
+
         .progress-item.empty {
             border-color: var(--accent-red);
             background: var(--status-empty);
@@ -5926,126 +5931,188 @@
         // ========== Progress Update ==========
 
         function updateProgress() {
-            updateSectionStatus('basicStatus', checkBasicComplete());
-            updateSectionStatus('weaponStatus', checkWeaponComplete());
-            updateSectionStatus('spGeneralStatus', checkSpGeneralComplete());
-            updateSectionStatus('generalStatus', checkGeneralComplete());
-            updateSectionStatus('academyStatus', checkAcademyComplete());
-            updateSectionStatus('asuraStatus', checkAsuraComplete());
-            updateSectionStatus('armorStatus', checkArmorComplete());
-            updateSectionStatus('flowerStatus', checkFlowerComplete());
-            updateSectionStatus('horseStatus', checkHorseComplete());
-            updateSectionStatus('tacticStatus', checkTacticComplete());
+            updateSectionProgress('basic', checkBasicProgress());
+            updateSectionProgress('weapon', checkWeaponProgress());
+            updateSectionProgress('spGeneral', checkSpGeneralProgress());
+            updateSectionProgress('general', checkGeneralProgress());
+            updateSectionProgress('academy', checkAcademyProgress());
+            updateSectionProgress('asura', checkAsuraProgress());
+            updateSectionProgress('armor', checkArmorProgress());
+            updateSectionProgress('flower', checkFlowerProgress());
+            updateSectionProgress('horse', checkHorseProgress());
+            updateSectionProgress('tactic', checkTacticProgress());
         }
 
-        function updateSectionStatus(elementId, status) {
-            const el = document.getElementById(elementId);
-            if (!el) return;
-            
-            el.className = 'status-badge ' + status;
-            switch(status) {
-                case 'complete': el.textContent = '完了'; break;
-                case 'partial': el.textContent = '入力中'; break;
-                default: el.textContent = '未入力';
+        function updateSectionProgress(section, progress) {
+            const item = document.querySelector(`.progress-item[data-section="${section}"]`);
+            if (!item) return;
+
+            const statusEl = item.querySelector('.status');
+            const { count, total } = progress;
+            const percent = total > 0 ? (count / total) * 100 : 0;
+
+            // Update text
+            statusEl.textContent = `${count}/${total}`;
+
+            // Update color class based on percentage
+            item.classList.remove('empty', 'partial', 'good', 'complete');
+            if (count === 0) {
+                item.classList.add('empty');
+            } else if (percent < 30) {
+                item.classList.add('partial');
+            } else if (percent < 70) {
+                item.classList.add('good');
+            } else {
+                item.classList.add('complete');
             }
         }
 
-        function checkBasicComplete() {
-            const username = document.getElementById('username').value;
-            const troopType = document.getElementById('troopType').value;
-            if (username && troopType) return 'complete';
-            if (username || troopType) return 'partial';
-            return 'empty';
+        function checkBasicProgress() {
+            let count = 0;
+            const total = 2; // username, troopType
+            if (document.getElementById('username').value) count++;
+            if (document.getElementById('troopType').value) count++;
+            return { count, total };
         }
 
-        function checkWeaponComplete() {
-            let hasAny = false;
-            ['akoni', 'inseki', 'hanya'].forEach(w => {
-                if (document.getElementById(`${w}Status`).value) hasAny = true;
+        function checkWeaponProgress() {
+            let count = 0;
+            const weapons = ['akoni', 'inseki', 'hanya'];
+            weapons.forEach(w => {
+                const card = document.querySelector(`#weaponSection .tap-card[data-weapon="${w}"]`);
+                if (card && parseInt(card.dataset.state) > 0) count++;
             });
-            return hasAny ? 'partial' : 'empty';
-        }
-
-        function checkSpGeneralComplete() {
-            let hasAny = false;
-            ['nobunaga', 'hideyoshi', 'ieyasu'].forEach(sp => {
-                if (document.getElementById(`${sp}Formed`).checked) hasAny = true;
-                if (document.getElementById(`${sp}Owned`).checked) hasAny = true;
-                if (document.getElementById(`${sp}Ideology`).value) hasAny = true;
-                if (document.getElementById(`${sp}Skill`).value) hasAny = true;
+            // Include custom weapons
+            const customWeapons = getCustomItemsForCategory('兵器');
+            customWeapons.forEach(item => {
+                const id = safeId(item.name);
+                const ownedEl = document.getElementById(`${id}_owned`);
+                if (ownedEl?.checked) count++;
             });
-            return hasAny ? 'partial' : 'empty';
+            const total = weapons.length + customWeapons.length;
+            return { count, total };
         }
 
-        function checkGeneralComplete() {
-            let hasAny = false;
+        function checkSpGeneralProgress() {
+            let count = 0;
+            const spGenerals = ['nobunaga', 'hideyoshi', 'ieyasu'];
+            spGenerals.forEach(sp => {
+                if (document.getElementById(`${sp}Owned`)?.checked) count++;
+            });
+            // Include custom SP generals
+            const customSp = getCustomItemsForCategory('SP武将');
+            customSp.forEach(item => {
+                const id = safeId(item.name);
+                if (document.getElementById(`${id}_owned`)?.checked) count++;
+            });
+            const total = spGenerals.length + customSp.length;
+            return { count, total };
+        }
+
+        function checkGeneralProgress() {
+            let count = 0;
             const allGenerals = getAllGenerals();
             for (let i = 0; i < allGenerals.length; i++) {
-                const el = document.getElementById(`general_${i}`);
                 const stateEl = document.getElementById(`generalState_${i}`);
-                if ((el && el.value) || (stateEl && parseInt(stateEl.value) > 0)) hasAny = true;
+                if (stateEl && parseInt(stateEl.value) > 0) count++;
             }
-            return hasAny ? 'partial' : 'empty';
+            return { count, total: allGenerals.length };
         }
 
-        function checkAcademyComplete() {
+        function checkAcademyProgress() {
+            let count = 0;
+            // Gokuden levels (5 fields)
             const fields = ['gokudenSword', 'gokudenBody', 'gokudenTech', 'gokudenHeart1', 'gokudenHeart2'];
-            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
-            
-            let hasAny = false;
             fields.forEach(f => {
-                if (document.getElementById(f).value) hasAny = true;
+                if (document.getElementById(f)?.value) count++;
             });
+            // Gokuden heiho (13 items)
+            const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
             gokudenHeiho.forEach(h => {
-                if (document.getElementById(`gokuden${h}_equipped`)?.checked) hasAny = true;
-                if (document.getElementById(`gokuden${h}_owned`)?.checked) hasAny = true;
+                if (document.getElementById(`gokuden${h}_owned`)?.checked) count++;
             });
-            
-            return hasAny ? 'partial' : 'empty';
+            // Custom academy items
+            const customAcademy = getCustomItemsForCategory('軍学道場');
+            customAcademy.forEach(item => {
+                const id = safeId(item.name);
+                if (document.getElementById(`${id}_owned`)?.checked) count++;
+            });
+            const total = fields.length + gokudenHeiho.length + customAcademy.length;
+            return { count, total };
         }
 
-        function checkAsuraComplete() {
-            let hasAny = false;
-            ['asura30_1', 'asura30_2', 'asura30_3', 'asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5', 'asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'].forEach(id => {
-                if (document.getElementById(id)?.checked) hasAny = true;
+        function checkAsuraProgress() {
+            let count = 0;
+            const skills = ['asura30_1', 'asura30_2', 'asura30_3', 'asura60_1', 'asura60_2', 'asura60_3', 'asura60_4', 'asura60_5', 'asura90_1', 'asura90_2', 'asura90_3', 'asura90_4', 'asura90_5'];
+            skills.forEach(id => {
+                if (document.getElementById(id)?.checked) count++;
             });
-            return hasAny ? 'partial' : 'empty';
+            // Custom asura items
+            const customAsura = getCustomItemsForCategory('阿修羅');
+            customAsura.forEach(item => {
+                const id = safeId(item.name);
+                if (document.getElementById(`${id}_owned`)?.checked) count++;
+            });
+            const total = skills.length + customAsura.length;
+            return { count, total };
         }
 
-        function checkArmorComplete() {
-            let hasAny = false;
-            ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'].forEach(m => {
-                if (document.getElementById(`mask_${m}_equipped`).checked) hasAny = true;
-                if (document.getElementById(`mask_${m}_owned`).checked) hasAny = true;
+        function checkArmorProgress() {
+            let count = 0;
+            const masks = ['genko', 'kirin', 'reikyo', 'kinen', 'hanya', 'kiou'];
+            masks.forEach(m => {
+                if (document.getElementById(`mask_${m}_owned`)?.checked) count++;
             });
-            return hasAny ? 'partial' : 'empty';
+            // Custom masks
+            const customMasks = getCustomItemsForCategory('核心具足');
+            customMasks.forEach(item => {
+                const id = safeId(item.name);
+                if (document.getElementById(`${id}_owned`)?.checked) count++;
+            });
+            const total = masks.length + customMasks.length;
+            return { count, total };
         }
 
-        function checkFlowerComplete() {
-            let hasAny = false;
+        function checkFlowerProgress() {
+            let count = 0;
             flowerFormations.forEach(f => {
-                if (document.getElementById(`flower_${f.id}_equipped`).checked) hasAny = true;
-                if (document.getElementById(`flower_${f.id}_owned`).checked) hasAny = true;
+                if (document.getElementById(`flower_${f.id}_owned`)?.checked) count++;
             });
-            return hasAny ? 'partial' : 'empty';
+            // Custom flowers
+            const customFlowers = getCustomItemsForCategory('花陣');
+            customFlowers.forEach(item => {
+                const id = safeId(item.name);
+                if (document.getElementById(`${id}_owned`)?.checked) count++;
+            });
+            const total = flowerFormations.length + customFlowers.length;
+            return { count, total };
         }
 
-        function checkHorseComplete() {
-            let hasAny = false;
-            ['kago', 'kobu', 'hangeki'].forEach(h => {
-                if (document.getElementById(`horse_${h}_gold`).value) hasAny = true;
-                if (document.getElementById(`horse_${h}_silver`).value) hasAny = true;
+        function checkHorseProgress() {
+            let count = 0;
+            const horses = ['kago', 'kobu', 'hangeki'];
+            horses.forEach(h => {
+                const gold = document.getElementById(`horse_${h}_gold`)?.value;
+                const silver = document.getElementById(`horse_${h}_silver`)?.value;
+                if (gold || silver) count++;
             });
-            return hasAny ? 'partial' : 'empty';
+            const total = horses.length;
+            return { count, total };
         }
 
-        function checkTacticComplete() {
-            let hasAny = false;
+        function checkTacticProgress() {
+            let count = 0;
             tactics.forEach(t => {
-                if (document.getElementById(`tactic_${t.id}_equipped`).checked) hasAny = true;
-                if (document.getElementById(`tactic_${t.id}_owned`).checked) hasAny = true;
+                if (document.getElementById(`tactic_${t.id}_owned`)?.checked) count++;
             });
-            return hasAny ? 'partial' : 'empty';
+            // Custom tactics
+            const customTactics = getCustomItemsForCategory('戦法');
+            customTactics.forEach(item => {
+                const id = safeId(item.name);
+                if (document.getElementById(`${id}_owned`)?.checked) count++;
+            });
+            const total = tactics.length + customTactics.length;
+            return { count, total };
         }
 
 
