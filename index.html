@@ -2728,48 +2728,46 @@
             updateProgress();
         }
 
-        // Collect current general states
+        // Collect current general states (DOM-based, using data-general attribute)
         function collectGeneralStates() {
             const states = {};
-            const allGenerals = getAllGenerals();
-            for (let i = 0; i < allGenerals.length; i++) {
-                const genName = allGenerals[i];
-                const levelEl = document.getElementById(`general_${i}`);
-                const stateEl = document.getElementById(`generalState_${i}`);
-                if (levelEl && stateEl) {
+            document.querySelectorAll('#generalGrid .general-item').forEach(item => {
+                const genName = item.dataset.general;
+                if (!genName) return;
+                const levelEl = item.querySelector('.general-level-select');
+                const stateEl = item.querySelector('input[type="hidden"]');
+                if (levelEl) {
                     states[genName] = {
-                        level: parseInt(levelEl.value) || 10,
-                        state: parseInt(stateEl.value) || 0
+                        level: parseInt(levelEl.value) || 0,
+                        state: parseInt(stateEl?.value) || 0
                     };
                 }
-            }
+            });
             return states;
         }
 
-        // Apply saved general states after re-rendering
+        // Apply saved general states after re-rendering (DOM-based)
         function applyGeneralStates(savedStates) {
-            const allGenerals = getAllGenerals();
-            for (let i = 0; i < allGenerals.length; i++) {
-                const genName = allGenerals[i];
+            document.querySelectorAll('#generalGrid .general-item').forEach(item => {
+                const genName = item.dataset.general;
+                if (!genName) return;
                 const saved = savedStates[genName];
-                if (saved) {
-                    const levelEl = document.getElementById(`general_${i}`);
-                    const stateEl = document.getElementById(`generalState_${i}`);
-                    const itemEl = document.getElementById(`generalItem_${i}`);
+                if (!saved) return;
 
-                    if (levelEl) levelEl.value = saved.level;
-                    if (stateEl) stateEl.value = saved.state;
-                    if (itemEl) {
-                        itemEl.dataset.state = saved.state;
-                        itemEl.classList.remove('owned', 'formed');
-                        if (saved.state === 1) {
-                            itemEl.classList.add('owned');
-                        } else if (saved.state === 2) {
-                            itemEl.classList.add('formed');
-                        }
-                    }
+                const levelEl = item.querySelector('.general-level-select');
+                const stateEl = item.querySelector('input[type="hidden"]');
+
+                if (levelEl) levelEl.value = saved.level;
+                if (stateEl) stateEl.value = saved.state;
+
+                item.dataset.state = saved.state;
+                item.classList.remove('owned', 'formed');
+                if (saved.state === 1) {
+                    item.classList.add('owned');
+                } else if (saved.state === 2) {
+                    item.classList.add('formed');
                 }
-            }
+            });
         }
 
         // Get generals sorted by index number from master data
@@ -5013,21 +5011,22 @@
                 };
             });
 
-            // Generals
-            const allGenerals = getAllGenerals();
+            // Generals (DOM-based, using data-general attribute)
             data.generals = {};
-            for (let i = 0; i < allGenerals.length; i++) {
-                const levelEl = document.getElementById(`general_${i}`);
-                const stateEl = document.getElementById(`generalState_${i}`);
+            document.querySelectorAll('#generalGrid .general-item').forEach(item => {
+                const genName = item.dataset.general;
+                if (!genName) return;
+                const levelEl = item.querySelector('.general-level-select');
+                const stateEl = item.querySelector('input[type="hidden"]');
                 if (levelEl) {
                     const state = stateEl ? parseInt(stateEl.value) : 0;
-                    data.generals[allGenerals[i]] = {
+                    data.generals[genName] = {
                         level: levelEl.value,
                         owned: state >= 1,
                         formed: state === 2
                     };
                 }
-            }
+            });
 
             // Academy
             const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
@@ -5674,19 +5673,21 @@
                 });
             }
 
-            // Generals
+            // Generals (DOM-based, using data-general attribute)
             if (data.generals) {
-                const allGenerals = getAllGenerals();
-                for (let i = 0; i < allGenerals.length; i++) {
-                    const levelEl = document.getElementById(`general_${i}`);
-                    const stateEl = document.getElementById(`generalState_${i}`);
-                    const itemEl = document.getElementById(`generalItem_${i}`);
-                    const generalData = data.generals[allGenerals[i]];
-                    
-                    if (levelEl && generalData) {
+                document.querySelectorAll('#generalGrid .general-item').forEach(item => {
+                    const genName = item.dataset.general;
+                    if (!genName) return;
+                    const generalData = data.generals[genName];
+                    if (!generalData) return;
+
+                    const levelEl = item.querySelector('.general-level-select');
+                    const stateEl = item.querySelector('input[type="hidden"]');
+
+                    if (levelEl) {
                         if (typeof generalData === 'object') {
                             levelEl.value = generalData.level || 0;
-                            if (stateEl && itemEl) {
+                            if (stateEl) {
                                 let state = 0;
                                 if (generalData.formed) {
                                     state = 2;
@@ -5694,20 +5695,20 @@
                                     state = 1;
                                 }
                                 stateEl.value = state;
-                                itemEl.dataset.state = state;
+                                item.dataset.state = state;
 
-                                itemEl.classList.remove('owned', 'formed');
+                                item.classList.remove('owned', 'formed');
                                 if (state === 1) {
-                                    itemEl.classList.add('owned');
+                                    item.classList.add('owned');
                                 } else if (state === 2) {
-                                    itemEl.classList.add('formed');
+                                    item.classList.add('formed');
                                 }
                             }
                         } else {
                             levelEl.value = generalData;
                         }
                     }
-                }
+                });
             }
 
             // Academy
