@@ -1259,6 +1259,12 @@
             display: block;
         }
 
+        .floating-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
         .floating-btn {
             width: 56px;
             height: 56px;
@@ -1279,9 +1285,22 @@
             transform: scale(1.1);
         }
 
+        .floating-btn.save-btn {
+            background: var(--accent-green);
+            box-shadow: 0 4px 20px rgba(60, 184, 120, 0.4);
+            font-size: 1.3rem;
+        }
+
+        .floating-btn.menu-btn {
+            background: var(--bg-card);
+            border: 2px solid var(--accent-gold);
+            color: var(--accent-gold);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
         .floating-menu {
             position: absolute;
-            bottom: 70px;
+            bottom: 130px;
             right: 0;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -2543,7 +2562,10 @@
             <button class="floating-menu-item" onclick="scrollToSection('tacticSection')">⑧ 戦法</button>
             <button class="floating-menu-item reset-btn" onclick="resetFloatingNavPosition()">↩ 位置をリセット</button>
         </div>
-        <button class="floating-btn" onclick="toggleFloatingMenu()">☰</button>
+        <div class="floating-btn-group">
+            <button class="floating-btn save-btn" onclick="submitData()" title="保存">💾</button>
+            <button class="floating-btn menu-btn" onclick="toggleFloatingMenu()" title="メニュー">☰</button>
+        </div>
     </div>
 
     <!-- Bulk Level Popup -->
@@ -2690,12 +2712,15 @@
         // Toggle between category view and index order view
         function toggleGeneralDisplayMode() {
             const checkbox = document.getElementById('showByIndexOrder');
-            showByIndexOrder = checkbox.checked;
 
-            // Collect current general states before re-rendering
+            // Collect current general states BEFORE changing the sort mode
+            // (getAllGenerals() depends on showByIndexOrder)
             const savedStates = collectGeneralStates();
 
-            // Re-render the grid
+            // Now change the sort mode
+            showByIndexOrder = checkbox.checked;
+
+            // Re-render the grid in new order
             initGeneralGrid();
 
             // Restore states after re-rendering
@@ -3918,7 +3943,7 @@
                 if (JSON.stringify(newGenerals) !== JSON.stringify(cachedCustomGenerals) || JSON.stringify(newRaw) !== JSON.stringify(cachedCustomGeneralsRaw)) {
                     cachedCustomGenerals = newGenerals;
                     cachedCustomGeneralsRaw = newRaw;
-                    initGeneralGrid();
+                    reRenderWithDataPreservation(initGeneralGrid, 'カスタム武将が更新されました');
                 }
             });
 
