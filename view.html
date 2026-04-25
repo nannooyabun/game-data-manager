@@ -3870,23 +3870,29 @@
                 // Get all categories
                 const allCategories = getAllCategories();
 
-                // Get filtered users (same as current view)
+                // Get entries using same logic as table view
                 const teamFilterValue = document.getElementById('teamFilter').value;
-                let usersToExport = [];
+                let entriesToExport = [];
+
+                // Get all visible entries (properly handles multi-team format)
+                const allEntries = getVisibleEntries();
 
                 if (teamFilterValue === '__all__') {
-                    usersToExport = Object.entries(gameData || {}).map(([name, data]) => ({ name, ...data }));
+                    entriesToExport = allEntries;
                 } else {
+                    // Filter by selected team's members
                     const team = Object.values(teams || {}).find(t => t.id === teamFilterValue);
                     if (team && team.members) {
-                        usersToExport = team.members
-                            .filter(m => gameData?.[m])
-                            .map(m => ({ name: m, ...gameData[m] }));
+                        const memberSet = new Set(team.members);
+                        entriesToExport = allEntries.filter(e => memberSet.has(e.username));
                     }
                 }
 
-                // Filter out hidden users
-                usersToExport = usersToExport.filter(u => !u.hidden);
+                // Convert entries to user objects for export (with name and team info)
+                const usersToExport = entriesToExport.map(e => ({
+                    name: e.team && e.team !== '1軍' ? `${e.username} (${e.team})` : e.username,
+                    ...e.data
+                }));
 
                 if (usersToExport.length === 0) {
                     showToast('エクスポートするデータがありません');
