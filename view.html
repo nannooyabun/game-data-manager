@@ -1553,14 +1553,17 @@
             const table = document.querySelector('.view-table tbody');
             if (!table) return;
 
-            // Deselect previous row
-            table.querySelectorAll('tr.row-selected').forEach(tr => {
-                tr.classList.remove('row-selected');
-            });
-
             // If clicking same row, deselect (toggle off)
             if (selectedRowKey === newKey) {
+                table.querySelectorAll('tr.row-selected').forEach(tr => {
+                    tr.classList.remove('row-selected');
+                });
                 selectedRowKey = null;
+                return;
+            }
+
+            // If another row is selected, do nothing (must deselect current first)
+            if (selectedRowKey !== null) {
                 return;
             }
 
