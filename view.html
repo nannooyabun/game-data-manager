@@ -80,8 +80,23 @@
         }
 
         .header-actions a:hover,
-        .header-actions select:hover {
+        .header-actions select:hover,
+        .excel-export-btn:hover {
             border-color: var(--accent-gold-dim);
+        }
+
+        .excel-export-btn {
+            padding: 0.5rem 1rem;
+            background: #217346;
+            border: 1px solid #1a5c38;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .excel-export-btn:hover {
+            background: #1a5c38;
         }
 
         /* Status area */
@@ -1184,6 +1199,7 @@
             <h1>武将データ一覧 - チーム編成ビュー</h1>
             <div class="header-actions">
                 <a href="index.html">← 入力画面へ戻る</a>
+                <button onclick="exportToExcel()" class="excel-export-btn">📊 Excel出力</button>
                 <select id="teamFilter">
                     <option value="__all__">全ユーザー</option>
                 </select>
@@ -3830,6 +3846,227 @@
             }
 
             showHelpContent(matched);
+        }
+
+        // ========== Excel Export ==========
+        async function exportToExcel() {
+            // Load SheetJS if not already loaded
+            if (typeof XLSX === 'undefined') {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+
+            showToast('Excel出力中...');
+
+            try {
+                // Get all categories
+                const allCategories = getAllCategories();
+
+                // Get filtered users (same as current view)
+                const teamFilterValue = document.getElementById('teamFilter').value;
+                let usersToExport = [];
+
+                if (teamFilterValue === '__all__') {
+                    usersToExport = Object.entries(gameDataCache || {}).map(([name, data]) => ({ name, ...data }));
+                } else {
+                    const team = teamsCache?.find(t => t.id === teamFilterValue);
+                    if (team && team.members) {
+                        usersToExport = team.members
+                            .filter(m => gameDataCache?.[m])
+                            .map(m => ({ name: m, ...gameDataCache[m] }));
+                    }
+                }
+
+                // Filter out hidden users
+                usersToExport = usersToExport.filter(u => !u.hidden);
+
+                if (usersToExport.length === 0) {
+                    showToast('エクスポートするデータがありません');
+                    return;
+                }
+
+                // Build Excel data with cell info for styling
+                const rows = [];
+                const cellStyles = {}; // Track cell styles: { "A1": "equipped", "B2": "owned", etc }
+
+                // Row 1: Category titles (will need merge info)
+                const categoryRow = [''];
+                const mergeRanges = [];
+                let colIndex = 1;
+
+                for (const cat of allCategories) {
+                    if (!cat.items || cat.items.length === 0) continue;
+                    const startCol = colIndex;
+                    for (let i = 0; i < cat.items.length; i++) {
+                        categoryRow.push(i === 0 ? cat.title : '');
+                        colIndex++;
+                    }
+                    if (cat.items.length > 1) {
+                        mergeRanges.push({ s: { r: 0, c: startCol }, e: { r: 0, c: colIndex - 1 } });
+                    }
+                }
+                rows.push(categoryRow);
+
+                // Row 2: Item names with rallyLimit info
+                const itemRow = ['ユーザー名'];
+                for (const cat of allCategories) {
+                    if (!cat.items || cat.items.length === 0) continue;
+                    for (const item of cat.items) {
+                        let name = item.name || item.id;
+                        // Add rally limit for generals if available
+                        if (item.rallyLimit) {
+                            name += `(${item.rallyLimit})`;
+                        }
+                        itemRow.push(name);
+                    }
+                }
+                rows.push(itemRow);
+
+                // Row 3: Notes (category notes + individual item notes)
+                const notesRow = ['備考'];
+                let hasAnyNotes = false;
+                for (const cat of allCategories) {
+                    if (!cat.items || cat.items.length === 0) continue;
+                    for (const item of cat.items) {
+                        let note = '';
+                        // Check for category-level notes
+                        if (cat.categoryNotes) {
+                            note = cat.categoryNotes;
+                            hasAnyNotes = true;
+                        }
+                        // Check for item-level notes (generals)
+                        if (item.notes) {
+                            note = note ? `${note} / ${item.notes}` : item.notes;
+                            hasAnyNotes = true;
+                        }
+                        notesRow.push(note);
+                    }
+                }
+                if (hasAnyNotes) {
+                    rows.push(notesRow);
+                }
+
+                const dataStartRow = rows.length; // Track where data rows start
+
+                // Data rows
+                for (const user of usersToExport) {
+                    const dataRow = [user.name];
+                    let colIdx = 1;
+
+                    for (const cat of allCategories) {
+                        if (!cat.items || cat.items.length === 0) continue;
+                        for (const item of cat.items) {
+                            let cellValue = '';
+                            let cellState = 'none';
+
+                            // Get cell state and value
+                            if (cat.isTextCategory && cat.getCellText) {
+                                cellValue = cat.getCellText(user, item) || '';
+                                cellState = 'text';
+                            } else {
+                                const state = cat.getCellState ? cat.getCellState(user, item) : 'none';
+                                const value = cat.getCellValue ? cat.getCellValue(user, item) : null;
+                                cellState = state;
+
+                                if (state === 'equipped') {
+                                    cellValue = value ? `◎${value}` : '◎';
+                                } else if (state === 'owned') {
+                                    cellValue = value ? `○${value}` : '○';
+                                } else {
+                                    cellValue = '';
+                                }
+                            }
+                            dataRow.push(cellValue);
+
+                            // Track style for this cell
+                            const cellRef = XLSX.utils.encode_cell({ r: rows.length, c: colIdx });
+                            cellStyles[cellRef] = cellState;
+                            colIdx++;
+                        }
+                    }
+                    rows.push(dataRow);
+                }
+
+                // Add legend at the bottom
+                rows.push([]);
+                rows.push(['凡例:', '◎ = 装備/編成中', '○ = 所持', '（空欄）= 未所持']);
+                rows.push(['', '数値は: 兵器=段階/改造, SP武将=主義Lv/スキルLv/副将段階, 武将=守護霊Lv']);
+
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+
+                // Apply merges for category row
+                ws['!merges'] = mergeRanges;
+
+                // Apply cell styles (background colors)
+                for (const [cellRef, state] of Object.entries(cellStyles)) {
+                    if (!ws[cellRef]) continue;
+                    if (state === 'equipped') {
+                        ws[cellRef].s = {
+                            fill: { fgColor: { rgb: "90EE90" } }, // Light green
+                            font: { bold: true }
+                        };
+                    } else if (state === 'owned') {
+                        ws[cellRef].s = {
+                            fill: { fgColor: { rgb: "FFFFE0" } } // Light yellow
+                        };
+                    }
+                }
+
+                // Style header rows
+                const headerStyle = {
+                    fill: { fgColor: { rgb: "4A4A6A" } },
+                    font: { color: { rgb: "FFFFFF" }, bold: true },
+                    alignment: { horizontal: "center" }
+                };
+                for (let c = 0; c < categoryRow.length; c++) {
+                    const cell1 = XLSX.utils.encode_cell({ r: 0, c });
+                    const cell2 = XLSX.utils.encode_cell({ r: 1, c });
+                    if (ws[cell1]) ws[cell1].s = headerStyle;
+                    if (ws[cell2]) ws[cell2].s = { ...headerStyle, fill: { fgColor: { rgb: "3A3A5A" } } };
+                }
+
+                // Set column widths
+                const colWidths = [{ wch: 12 }]; // User name column
+                for (const cat of allCategories) {
+                    if (!cat.items || cat.items.length === 0) continue;
+                    for (const item of cat.items) {
+                        const name = item.name || item.id;
+                        const width = Math.max(5, Math.min(12, name.length * 1.5 + 2));
+                        colWidths.push({ wch: width });
+                    }
+                }
+                ws['!cols'] = colWidths;
+
+                // Freeze first column and header rows
+                ws['!freeze'] = { xSplit: 1, ySplit: hasAnyNotes ? 3 : 2 };
+
+                XLSX.utils.book_append_sheet(wb, ws, 'データ一覧');
+
+                // Generate filename with date and team name
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+                let teamName = '';
+                if (teamFilterValue !== '__all__') {
+                    const team = teamsCache?.find(t => t.id === teamFilterValue);
+                    teamName = team?.name ? `_${team.name}` : '';
+                }
+                const filename = `武将データ_${dateStr}${teamName}.xlsx`;
+
+                // Download
+                XLSX.writeFile(wb, filename);
+                showToast('Excel出力完了');
+
+            } catch (error) {
+                console.error('Excel export error:', error);
+                showToast('Excel出力に失敗しました');
+            }
         }
     </script>
 
