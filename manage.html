@@ -1980,6 +1980,18 @@
                     <input type="text" id="newTeamName" placeholder="新しいチーム名を入力" maxlength="30">
                     <button onclick="createTeam()">チーム作成</button>
                 </div>
+                <div class="team-toolbar" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">並び替え:</span>
+                    <select id="teamSortKey" onchange="onTeamSortChange()" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 0.85rem;">
+                        <option value="createdAt_desc">作成日 (新→古)</option>
+                        <option value="createdAt_asc">作成日 (古→新)</option>
+                        <option value="name_asc">名前 (A→Z)</option>
+                        <option value="name_desc">名前 (Z→A)</option>
+                        <option value="memberCount_desc">メンバー数 (多→少)</option>
+                        <option value="memberCount_asc">メンバー数 (少→多)</option>
+                    </select>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">※ 有効→無効の順で表示</span>
+                </div>
                 <div class="team-list" id="teamList">
                     <div class="empty-state">チームがありません</div>
                 </div>
@@ -2818,10 +2830,45 @@
             }
         }
 
+        // Sort teams (primary: active→inactive, secondary: selected sort key)
+        function sortTeamList(teamList) {
+            const sortKey = document.getElementById('teamSortKey')?.value || 'createdAt_desc';
+            const [key, order] = sortKey.split('_');
+            const asc = order === 'asc';
+
+            return teamList.sort((a, b) => {
+                // Primary: active → inactive
+                const activeA = isTeamActive(a) ? 0 : 1;
+                const activeB = isTeamActive(b) ? 0 : 1;
+                if (activeA !== activeB) return activeA - activeB;
+
+                // Secondary: selected sort key
+                let cmp = 0;
+                switch (key) {
+                    case 'createdAt':
+                        const dateA = new Date(a.createdAt || 0).getTime();
+                        const dateB = new Date(b.createdAt || 0).getTime();
+                        cmp = dateA - dateB;
+                        break;
+                    case 'name':
+                        cmp = (a.name || '').localeCompare(b.name || '');
+                        break;
+                    case 'memberCount':
+                        cmp = (a.members?.length || 0) - (b.members?.length || 0);
+                        break;
+                }
+                return asc ? cmp : -cmp;
+            });
+        }
+
+        function onTeamSortChange() {
+            renderTeamList();
+        }
+
         // Render team list (view mode or edit mode per team)
         function renderTeamList() {
             const container = document.getElementById('teamList');
-            const teamList = Object.values(teams);
+            const teamList = sortTeamList(Object.values(teams));
 
             // Preserve focus across re-render
             const focused = document.activeElement;
