@@ -2386,6 +2386,7 @@
                         <td class="completion">${completion}%</td>
                         <td class="actions">
                             <button class="btn-edit" onclick="editUser('${escapeHtml(name)}', '${escapeHtml(team)}')">編集</button>
+                            <button class="btn-rename" onclick="promptRenameUser('${escapeHtml(name)}')" style="background: var(--accent-gold);">名前変更</button>
                             <button class="btn-delete" onclick="confirmDeleteUser('${escapeHtml(name)}', '${escapeHtml(team)}')">削除</button>
                         </td>
                     </tr>
@@ -2466,6 +2467,68 @@
             } catch (error) {
                 console.error('Delete error:', error);
                 showToast('削除に失敗しました', 'error');
+            }
+        }
+
+        // Prompt for new username
+        function promptRenameUser(oldName) {
+            const newName = prompt(`「${oldName}」の新しい名前を入力してください:`, oldName);
+            if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
+            if (gameData[newName.trim()]) {
+                showToast(`「${newName.trim()}」は既に存在します`, 'error');
+                return;
+            }
+            renameUser(oldName, newName.trim());
+        }
+
+        // Rename user (update gameData and all team members)
+        async function renameUser(oldName, newName) {
+            if (!gameData[oldName]) {
+                showToast('ユーザーが見つかりません', 'error');
+                return;
+            }
+            try {
+                const { database, ref, set, remove, update } = window.firebaseDB;
+
+                // 1. Copy user data to new name
+                const userData = JSON.parse(JSON.stringify(gameData[oldName]));
+                await set(ref(database, `gameData/${newName}`), userData);
+
+                // 2. Update team members references
+                const teamUpdates = {};
+                Object.entries(teams).forEach(([teamId, team]) => {
+                    if (!Array.isArray(team.members)) return;
+                    const updatedMembers = team.members.map(entry => {
+                        const p = parseMemberEntry(entry);
+                        if (p.username === oldName) {
+                            return p.team ? `${newName}/${p.team}` : newName;
+                        }
+                        return entry;
+                    });
+                    // Check if any member was updated
+                    if (JSON.stringify(updatedMembers) !== JSON.stringify(team.members)) {
+                        teamUpdates[`teams/${teamId}/members`] = updatedMembers;
+                    }
+                });
+
+                // 3. Update hidden users if applicable
+                if (hiddenUsers[oldName]) {
+                    teamUpdates[`settings/hiddenUsers/${newName}`] = true;
+                    teamUpdates[`settings/hiddenUsers/${oldName}`] = null;
+                }
+
+                // Apply team updates
+                if (Object.keys(teamUpdates).length > 0) {
+                    await update(ref(database), teamUpdates);
+                }
+
+                // 4. Delete old user data
+                await remove(ref(database, `gameData/${oldName}`));
+
+                showToast(`「${oldName}」を「${newName}」に変更しました`, 'success');
+            } catch (error) {
+                console.error('Rename error:', error);
+                showToast('名前の変更に失敗しました', 'error');
             }
         }
 
