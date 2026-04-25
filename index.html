@@ -6721,13 +6721,19 @@
                         top: rect.top
                     }));
                 } else if (isTouch) {
-                    // Touch tap (not drag) - toggle menu if tapped on button
-                    // Only for touch events; mouse uses onclick handler
+                    // Touch tap (not drag) - trigger the appropriate button action
                     const touch = e.changedTouches[0];
                     const target = document.elementFromPoint(touch.clientX, touch.clientY);
-                    if (target && target.closest('.floating-btn')) {
-                        e.preventDefault();
-                        toggleFloatingMenu();
+                    if (target) {
+                        const saveBtn = target.closest('.save-btn');
+                        const menuBtn = target.closest('.menu-btn');
+                        if (saveBtn) {
+                            e.preventDefault();
+                            submitData();
+                        } else if (menuBtn) {
+                            e.preventDefault();
+                            toggleFloatingMenu();
+                        }
                     }
                 }
             }
