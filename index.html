@@ -744,6 +744,32 @@
             content: '編成';
         }
 
+        /* State: Deputy (副将) */
+        .general-item.deputy {
+            border-color: #9b59b6;
+            background: rgba(155, 89, 182, 0.1);
+        }
+
+        .general-item.deputy .general-name {
+            color: #9b59b6;
+            font-weight: 500;
+            cursor: default;
+        }
+
+        .general-item.deputy .general-name::before {
+            content: '▲ ';
+        }
+
+        .general-item.deputy .status-badge {
+            display: inline-block;
+            background: #9b59b6;
+            color: white;
+        }
+
+        .general-item.deputy .status-badge::after {
+            content: '副将';
+        }
+
         .general-item input[type="number"] {
             width: 45px;
             padding: 0.2rem;
@@ -2045,7 +2071,7 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="nobunagaDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('nobunagaDeputy')">
+                            <input type="text" id="nobunagaDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('nobunagaDeputy'); updateDeputyStates()">
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -2083,7 +2109,7 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="hideyoshiDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('hideyoshiDeputy')">
+                            <input type="text" id="hideyoshiDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('hideyoshiDeputy'); updateDeputyStates()">
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -2121,7 +2147,7 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="ieyasuDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('ieyasuDeputy')">
+                            <input type="text" id="ieyasuDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('ieyasuDeputy'); updateDeputyStates()">
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -4312,7 +4338,7 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="${safeId(item.name)}_deputy" class="deputy-name-input" list="generalNameList" placeholder="副将の名前" onchange="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy')">
+                            <input type="text" id="${safeId(item.name)}_deputy" class="deputy-name-input" list="generalNameList" placeholder="副将の名前" onchange="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy'); updateDeputyStates()">
                             <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
@@ -5010,26 +5036,73 @@
             return allGenerals.indexOf(generalName);
         }
 
+        // Check if a general is a deputy of a formed SP general
+        function isGeneralDeputy(generalName) {
+            // Check built-in SP generals
+            const spGeneralIds = ['nobunaga', 'hideyoshi', 'ieyasu'];
+            for (const spId of spGeneralIds) {
+                const formedCb = document.getElementById(`${spId}Formed`);
+                const deputyInput = document.getElementById(`${spId}Deputy`);
+                if (formedCb?.checked && deputyInput?.value === generalName) {
+                    return true;
+                }
+            }
+            // Check custom SP generals
+            if (cachedCustomSpGenerals) {
+                for (const spName of cachedCustomSpGenerals) {
+                    const id = safeId(spName);
+                    const formedCb = document.getElementById(`${id}_formed`);
+                    const deputyInput = document.getElementById(`${id}_deputy`);
+                    if (formedCb?.checked && deputyInput?.value === generalName) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Update deputy states for all generals
+        function updateDeputyStates() {
+            document.querySelectorAll('#generalGrid .general-item').forEach(item => {
+                const generalName = item.dataset.general;
+                if (!generalName) return;
+                const isDeputy = isGeneralDeputy(generalName);
+                item.classList.remove('deputy');
+                if (isDeputy) {
+                    item.classList.add('deputy');
+                    // Remove owned/formed when deputy
+                    item.classList.remove('owned', 'formed');
+                }
+            });
+        }
+
         // Toggle general state: 0 (none) -> 1 (owned) -> 2 (formed) -> 0 (none)
         function toggleGeneralState(index) {
             const item = document.getElementById(`generalItem_${index}`);
             const hiddenInput = document.getElementById(`generalState_${index}`);
+
+            // If this general is a deputy, don't allow state changes
+            const generalName = item?.dataset?.general;
+            if (generalName && isGeneralDeputy(generalName)) {
+                return; // Skip state toggle for deputies
+            }
+
             let currentState = parseInt(item.dataset.state || '0');
-            
+
             // Cycle through states: 0 -> 1 -> 2 -> 0
             currentState = (currentState + 1) % 3;
-            
+
             item.dataset.state = currentState;
             hiddenInput.value = currentState;
-            
+
             // Update visual classes
-            item.classList.remove('owned', 'formed');
+            item.classList.remove('owned', 'formed', 'deputy');
             if (currentState === 1) {
                 item.classList.add('owned');
             } else if (currentState === 2) {
                 item.classList.add('formed');
             }
-            
+
             updateProgress();
         }
 
@@ -7030,6 +7103,8 @@
                 if (state === '2') count++;
             }
             document.getElementById('totalFormationCount').innerHTML = `${count}<span>人</span>`;
+            // Update deputy states for generals
+            updateDeputyStates();
         }
 
         // ========== Summary Update ==========
