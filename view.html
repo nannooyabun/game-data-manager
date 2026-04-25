@@ -3852,14 +3852,34 @@
         }
 
         // ========== Excel Export ==========
+        // Category color mapping (RGB hex without #)
+        const categoryColors = {
+            'cat-basic': 'E8E8E8',     // Gray for basic info
+            'cat-weapon': 'FFE4E1',    // Light red/pink for weapons
+            'cat-sp': 'FFFACD',        // Light yellow for SP generals
+            'cat-general': 'E6F3FF',   // Light blue for generals
+            'cat-academy': 'E8F5E9',   // Light green for academy
+            'cat-asura': 'FFF3E0',     // Light orange for asura
+            'cat-armor': 'F3E5F5',     // Light purple for armor
+            'cat-flower': 'FCE4EC',    // Light pink for flowers
+            'cat-tactic': 'E0F7FA'     // Light cyan for tactics
+        };
+
         async function exportToExcel() {
-            // Load SheetJS if not already loaded
+            // Load xlsx-style for styling support
             if (typeof XLSX === 'undefined') {
                 await new Promise((resolve, reject) => {
                     const script = document.createElement('script');
-                    script.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+                    script.src = 'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
                     script.onload = resolve;
-                    script.onerror = reject;
+                    script.onerror = () => {
+                        // Fallback to standard SheetJS
+                        const fallback = document.createElement('script');
+                        fallback.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+                        fallback.onload = resolve;
+                        fallback.onerror = reject;
+                        document.head.appendChild(fallback);
+                    };
                     document.head.appendChild(script);
                 });
             }
@@ -3901,7 +3921,8 @@
 
                 // Build Excel data with cell info for styling
                 const rows = [];
-                const cellStyles = {}; // Track cell styles: { "A1": "equipped", "B2": "owned", etc }
+                const cellStyles = {}; // Track cell styles: { "A1": { state, colorClass }, ... }
+                const columnCategories = [null]; // Track category colorClass for each column (index 0 = user name column)
 
                 // Row 1: Category titles (will need merge info)
                 const categoryRow = [''];
@@ -3913,6 +3934,7 @@
                     const startCol = colIndex;
                     for (let i = 0; i < cat.items.length; i++) {
                         categoryRow.push(i === 0 ? cat.title : '');
+                        columnCategories.push(cat.colorClass || 'cat-general');
                         colIndex++;
                     }
                     if (cat.items.length > 1) {
@@ -3992,9 +4014,9 @@
                             }
                             dataRow.push(cellValue);
 
-                            // Track style for this cell
+                            // Track style for this cell (state + category color)
                             const cellRef = XLSX.utils.encode_cell({ r: rows.length, c: colIdx });
-                            cellStyles[cellRef] = cellState;
+                            cellStyles[cellRef] = { state: cellState, colorClass: cat.colorClass || 'cat-general' };
                             colIdx++;
                         }
                     }
@@ -4013,32 +4035,76 @@
                 // Apply merges for category row
                 ws['!merges'] = mergeRanges;
 
-                // Apply cell styles (background colors)
-                for (const [cellRef, state] of Object.entries(cellStyles)) {
+                // Apply cell styles (background colors based on state and category)
+                for (const [cellRef, styleInfo] of Object.entries(cellStyles)) {
                     if (!ws[cellRef]) continue;
+                    const { state, colorClass } = styleInfo;
+
                     if (state === 'equipped') {
                         ws[cellRef].s = {
-                            fill: { fgColor: { rgb: "90EE90" } }, // Light green
-                            font: { bold: true }
+                            fill: { patternType: 'solid', fgColor: { rgb: "90EE90" } },
+                            font: { bold: true },
+                            alignment: { horizontal: 'center' }
                         };
                     } else if (state === 'owned') {
                         ws[cellRef].s = {
-                            fill: { fgColor: { rgb: "FFFFE0" } } // Light yellow
+                            fill: { patternType: 'solid', fgColor: { rgb: "FFFACD" } },
+                            alignment: { horizontal: 'center' }
+                        };
+                    } else if (state === 'text') {
+                        // Text cells use category color
+                        const bgColor = categoryColors[colorClass] || 'FFFFFF';
+                        ws[cellRef].s = {
+                            fill: { patternType: 'solid', fgColor: { rgb: bgColor } },
+                            alignment: { horizontal: 'center' }
+                        };
+                    } else {
+                        // Empty cells - light gray
+                        ws[cellRef].s = {
+                            fill: { patternType: 'solid', fgColor: { rgb: "F5F5F5" } },
+                            alignment: { horizontal: 'center' }
                         };
                     }
                 }
 
-                // Style header rows
-                const headerStyle = {
-                    fill: { fgColor: { rgb: "4A4A6A" } },
-                    font: { color: { rgb: "FFFFFF" }, bold: true },
-                    alignment: { horizontal: "center" }
-                };
+                // Style header rows with category colors
                 for (let c = 0; c < categoryRow.length; c++) {
+                    const colorClass = columnCategories[c];
+                    const bgColor = colorClass ? (categoryColors[colorClass] || 'E0E0E0') : 'E0E0E0';
+
+                    // Category title row
                     const cell1 = XLSX.utils.encode_cell({ r: 0, c });
+                    if (ws[cell1]) {
+                        ws[cell1].s = {
+                            fill: { patternType: 'solid', fgColor: { rgb: bgColor } },
+                            font: { bold: true, sz: 11 },
+                            alignment: { horizontal: 'center', vertical: 'center' },
+                            border: { bottom: { style: 'thin', color: { rgb: '999999' } } }
+                        };
+                    }
+
+                    // Item name row
                     const cell2 = XLSX.utils.encode_cell({ r: 1, c });
-                    if (ws[cell1]) ws[cell1].s = headerStyle;
-                    if (ws[cell2]) ws[cell2].s = { ...headerStyle, fill: { fgColor: { rgb: "3A3A5A" } } };
+                    if (ws[cell2]) {
+                        ws[cell2].s = {
+                            fill: { patternType: 'solid', fgColor: { rgb: bgColor } },
+                            font: { bold: true, sz: 10 },
+                            alignment: { horizontal: 'center', vertical: 'center' },
+                            border: { bottom: { style: 'thin', color: { rgb: '999999' } } }
+                        };
+                    }
+
+                    // Notes row (if exists)
+                    if (hasAnyNotes) {
+                        const cell3 = XLSX.utils.encode_cell({ r: 2, c });
+                        if (ws[cell3]) {
+                            ws[cell3].s = {
+                                fill: { patternType: 'solid', fgColor: { rgb: 'FAFAFA' } },
+                                font: { sz: 9, color: { rgb: '666666' } },
+                                alignment: { horizontal: 'center' }
+                            };
+                        }
+                    }
                 }
 
                 // Set column widths
