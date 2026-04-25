@@ -2610,6 +2610,7 @@
             if (!team) return;
             teamEditState[teamId] = {
                 members: Array.isArray(team.members) ? [...team.members] : [],
+                newName: team.name || '',
                 search: '',
                 filterTroop: '',
                 filterMembership: '',
@@ -2624,14 +2625,26 @@
             renderTeamList();
         }
 
+        function updateTeamName(teamId, newName) {
+            const state = teamEditState[teamId];
+            if (!state) return;
+            state.newName = newName;
+        }
+
         async function saveEditTeam(teamId) {
             const state = teamEditState[teamId];
             if (!state) return;
+            const team = teams[teamId];
+            const nameChanged = team && state.newName && state.newName !== team.name;
             try {
-                const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, `teams/${teamId}/members`), state.members);
+                const { database, ref, update } = window.firebaseDB;
+                const updates = { members: state.members };
+                if (nameChanged) {
+                    updates.name = state.newName.trim();
+                }
+                await update(ref(database, `teams/${teamId}`), updates);
                 delete teamEditState[teamId];
-                showToast('メンバーを更新しました', 'success');
+                showToast(nameChanged ? 'チーム名とメンバーを更新しました' : 'メンバーを更新しました', 'success');
             } catch (error) {
                 console.error('Save edit team error:', error);
                 showToast('保存に失敗しました', 'error');
@@ -2943,14 +2956,26 @@
             const uniqueUsers = new Set(state.members.map(e => parseMemberEntry(e).username));
             const slotCount = countMemberSlots(state.members);
 
+            const active = isTeamActive(team);
+            const statusBadge = active
+                ? '<span class="team-status-badge active">🟢 有効</span>'
+                : '<span class="team-status-badge inactive">⚫ 無効</span>';
+
             return `
                 <div class="team-card" style="border-color: var(--accent-gold);">
                     <div class="team-card-header">
-                        <h4>🎯 ${escapeHtml(team.name)} <span style="color: var(--accent-gold); font-size: 0.85rem;">(編集中)</span></h4>
+                        <h4>${statusBadge} <span style="color: var(--accent-gold); font-size: 0.85rem;">(編集中)</span></h4>
                         <div class="team-card-actions">
                             <button class="team-edit-btn save" onclick="saveEditTeam('${team.id}')">💾 保存</button>
                             <button class="team-edit-btn cancel" onclick="cancelEditTeam('${team.id}')">❌ キャンセル</button>
                         </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.85rem; color: var(--text-secondary);">チーム名:</label>
+                        <input type="text" value="${escapeHtml(state.newName)}"
+                            data-focus-key="name-${team.id}"
+                            oninput="updateTeamName('${team.id}', this.value)"
+                            style="flex: 1; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
                     </div>
                     <div style="color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 0.5rem;">
                         編集中: ${uniqueUsers.size}ユーザー / ${slotCount}軍団スロット (未保存)
