@@ -3194,8 +3194,17 @@
                 return `<option value="${cat.key}">${escapeHtml(cat.title)}</option>`;
             }).join('');
 
+            // Pre-filter items for each category based on column filter
+            const filteredCats = allCats.map(cat => ({
+                ...cat,
+                visibleItems: cat.items.filter(item => shouldShowColumn(entries, cat, item))
+            }));
+
             // Build category header row
-            const catRowCells = allCats.map((cat, catIdx) => {
+            const catRowCells = filteredCats.map((cat, catIdx) => {
+                const visibleCount = cat.visibleItems.length;
+                if (visibleCount === 0) return '';
+
                 const borderClass = catIdx > 0 ? ' cat-border-left' : '';
                 const isCollapsed = collapsedCategories.has(cat.key);
                 const toggleIcon = isCollapsed ? '▶' : '▼';
@@ -3205,13 +3214,13 @@
                 if (isCollapsed) {
                     return `<th class="cat-header cat-collapsed-placeholder ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" rowspan="2">${escapeHtml(cat.title.substring(0, 6))}…</th>`;
                 }
-                return `<th class="cat-header ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" colspan="${cat.items.length}"><div class="cat-header-content">${escapeHtml(cat.title)}<span class="cat-toggle">${toggleIcon}</span></div>${catNotesHtml}</th>`;
+                return `<th class="cat-header ${cat.colorClass}${borderClass}" data-cat-key="${cat.key}" onclick="toggleCategory('${cat.key}')" colspan="${visibleCount}"><div class="cat-header-content">${escapeHtml(cat.title)}<span class="cat-toggle">${toggleIcon}</span></div>${catNotesHtml}</th>`;
             }).join('');
 
-            // Build item header row (skip collapsed categories)
-            const itemRowCells = allCats.flatMap((cat, catIdx) => {
-                if (collapsedCategories.has(cat.key)) return [];
-                return cat.items.map((item, itemIdx) => {
+            // Build item header row (skip collapsed/empty categories)
+            const itemRowCells = filteredCats.flatMap((cat, catIdx) => {
+                if (collapsedCategories.has(cat.key) || cat.visibleItems.length === 0) return [];
+                return cat.visibleItems.map((item, itemIdx) => {
                     let borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
                     // Add dotted border between asura level groups
                     if (item.id === 'asura60_0' || item.id === 'asura90_0') {
@@ -3234,13 +3243,14 @@
                 const troop = troopMap[user.troopType] || user.troopType || '-';
                 const virtualRowClass = isVirtual ? ' virtual-member-row' : '';
                 const virtualIcon = isVirtual ? '<span class="virtual-icon">🔬</span>' : '';
-                const dataCells = allCats.flatMap((cat, catIdx) => {
+                const dataCells = filteredCats.flatMap((cat, catIdx) => {
+                    if (cat.visibleItems.length === 0) return [];
                     const isCollapsed = collapsedCategories.has(cat.key);
                     if (isCollapsed) {
                         const borderClass = catIdx > 0 ? ' cat-border-left' : '';
                         return [`<td class="cat-collapsed-placeholder ${cat.colorClass}${borderClass}"></td>`];
                     }
-                    return cat.items.map((item, itemIdx) => {
+                    return cat.visibleItems.map((item, itemIdx) => {
                         let borderClass = (catIdx > 0 && itemIdx === 0) ? ' cat-border-left' : '';
                         // Text-display category (basic info)
                         if (cat.isTextCategory) {
