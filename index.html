@@ -5075,7 +5075,7 @@
                 const indexLabel = showByIndexOrder && indexNo !== undefined ? `<span style="color: var(--text-muted); font-size: 0.7rem; margin-right: 0.3rem;">${indexNo}.</span>` : '';
                 return `
                     <div class="general-item" id="generalItem_${index}" data-general="${g}" data-state="0">
-                        <span class="general-name" onclick="toggleGeneralState(${index})">${indexLabel}${g}</span>
+                        <span class="general-name" onclick="toggleGeneralState(${index}); updateFormationCount();">${indexLabel}${g}</span>
                         <span class="status-badge"></span>
                         <div class="general-level-input">
                             <select id="general_${index}" onchange="updateProgress()" class="general-level-select">
@@ -5251,12 +5251,12 @@
             }
 
             updateProgress();
-            updateFormationCount();
         }
 
         // Legacy function for compatibility
         function toggleGeneralFormed(index) {
             toggleGeneralState(index);
+            updateFormationCount();
         }
 
         // ========== Generic Tap-Toggle (tri-state cycle) ==========
