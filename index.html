@@ -1018,6 +1018,10 @@
             border-color: var(--accent-red);
         }
 
+        .toast.info {
+            border-color: var(--accent-blue, #2196F3);
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -3908,12 +3912,21 @@
                 }
             });
 
+            // Helper: Re-render with form data preservation
+            function reRenderWithDataPreservation(renderFn, message) {
+                const formData = collectFormData();
+                renderFn();
+                loadDataToForm(formData);
+                updateProgress();
+                if (message) showToast(message, 'info');
+            }
+
             // Listen for custom items changes
             onValue(ref(database, 'customItems'), (snapshot) => {
                 const newItems = snapshot.exists() ? snapshot.val() : {};
                 if (JSON.stringify(newItems) !== JSON.stringify(cachedCustomItems)) {
                     cachedCustomItems = newItems;
-                    renderAllCustomItems();
+                    reRenderWithDataPreservation(renderAllCustomItems, 'カスタムアイテムが更新されました');
                 }
             });
 
@@ -3922,7 +3935,7 @@
                 const newConfig = snapshot.exists() ? snapshot.val() : null;
                 if (JSON.stringify(newConfig) !== JSON.stringify(cachedCategoriesIndex)) {
                     cachedCategoriesIndex = newConfig;
-                    initGeneralGrid();  // Re-render generals with new categories
+                    reRenderWithDataPreservation(initGeneralGrid, 'カテゴリ設定が更新されました');
                 }
             });
 
@@ -3931,7 +3944,7 @@
                 const newData = snapshot.exists() ? snapshot.val() : null;
                 if (JSON.stringify(newData) !== JSON.stringify(cachedGeneralMasterData)) {
                     cachedGeneralMasterData = newData;
-                    initGeneralGrid();  // Re-render generals with new master data
+                    reRenderWithDataPreservation(initGeneralGrid, '武将データが更新されました');
                 }
             });
 
