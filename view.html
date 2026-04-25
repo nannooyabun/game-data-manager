@@ -1059,6 +1059,10 @@
                 <select id="teamFilter">
                     <option value="__all__">全ユーザー</option>
                 </select>
+                <label style="font-size: 0.8rem; margin-left: 0.5rem; display: flex; align-items: center; gap: 0.3rem;">
+                    <input type="checkbox" id="includeInactiveTeams" onchange="populateTeamFilter(); populateComparisonTeamSelect();">
+                    無効含む
+                </label>
                 <a href="index.html">← 入力画面へ戻る</a>
             </div>
         </div>
@@ -1441,16 +1445,25 @@
             return hiddenUsers[username] === true;
         }
 
+        // Check if team is active (undefined/true = active, false = inactive)
+        function isTeamActive(team) {
+            return team.active !== false;
+        }
+
         function populateTeamFilter() {
             const sel = document.getElementById('teamFilter');
             const current = sel.value || '__all__';
+            const includeInactive = document.getElementById('includeInactiveTeams')?.checked || false;
             sel.innerHTML = '<option value="__all__">全ユーザー</option>';
-            Object.values(teams).forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t.id;
-                opt.textContent = `${t.name} (${(t.members || []).length}人)`;
-                sel.appendChild(opt);
-            });
+            Object.values(teams)
+                .filter(t => includeInactive || isTeamActive(t))
+                .forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    const statusMark = isTeamActive(t) ? '' : '⚫ ';
+                    opt.textContent = `${statusMark}${t.name} (${(t.members || []).length}人)`;
+                    sel.appendChild(opt);
+                });
             sel.value = current;
         }
 
@@ -3022,13 +3035,17 @@
 
         function populateComparisonTeamSelect() {
             const sel = document.getElementById('comparisonTeamSelect');
+            const includeInactive = document.getElementById('includeInactiveTeams')?.checked || false;
             sel.innerHTML = '<option value="">選択してください</option>';
-            Object.values(teams).forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t.id;
-                opt.textContent = `${t.name} (${(t.members || []).length}人)`;
-                sel.appendChild(opt);
-            });
+            Object.values(teams)
+                .filter(t => includeInactive || isTeamActive(t))
+                .forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    const statusMark = isTeamActive(t) ? '' : '⚫ ';
+                    opt.textContent = `${statusMark}${t.name} (${(t.members || []).length}人)`;
+                    sel.appendChild(opt);
+                });
         }
 
         function loadTeamMembers() {

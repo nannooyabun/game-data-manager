@@ -416,6 +416,21 @@
             gap: 0.5rem;
         }
 
+        .team-status-badge {
+            font-size: 0.75rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-weight: normal;
+        }
+        .team-status-badge.active {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--accent-green);
+        }
+        .team-status-badge.inactive {
+            background: rgba(128, 128, 128, 0.2);
+            color: var(--text-muted);
+        }
+
         .team-card-actions {
             display: flex;
             gap: 0.5rem;
@@ -2476,7 +2491,8 @@
                 id: teamId,
                 name: name,
                 members: [],
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                active: true
             };
 
             try {
@@ -2769,6 +2785,26 @@
             }
         }
 
+        // Check if team is active (undefined/true = active, false = inactive)
+        function isTeamActive(team) {
+            return team.active !== false;
+        }
+
+        // Toggle team active status
+        async function toggleTeamActive(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+            const newActive = !isTeamActive(team);
+            try {
+                const { database, ref, update } = window.firebaseDB;
+                await update(ref(database, `teams/${teamId}`), { active: newActive });
+                showToast(`${team.name} を${newActive ? '有効' : '無効'}にしました`, 'success');
+            } catch (error) {
+                console.error('Toggle team active error:', error);
+                showToast('状態の変更に失敗しました', 'error');
+            }
+        }
+
         // Render team list (view mode or edit mode per team)
         function renderTeamList() {
             const container = document.getElementById('teamList');
@@ -2808,6 +2844,7 @@
             const uniqueUsers = new Set(members.map(e => parseMemberEntry(e).username));
             const memberCount = uniqueUsers.size;
             const slotCount = countMemberSlots(members);
+            const active = isTeamActive(team);
 
             const chips = members.map(entry => {
                 const p = parseMemberEntry(entry);
@@ -2817,12 +2854,21 @@
                 return `<span class="team-member-chip">${label}</span>`;
             }).join('');
 
+            const statusBadge = active
+                ? '<span class="team-status-badge active">🟢 有効</span>'
+                : '<span class="team-status-badge inactive">⚫ 無効</span>';
+            const toggleBtn = active
+                ? `<button class="action-btn" onclick="toggleTeamActive('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--text-muted);">無効化</button>`
+                : `<button class="action-btn" onclick="toggleTeamActive('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--accent-green);">有効化</button>`;
+            const cardStyle = active ? '' : ' style="opacity: 0.6;"';
+
             return `
-                <div class="team-card">
+                <div class="team-card"${cardStyle}>
                     <div class="team-card-header">
-                        <h4>🎯 ${escapeHtml(team.name)}</h4>
+                        <h4>${statusBadge} ${escapeHtml(team.name)}</h4>
                         <div class="team-card-actions">
                             <button class="team-edit-btn edit" onclick="startEditTeam('${team.id}')">✏️ 編集</button>
+                            ${toggleBtn}
                             <button class="action-btn danger" onclick="deleteTeam('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">削除</button>
                         </div>
                     </div>

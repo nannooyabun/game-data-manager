@@ -3777,6 +3777,11 @@
             return cachedHiddenUsers[username] === true;
         }
 
+        // Check if a team is active (undefined/true = active, false = inactive)
+        function isTeamActive(team) {
+            return team.active !== false;
+        }
+
         // ========== Team Tag Field (A-1/A-2/A-3) ==========
         // Currently-selected team IDs (in-memory, not yet synced to Firebase)
         let pendingTeamMembership = [];  // array of team IDs
@@ -3840,6 +3845,7 @@
             const q = (input.value || '').toLowerCase().trim();
             const teamList = Object.values(cachedTeams);
             const available = teamList.filter(t => {
+                if (!isTeamActive(t)) return false;  // Hide inactive teams
                 if (pendingTeamMembership.includes(t.id)) return false;
                 if (q && !(t.name || '').toLowerCase().includes(q)) return false;
                 return true;
