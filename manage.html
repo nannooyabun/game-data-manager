@@ -305,6 +305,14 @@
             z-index: 1;
         }
 
+        .data-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+        .data-table th.sortable:hover {
+            background: var(--bg-input);
+        }
+
         .data-table tr:hover td {
             background: var(--bg-input);
         }
@@ -414,6 +422,21 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+        }
+
+        .team-status-badge {
+            font-size: 0.75rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-weight: normal;
+        }
+        .team-status-badge.active {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--accent-green);
+        }
+        .team-status-badge.inactive {
+            background: rgba(128, 128, 128, 0.2);
+            color: var(--text-muted);
         }
 
         .team-card-actions {
@@ -1921,15 +1944,29 @@
                 <div class="action-row">
                     <button class="action-btn danger" onclick="clearAllData()">🗑️ 全データ削除</button>
                 </div>
+                <div class="user-data-filters" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="userSearchInput" placeholder="🔍 名前で検索..." oninput="refreshDataTable()" style="flex: 1; min-width: 120px; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
+                    <select id="userTroopFilter" onchange="refreshDataTable()" style="padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
+                        <option value="">兵種: 全て</option>
+                        <option value="horse">馬</option>
+                        <option value="infantry">歩</option>
+                        <option value="bow">弓</option>
+                    </select>
+                    <select id="userStatusFilter" onchange="refreshDataTable()" style="padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
+                        <option value="">状態: 全て</option>
+                        <option value="visible">通常のみ</option>
+                        <option value="hidden">非表示のみ</option>
+                    </select>
+                </div>
                 <div class="data-table-container">
                     <table class="data-table" id="dataTable">
                         <thead>
                             <tr>
-                                <th>ユーザー</th>
+                                <th class="sortable" onclick="setUserSort('name')">ユーザー <span id="sortIcon_name">▲</span></th>
                                 <th>軍団</th>
                                 <th>兵種</th>
-                                <th>更新</th>
-                                <th>%</th>
+                                <th class="sortable" onclick="setUserSort('updatedAt')">更新 <span id="sortIcon_updatedAt"></span></th>
+                                <th class="sortable" onclick="setUserSort('completion')">% <span id="sortIcon_completion"></span></th>
                                 <th>操作</th>
                             </tr>
                         </thead>
@@ -1964,6 +2001,18 @@
                 <div class="team-create-form">
                     <input type="text" id="newTeamName" placeholder="新しいチーム名を入力" maxlength="30">
                     <button onclick="createTeam()">チーム作成</button>
+                </div>
+                <div class="team-toolbar" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary);">並び替え:</span>
+                    <select id="teamSortKey" onchange="onTeamSortChange()" style="padding: 0.3rem 0.5rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary); font-size: 0.85rem;">
+                        <option value="createdAt_desc">作成日 (新→古)</option>
+                        <option value="createdAt_asc">作成日 (古→新)</option>
+                        <option value="name_asc">名前 (A→Z)</option>
+                        <option value="name_desc">名前 (Z→A)</option>
+                        <option value="memberCount_desc">メンバー数 (多→少)</option>
+                        <option value="memberCount_asc">メンバー数 (少→多)</option>
+                    </select>
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">※ 有効→無効の順で表示</span>
                 </div>
                 <div class="team-list" id="teamList">
                     <div class="empty-state">チームがありません</div>
@@ -2305,6 +2354,31 @@
         }
 
         // Refresh data table
+        // User table sort state
+        let userSortKey = 'name';
+        let userSortAsc = true;
+
+        function setUserSort(key) {
+            if (userSortKey === key) {
+                userSortAsc = !userSortAsc;
+            } else {
+                userSortKey = key;
+                userSortAsc = true;
+            }
+            // Update sort icons
+            ['name', 'updatedAt', 'completion'].forEach(k => {
+                const icon = document.getElementById(`sortIcon_${k}`);
+                if (icon) {
+                    if (k === userSortKey) {
+                        icon.textContent = userSortAsc ? '▲' : '▼';
+                    } else {
+                        icon.textContent = '';
+                    }
+                }
+            });
+            refreshDataTable();
+        }
+
         function refreshDataTable() {
             const tbody = document.getElementById('dataTableBody');
 
@@ -2313,30 +2387,65 @@
                 return;
             }
 
+            // Get filter values
+            const searchQuery = (document.getElementById('userSearchInput')?.value || '').toLowerCase().trim();
+            const troopFilter = document.getElementById('userTroopFilter')?.value || '';
+            const statusFilter = document.getElementById('userStatusFilter')?.value || '';
+
             const troopMap = { 'horse': '馬', 'infantry': '歩', 'bow': '弓', 'horse_infantry': '馬歩', 'horse_bow': '馬弓', 'infantry_bow': '歩弓', 'horse_infantry_bow': '馬歩弓' };
 
             // Flatten: each (user, team) becomes a row
-            const rows = [];
+            let rows = [];
             Object.entries(gameData).forEach(([name, userData]) => {
                 const teams = getUserTeams(userData);
                 teams.forEach(team => {
                     const teamData = getUserTeamData(userData, team);
-                    if (teamData) rows.push({ name, team, data: teamData });
+                    if (teamData) {
+                        const completion = calculateCompletion(teamData);
+                        rows.push({ name, team, data: teamData, completion });
+                    }
                 });
             });
 
+            // Apply filters
+            rows = rows.filter(row => {
+                // Search filter
+                if (searchQuery && !row.name.toLowerCase().includes(searchQuery)) return false;
+                // Troop filter
+                if (troopFilter && row.data.troopType !== troopFilter) return false;
+                // Status filter
+                const hidden = isUserHidden(row.name);
+                if (statusFilter === 'visible' && hidden) return false;
+                if (statusFilter === 'hidden' && !hidden) return false;
+                return true;
+            });
+
             if (rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">保存されたデータがありません</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">該当するデータがありません</td></tr>';
                 return;
             }
 
+            // Sort rows
             rows.sort((a, b) => {
-                if (a.name !== b.name) return a.name.localeCompare(b.name);
-                return a.team.localeCompare(b.team);
+                let cmp = 0;
+                switch (userSortKey) {
+                    case 'name':
+                        cmp = a.name.localeCompare(b.name);
+                        if (cmp === 0) cmp = a.team.localeCompare(b.team);
+                        break;
+                    case 'updatedAt':
+                        const dateA = new Date(a.data.timestamp || 0).getTime();
+                        const dateB = new Date(b.data.timestamp || 0).getTime();
+                        cmp = dateA - dateB;
+                        break;
+                    case 'completion':
+                        cmp = a.completion - b.completion;
+                        break;
+                }
+                return userSortAsc ? cmp : -cmp;
             });
 
-            tbody.innerHTML = rows.map(({ name, team, data }) => {
-                const completion = calculateCompletion(data);
+            tbody.innerHTML = rows.map(({ name, team, data, completion }) => {
                 // Format date as YY/MM/DD
                 let dateStr = '-';
                 if (data.timestamp) {
@@ -2359,6 +2468,7 @@
                         <td class="completion">${completion}%</td>
                         <td class="actions">
                             <button class="btn-edit" onclick="editUser('${escapeHtml(name)}', '${escapeHtml(team)}')">編集</button>
+                            <button class="btn-rename" onclick="promptRenameUser('${escapeHtml(name)}')" style="background: var(--accent-gold);">名前変更</button>
                             <button class="btn-delete" onclick="confirmDeleteUser('${escapeHtml(name)}', '${escapeHtml(team)}')">削除</button>
                         </td>
                     </tr>
@@ -2442,6 +2552,68 @@
             }
         }
 
+        // Prompt for new username
+        function promptRenameUser(oldName) {
+            const newName = prompt(`「${oldName}」の新しい名前を入力してください:`, oldName);
+            if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
+            if (gameData[newName.trim()]) {
+                showToast(`「${newName.trim()}」は既に存在します`, 'error');
+                return;
+            }
+            renameUser(oldName, newName.trim());
+        }
+
+        // Rename user (update gameData and all team members)
+        async function renameUser(oldName, newName) {
+            if (!gameData[oldName]) {
+                showToast('ユーザーが見つかりません', 'error');
+                return;
+            }
+            try {
+                const { database, ref, set, remove, update } = window.firebaseDB;
+
+                // 1. Copy user data to new name
+                const userData = JSON.parse(JSON.stringify(gameData[oldName]));
+                await set(ref(database, `gameData/${newName}`), userData);
+
+                // 2. Update team members references
+                const teamUpdates = {};
+                Object.entries(teams).forEach(([teamId, team]) => {
+                    if (!Array.isArray(team.members)) return;
+                    const updatedMembers = team.members.map(entry => {
+                        const p = parseMemberEntry(entry);
+                        if (p.username === oldName) {
+                            return p.team ? `${newName}/${p.team}` : newName;
+                        }
+                        return entry;
+                    });
+                    // Check if any member was updated
+                    if (JSON.stringify(updatedMembers) !== JSON.stringify(team.members)) {
+                        teamUpdates[`teams/${teamId}/members`] = updatedMembers;
+                    }
+                });
+
+                // 3. Update hidden users if applicable
+                if (hiddenUsers[oldName]) {
+                    teamUpdates[`settings/hiddenUsers/${newName}`] = true;
+                    teamUpdates[`settings/hiddenUsers/${oldName}`] = null;
+                }
+
+                // Apply team updates
+                if (Object.keys(teamUpdates).length > 0) {
+                    await update(ref(database), teamUpdates);
+                }
+
+                // 4. Delete old user data
+                await remove(ref(database, `gameData/${oldName}`));
+
+                showToast(`「${oldName}」を「${newName}」に変更しました`, 'success');
+            } catch (error) {
+                console.error('Rename error:', error);
+                showToast('名前の変更に失敗しました', 'error');
+            }
+        }
+
         // Clear all data
         async function clearAllData() {
             if (!confirm('全てのデータを削除しますか？この操作は取り消せません。')) return;
@@ -2476,7 +2648,8 @@
                 id: teamId,
                 name: name,
                 members: [],
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                active: true
             };
 
             try {
@@ -2594,6 +2767,7 @@
             if (!team) return;
             teamEditState[teamId] = {
                 members: Array.isArray(team.members) ? [...team.members] : [],
+                newName: team.name || '',
                 search: '',
                 filterTroop: '',
                 filterMembership: '',
@@ -2608,14 +2782,26 @@
             renderTeamList();
         }
 
+        function updateTeamName(teamId, newName) {
+            const state = teamEditState[teamId];
+            if (!state) return;
+            state.newName = newName;
+        }
+
         async function saveEditTeam(teamId) {
             const state = teamEditState[teamId];
             if (!state) return;
+            const team = teams[teamId];
+            const nameChanged = team && state.newName && state.newName !== team.name;
             try {
-                const { database, ref, set } = window.firebaseDB;
-                await set(ref(database, `teams/${teamId}/members`), state.members);
+                const { database, ref, update } = window.firebaseDB;
+                const updates = { members: state.members };
+                if (nameChanged) {
+                    updates.name = state.newName.trim();
+                }
+                await update(ref(database, `teams/${teamId}`), updates);
                 delete teamEditState[teamId];
-                showToast('メンバーを更新しました', 'success');
+                showToast(nameChanged ? 'チーム名とメンバーを更新しました' : 'メンバーを更新しました', 'success');
             } catch (error) {
                 console.error('Save edit team error:', error);
                 showToast('保存に失敗しました', 'error');
@@ -2769,10 +2955,65 @@
             }
         }
 
+        // Check if team is active (undefined/true = active, false = inactive)
+        function isTeamActive(team) {
+            return team.active !== false;
+        }
+
+        // Toggle team active status
+        async function toggleTeamActive(teamId) {
+            const team = teams[teamId];
+            if (!team) return;
+            const newActive = !isTeamActive(team);
+            try {
+                const { database, ref, update } = window.firebaseDB;
+                await update(ref(database, `teams/${teamId}`), { active: newActive });
+                showToast(`${team.name} を${newActive ? '有効' : '無効'}にしました`, 'success');
+            } catch (error) {
+                console.error('Toggle team active error:', error);
+                showToast('状態の変更に失敗しました', 'error');
+            }
+        }
+
+        // Sort teams (primary: active→inactive, secondary: selected sort key)
+        function sortTeamList(teamList) {
+            const sortKey = document.getElementById('teamSortKey')?.value || 'createdAt_desc';
+            const [key, order] = sortKey.split('_');
+            const asc = order === 'asc';
+
+            return teamList.sort((a, b) => {
+                // Primary: active → inactive
+                const activeA = isTeamActive(a) ? 0 : 1;
+                const activeB = isTeamActive(b) ? 0 : 1;
+                if (activeA !== activeB) return activeA - activeB;
+
+                // Secondary: selected sort key
+                let cmp = 0;
+                switch (key) {
+                    case 'createdAt':
+                        const dateA = new Date(a.createdAt || 0).getTime();
+                        const dateB = new Date(b.createdAt || 0).getTime();
+                        cmp = dateA - dateB;
+                        break;
+                    case 'name':
+                        cmp = (a.name || '').localeCompare(b.name || '');
+                        break;
+                    case 'memberCount':
+                        cmp = (a.members?.length || 0) - (b.members?.length || 0);
+                        break;
+                }
+                return asc ? cmp : -cmp;
+            });
+        }
+
+        function onTeamSortChange() {
+            renderTeamList();
+        }
+
         // Render team list (view mode or edit mode per team)
         function renderTeamList() {
             const container = document.getElementById('teamList');
-            const teamList = Object.values(teams);
+            const teamList = sortTeamList(Object.values(teams));
 
             // Preserve focus across re-render
             const focused = document.activeElement;
@@ -2808,6 +3049,7 @@
             const uniqueUsers = new Set(members.map(e => parseMemberEntry(e).username));
             const memberCount = uniqueUsers.size;
             const slotCount = countMemberSlots(members);
+            const active = isTeamActive(team);
 
             const chips = members.map(entry => {
                 const p = parseMemberEntry(entry);
@@ -2817,12 +3059,21 @@
                 return `<span class="team-member-chip">${label}</span>`;
             }).join('');
 
+            const statusBadge = active
+                ? '<span class="team-status-badge active">🟢 有効</span>'
+                : '<span class="team-status-badge inactive">⚫ 無効</span>';
+            const toggleBtn = active
+                ? `<button class="action-btn" onclick="toggleTeamActive('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--text-muted);">無効化</button>`
+                : `<button class="action-btn" onclick="toggleTeamActive('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--accent-green);">有効化</button>`;
+            const cardStyle = active ? '' : ' style="opacity: 0.6;"';
+
             return `
-                <div class="team-card">
+                <div class="team-card"${cardStyle}>
                     <div class="team-card-header">
-                        <h4>🎯 ${escapeHtml(team.name)}</h4>
+                        <h4>${statusBadge} ${escapeHtml(team.name)}</h4>
                         <div class="team-card-actions">
                             <button class="team-edit-btn edit" onclick="startEditTeam('${team.id}')">✏️ 編集</button>
+                            ${toggleBtn}
                             <button class="action-btn danger" onclick="deleteTeam('${team.id}')" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">削除</button>
                         </div>
                     </div>
@@ -2897,14 +3148,26 @@
             const uniqueUsers = new Set(state.members.map(e => parseMemberEntry(e).username));
             const slotCount = countMemberSlots(state.members);
 
+            const active = isTeamActive(team);
+            const statusBadge = active
+                ? '<span class="team-status-badge active">🟢 有効</span>'
+                : '<span class="team-status-badge inactive">⚫ 無効</span>';
+
             return `
                 <div class="team-card" style="border-color: var(--accent-gold);">
                     <div class="team-card-header">
-                        <h4>🎯 ${escapeHtml(team.name)} <span style="color: var(--accent-gold); font-size: 0.85rem;">(編集中)</span></h4>
+                        <h4>${statusBadge} <span style="color: var(--accent-gold); font-size: 0.85rem;">(編集中)</span></h4>
                         <div class="team-card-actions">
                             <button class="team-edit-btn save" onclick="saveEditTeam('${team.id}')">💾 保存</button>
                             <button class="team-edit-btn cancel" onclick="cancelEditTeam('${team.id}')">❌ キャンセル</button>
                         </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <label style="font-size: 0.85rem; color: var(--text-secondary);">チーム名:</label>
+                        <input type="text" value="${escapeHtml(state.newName)}"
+                            data-focus-key="name-${team.id}"
+                            oninput="updateTeamName('${team.id}', this.value)"
+                            style="flex: 1; padding: 0.4rem 0.6rem; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
                     </div>
                     <div style="color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 0.5rem;">
                         編集中: ${uniqueUsers.size}ユーザー / ${slotCount}軍団スロット (未保存)
