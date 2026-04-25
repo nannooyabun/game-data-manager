@@ -425,6 +425,12 @@
             font-size: 1.1rem;
             line-height: 1;
         }
+        .cell-deputy {
+            color: #9b59b6;
+            font-size: 0.8rem;
+            font-weight: 500;
+            line-height: 1;
+        }
         .cell-none {
             color: transparent;
         }
@@ -2300,13 +2306,19 @@
         ];
 
         const academyHeihoItems = [
-            { id: 'momiji', name: '紅葉' }, { id: 'banseki', name: '盤石' },
-            { id: 'shishi', name: '獅子の洞入り' }, { id: 'tengu', name: '天狗抄' },
-            { id: 'attack', name: '攻撃' }, { id: 'defense', name: '防御' },
-            { id: 'combo', name: '連撃' }, { id: 'resist', name: '抵抗' },
-            { id: 'shield', name: '楯突' }, { id: 'pierce', name: '貫通' },
-            { id: 'evade', name: '回避' }, { id: 'accuracy', name: '命中' },
-            { id: 'barrier', name: '障壁' }
+            { id: 'momiji', name: '紅葉', hasYinyang: true },
+            { id: 'banseki', name: '盤石', hasYinyang: true },
+            { id: 'shishi', name: '獅子の洞入り', hasYinyang: true },
+            { id: 'tengu', name: '天狗抄', hasYinyang: true },
+            { id: 'attack', name: '攻撃', hasYinyang: false },
+            { id: 'defense', name: '防御', hasYinyang: false },
+            { id: 'combo', name: '連撃', hasYinyang: false },
+            { id: 'resist', name: '抵抗', hasYinyang: false },
+            { id: 'shield', name: '楯突', hasYinyang: false },
+            { id: 'pierce', name: '貫通', hasYinyang: false },
+            { id: 'evade', name: '回避', hasYinyang: false },
+            { id: 'accuracy', name: '命中', hasYinyang: false },
+            { id: 'barrier', name: '障壁', hasYinyang: false }
         ];
 
         const asuraSkillItems = [
@@ -2374,8 +2386,44 @@
             return items;
         }
 
+        // Helper to check if a general is a deputy for a formed SP general
+        function getDeputyInfo(user, generalName) {
+            // Check built-in SP generals
+            const spGeneralIds = ['nobunaga', 'hideyoshi', 'ieyasu'];
+            for (const spId of spGeneralIds) {
+                const sp = user.spGenerals?.[spId];
+                if (sp && sp.formed && sp.deputy === generalName) {
+                    const stageMap = { '0': 'C', '1': 'B', '2': 'A', '3': 'S' };
+                    return {
+                        isDeputy: true,
+                        spGeneral: spId,
+                        deputyStage: stageMap[sp.deputyStage] || sp.deputyStage || ''
+                    };
+                }
+            }
+            // Check custom SP generals
+            if (user.customItems?.spGenerals) {
+                for (const [spName, sp] of Object.entries(user.customItems.spGenerals)) {
+                    if (sp && sp.formed && sp.deputy === generalName) {
+                        const stageMap = { '0': 'C', '1': 'B', '2': 'A', '3': 'S' };
+                        return {
+                            isDeputy: true,
+                            spGeneral: spName,
+                            deputyStage: stageMap[sp.deputyStage] || sp.deputyStage || ''
+                        };
+                    }
+                }
+            }
+            return { isDeputy: false };
+        }
+
         // Helper for general cell state
         function getGeneralCellState(user, generalName) {
+            // First check if this general is a deputy
+            const deputyInfo = getDeputyInfo(user, generalName);
+            if (deputyInfo.isDeputy) {
+                return 'deputy';
+            }
             const g = user.generals && user.generals[generalName];
             if (!g) return 'none';
             if (g.formed) return 'equipped';
@@ -2386,6 +2434,13 @@
         // Helper for general cell value (level)
         function getGeneralCellValue(user, generalName) {
             const g = user.generals && user.generals[generalName];
+            // First check if this general is a deputy
+            const deputyInfo = getDeputyInfo(user, generalName);
+            if (deputyInfo.isDeputy && g) {
+                // Format: ▲レベル/段階
+                const level = typeof g === 'object' ? g.level : g;
+                return `▲${level || '-'}/${deputyInfo.deputyStage || '-'}`;
+            }
             if (!g) return null;
             // Support both new format {level, formed, owned} and old format (just level number)
             if (typeof g === 'object') {
@@ -2619,7 +2674,16 @@
                         const stageMap = { '0': 'C', '1': 'B', '2': 'A', '3': 'S' };
                         const stage = stageMap[stageNum] || stageNum || '';
                         if (!ideology && !skill && !stage) return null;
-                        return `${ideology || '-'}/${skill || '-'}/${stage || '-'}`;
+
+                        // Add deputy initial for stages that support deputy (A, B, S)
+                        const deputyName = sp.deputy || '';
+                        if (stage === 'C' || !stage) {
+                            // No deputy support at stage C
+                            return `${ideology || '-'}/${skill || '-'}/${stage || '-'}`;
+                        }
+                        // Stage A, B, or S - show deputy initial
+                        const deputyInitial = deputyName ? deputyName.charAt(0) : '-';
+                        return `${ideology || '-'}/${skill || '-'}/${stage}/${deputyInitial}`;
                     }
                 },
                 // Generals will be inserted here dynamically
@@ -2632,15 +2696,46 @@
                         if (item.isCustom) {
                             const a = user.customItems?.academy?.[item.id];
                             if (!a) return 'none';
-                            if (a.equipped) return 'equipped';
+                            // New format: slot means equipped, old format: equipped field
+                            if (a.slot || a.equipped) return 'equipped';
                             if (a.owned) return 'owned';
                             return 'none';
                         }
                         const h = user.academy && user.academy.heiho && user.academy.heiho[item.id];
                         if (!h) return 'none';
-                        if (h.equipped) return 'equipped';
+                        // New format: slot means equipped, old format: equipped field
+                        if (h.slot || h.equipped) return 'equipped';
                         if (h.owned) return 'owned';
                         return 'none';
+                    },
+                    getCellValue: (user, item) => {
+                        const getSlotLevel = (slots, slotName) => {
+                            if (!slots || !slotName) return null;
+                            // Support both old format (direct props) and new format (slots object)
+                            if (slots[slotName] !== undefined) return slots[slotName];
+                            return null;
+                        };
+                        if (item.isCustom) {
+                            const a = user.customItems?.academy?.[item.id];
+                            if (!a || !a.slot) return null;
+                            const slots = user.academy?.slots || user.academy;
+                            const level = getSlotLevel(slots, a.slot);
+                            if (!level) return null;
+                            // Custom items always have yinyang
+                            const yinyang = a.yinyang === 'yin' ? '陰' : (a.yinyang === 'yang' ? '陽' : '');
+                            return yinyang ? `${yinyang}/${level}` : level;
+                        }
+                        const h = user.academy?.heiho?.[item.id];
+                        if (!h || !h.slot) return null;
+                        const slots = user.academy?.slots || user.academy;
+                        const level = getSlotLevel(slots, h.slot);
+                        if (!level) return null;
+                        // Only show yinyang for items that support it
+                        if (item.hasYinyang && h.yinyang) {
+                            const yinyang = h.yinyang === 'yin' ? '陰' : '陽';
+                            return `${yinyang}/${level}`;
+                        }
+                        return level;
                     }
                 },
                 {
@@ -2747,6 +2842,14 @@
         function stateSymbol(state, value = null) {
             if (state === 'none') return '';
 
+            // Deputy state - show the value directly (already includes ▲)
+            if (state === 'deputy') {
+                if (value) {
+                    return `<span class="cell-deputy">${value}</span>`;
+                }
+                return '<span class="cell-deputy">▲</span>';
+            }
+
             // If no value, just show the symbol
             if (value === null || value === undefined) {
                 if (state === 'equipped') return '<span class="cell-equipped">●</span>';
@@ -2758,10 +2861,15 @@
             let intensityClass = 'val-high';
             let numericValue = typeof value === 'number' ? value : null;
 
-            // Handle string values like "5/3" (upgrade/reform)
+            // Handle string values like "5/3" (upgrade/reform) or "陰/9" (yinyang/level)
             if (typeof value === 'string' && value.includes('/')) {
                 const parts = value.split('/');
-                numericValue = parseInt(parts[0]) || 0;  // Use upgrade value for intensity
+                // Try first part, if not numeric try second part (for yinyang format)
+                numericValue = parseInt(parts[0]);
+                if (isNaN(numericValue) && parts.length > 1) {
+                    numericValue = parseInt(parts[1]) || 0;
+                }
+                numericValue = numericValue || 0;
             } else if (typeof value === 'string') {
                 numericValue = parseInt(value) || 0;
             }

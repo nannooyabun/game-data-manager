@@ -493,6 +493,21 @@
             color: var(--accent-gold);
         }
 
+        /* Deputy name validation */
+        .deputy-name-input.invalid {
+            border-color: #e74c3c !important;
+            background: rgba(231, 76, 60, 0.1) !important;
+        }
+        .deputy-warning {
+            color: #e74c3c;
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+            display: none;
+        }
+        .deputy-name-input.invalid + .deputy-warning {
+            display: block;
+        }
+
         /* Skill Grid */
         .skill-grid {
             display: grid;
@@ -937,6 +952,57 @@
             background: var(--accent-green);
             color: var(--bg-primary);
             border-color: var(--accent-green);
+        }
+
+        /* Academy heiho slot selection and yinyang toggle */
+        .academy-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 0.3rem;
+            flex-wrap: wrap;
+        }
+        .academy-slot-select {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .academy-slot-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .yinyang-toggle {
+            display: flex;
+            gap: 0;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .yinyang-toggle button {
+            padding: 0.15rem 0.4rem;
+            font-size: 0.7rem;
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .yinyang-toggle button.active {
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+        }
+        .yinyang-toggle button:hover:not(.active) {
+            background: var(--bg-tertiary);
+        }
+        .academy-level-display {
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            font-weight: 500;
+            margin-left: auto;
         }
 
         /* Tappable name area - stops click propagation issues with inputs */
@@ -1979,7 +2045,8 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="nobunagaDeputy" placeholder="副将の名前" list="generalNameList" onchange="updateProgress()">
+                            <input type="text" id="nobunagaDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('nobunagaDeputy')">
+                            <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
                 </div>
@@ -2016,7 +2083,8 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="hideyoshiDeputy" placeholder="副将の名前" list="generalNameList" onchange="updateProgress()">
+                            <input type="text" id="hideyoshiDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('hideyoshiDeputy')">
+                            <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
                 </div>
@@ -2053,7 +2121,8 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="ieyasuDeputy" placeholder="副将の名前" list="generalNameList" onchange="updateProgress()">
+                            <input type="text" id="ieyasuDeputy" class="deputy-name-input" placeholder="副将の名前" list="generalNameList" onchange="updateProgress(); validateDeputyName('ieyasuDeputy')">
+                            <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
                 </div>
@@ -2133,7 +2202,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>剣</label>
-                            <select id="gokudenSword" onchange="updateProgress()">
+                            <select id="gokudenSword" onchange="updateProgress(); updateAllAcademyLevelDisplays()">
                                 <option value="">-</option>
                                 <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                                 <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
@@ -2141,7 +2210,7 @@
                         </div>
                         <div class="form-group">
                             <label>体</label>
-                            <select id="gokudenBody" onchange="updateProgress()">
+                            <select id="gokudenBody" onchange="updateProgress(); updateAllAcademyLevelDisplays()">
                                 <option value="">-</option>
                                 <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                                 <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
@@ -2149,7 +2218,7 @@
                         </div>
                         <div class="form-group">
                             <label>技</label>
-                            <select id="gokudenTech" onchange="updateProgress()">
+                            <select id="gokudenTech" onchange="updateProgress(); updateAllAcademyLevelDisplays()">
                                 <option value="">-</option>
                                 <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                                 <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
@@ -2157,7 +2226,7 @@
                         </div>
                         <div class="form-group">
                             <label>心１</label>
-                            <select id="gokudenHeart1" onchange="updateProgress()">
+                            <select id="gokudenHeart1" onchange="updateProgress(); updateAllAcademyLevelDisplays()">
                                 <option value="">-</option>
                                 <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                                 <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
@@ -2165,7 +2234,7 @@
                         </div>
                         <div class="form-group">
                             <label>心２</label>
-                            <select id="gokudenHeart2" onchange="updateProgress()">
+                            <select id="gokudenHeart2" onchange="updateProgress(); updateAllAcademyLevelDisplays()">
                                 <option value="">-</option>
                                 <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                                 <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
@@ -3588,15 +3657,7 @@
                     }
                 });
             }
-            // Convert academy heiho
-            if (data.academy?.heiho) {
-                Object.values(data.academy.heiho).forEach(h => {
-                    if (h.equipped) {
-                        h.equipped = false;
-                        h.owned = true;
-                    }
-                });
-            }
+            // Academy heiho - NOT converted (shared across teams)
             // Convert armor masks
             if (data.armor?.masks) {
                 Object.values(data.armor.masks).forEach(m => {
@@ -3606,15 +3667,7 @@
                     }
                 });
             }
-            // Convert flowers
-            if (data.flowers) {
-                Object.values(data.flowers).forEach(f => {
-                    if (f.equipped) {
-                        f.equipped = false;
-                        f.owned = true;
-                    }
-                });
-            }
+            // Flowers - NOT converted (shared across teams)
             // Convert tactics
             if (data.tactics) {
                 Object.values(data.tactics).forEach(t => {
@@ -3636,21 +3689,13 @@
                         if (w.status === 'equipped') { w.status = 'owned'; }
                     });
                 }
-                if (data.customItems.academy) {
-                    Object.values(data.customItems.academy).forEach(a => {
-                        if (a.equipped) { a.equipped = false; a.owned = true; }
-                    });
-                }
+                // Custom academy - NOT converted (shared across teams)
                 if (data.customItems.masks) {
                     Object.values(data.customItems.masks).forEach(m => {
                         if (m.equipped) { m.equipped = false; m.owned = true; }
                     });
                 }
-                if (data.customItems.flowers) {
-                    Object.values(data.customItems.flowers).forEach(f => {
-                        if (f.equipped) { f.equipped = false; f.owned = true; }
-                    });
-                }
+                // Custom flowers - NOT converted (shared across teams)
                 if (data.customItems.tactics) {
                     Object.values(data.customItems.tactics).forEach(t => {
                         if (t.equipped) { t.equipped = false; t.owned = true; }
@@ -4267,7 +4312,8 @@
                         </div>
                         <div class="form-group">
                             <label>副将名</label>
-                            <input type="text" id="${safeId(item.name)}_deputy" list="generalNameList" placeholder="副将の名前" onchange="updateProgress()">
+                            <input type="text" id="${safeId(item.name)}_deputy" class="deputy-name-input" list="generalNameList" placeholder="副将の名前" onchange="updateProgress(); validateDeputyName('${safeId(item.name)}_deputy')">
+                            <div class="deputy-warning">⚠ 武将データに存在しません</div>
                         </div>
                     </div>
                 </div>
@@ -4610,20 +4656,30 @@
         }
 
         // Academy heiho (極伝兵法) - tap-card style
+        // Items 0-3 support yinyang (陰/陽), items 4-12 are default-owned without yinyang
         const academyHeihoItems = [
-            { id: 'Momiji', name: '紅葉' },
-            { id: 'Banseki', name: '盤石' },
-            { id: 'Shishi', name: '獅子の洞入り' },
-            { id: 'Tengu', name: '天狗抄' },
-            { id: 'Attack', name: '攻撃' },
-            { id: 'Defense', name: '防御' },
-            { id: 'Combo', name: '連撃' },
-            { id: 'Resist', name: '抵抗' },
-            { id: 'Shield', name: '楯突' },
-            { id: 'Pierce', name: '貫通' },
-            { id: 'Evade', name: '回避' },
-            { id: 'Accuracy', name: '命中' },
-            { id: 'Barrier', name: '障壁' }
+            { id: 'Momiji', name: '紅葉', hasYinyang: true },
+            { id: 'Banseki', name: '盤石', hasYinyang: true },
+            { id: 'Shishi', name: '獅子の洞入り', hasYinyang: true },
+            { id: 'Tengu', name: '天狗抄', hasYinyang: true },
+            { id: 'Attack', name: '攻撃', hasYinyang: false },
+            { id: 'Defense', name: '防御', hasYinyang: false },
+            { id: 'Combo', name: '連撃', hasYinyang: false },
+            { id: 'Resist', name: '抵抗', hasYinyang: false },
+            { id: 'Shield', name: '楯突', hasYinyang: false },
+            { id: 'Pierce', name: '貫通', hasYinyang: false },
+            { id: 'Evade', name: '回避', hasYinyang: false },
+            { id: 'Accuracy', name: '命中', hasYinyang: false },
+            { id: 'Barrier', name: '障壁', hasYinyang: false }
+        ];
+
+        // Slot names for academy
+        const academySlots = [
+            { id: 'sword', name: '剣' },
+            { id: 'body', name: '体' },
+            { id: 'tech', name: '技' },
+            { id: 'heart1', name: '心1' },
+            { id: 'heart2', name: '心2' }
         ];
 
         function initAcademyGrid() {
@@ -4634,12 +4690,29 @@
             grid.innerHTML = academyHeihoItems.map((h, idx) => {
                 const defaultOwned = idx >= 4;
                 const twoState = idx >= 4; // Only basic items are 2-state
+                const slotOptions = academySlots.map(s =>
+                    `<option value="${s.id}">${s.name}</option>`
+                ).join('');
+                const yinyangHtml = h.hasYinyang ? `
+                    <div class="yinyang-toggle">
+                        <button type="button" data-value="yin" onclick="event.stopPropagation(); setAcademyYinyang('${h.id}', 'yin')">陰</button>
+                        <button type="button" data-value="yang" onclick="event.stopPropagation(); setAcademyYinyang('${h.id}', 'yang')">陽</button>
+                    </div>
+                ` : '';
                 return `
-                <div class="flower-item tap-card" data-state="${defaultOwned ? 1 : 0}" ${twoState ? 'data-two-state="1"' : ''} data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+                <div class="flower-item tap-card" data-state="${defaultOwned ? 1 : 0}" data-heiho-id="${h.id}" ${twoState ? 'data-two-state="1"' : ''} data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
                     <div class="tap-header" style="flex: 1; display: block;">
                         <div class="name">${h.name}<span class="tap-state-badge">${defaultOwned ? '所持' : '未所持'}</span></div>
                     </div>
-                    <input type="checkbox" id="gokuden${h.id}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
+                    <div class="academy-controls">
+                        <select class="academy-slot-select" id="gokuden${h.id}_slot" onchange="event.stopPropagation(); onAcademySlotChange('${h.id}')" onclick="event.stopPropagation()">
+                            <option value="">--</option>
+                            ${slotOptions}
+                        </select>
+                        ${yinyangHtml}
+                        <span class="academy-level-display" id="gokuden${h.id}_levelDisplay"></span>
+                    </div>
+                    <input type="hidden" id="gokuden${h.id}_yinyang" value="">
                     <input type="checkbox" id="gokuden${h.id}_owned" data-role="owned" style="display:none;" ${defaultOwned ? 'checked' : ''} onchange="updateProgress()">
                 </div>
             `}).join('');
@@ -4648,6 +4721,115 @@
                 const state = parseInt(card.dataset.state) || 0;
                 setTapState(card, state);
             });
+            // Update slot availability
+            updateAcademySlotAvailability();
+        }
+
+        // Handle slot selection change
+        function onAcademySlotChange(heihoId) {
+            updateAcademySlotAvailability();
+            updateAcademyLevelDisplay(heihoId);
+            updateProgress();
+        }
+
+        // Update which slots are available (1:1 mapping)
+        function updateAcademySlotAvailability() {
+            const usedSlots = new Set();
+            // First pass: collect used slots
+            academyHeihoItems.forEach(h => {
+                const select = document.getElementById(`gokuden${h.id}_slot`);
+                if (select && select.value) {
+                    usedSlots.add(select.value);
+                }
+            });
+            // Second pass: disable used slots in other selects
+            academyHeihoItems.forEach(h => {
+                const select = document.getElementById(`gokuden${h.id}_slot`);
+                if (!select) return;
+                const currentValue = select.value;
+                Array.from(select.options).forEach(opt => {
+                    if (opt.value === '' || opt.value === currentValue) {
+                        opt.disabled = false;
+                    } else {
+                        opt.disabled = usedSlots.has(opt.value);
+                    }
+                });
+            });
+            // Also include custom academy items
+            document.querySelectorAll('.custom-academy-item .academy-slot-select').forEach(select => {
+                const currentValue = select.value;
+                if (currentValue) usedSlots.add(currentValue);
+            });
+        }
+
+        // Update level display based on selected slot
+        function updateAcademyLevelDisplay(heihoId) {
+            const select = document.getElementById(`gokuden${heihoId}_slot`);
+            const display = document.getElementById(`gokuden${heihoId}_levelDisplay`);
+            if (!select || !display) return;
+            const slotId = select.value;
+            if (!slotId) {
+                display.textContent = '';
+                return;
+            }
+            const slotMap = { sword: 'gokudenSword', body: 'gokudenBody', tech: 'gokudenTech', heart1: 'gokudenHeart1', heart2: 'gokudenHeart2' };
+            const levelEl = document.getElementById(slotMap[slotId]);
+            const level = levelEl?.value || '-';
+            display.textContent = `→ Lv.${level}`;
+        }
+
+        // Update all level displays
+        function updateAllAcademyLevelDisplays() {
+            academyHeihoItems.forEach(h => updateAcademyLevelDisplay(h.id));
+            // Also custom items
+            document.querySelectorAll('.custom-academy-item').forEach(item => {
+                const heihoId = item.dataset.heihoId;
+                if (heihoId) updateAcademyLevelDisplay(heihoId);
+            });
+        }
+
+        // Set yinyang value
+        function setAcademyYinyang(heihoId, value) {
+            const hiddenInput = document.getElementById(`gokuden${heihoId}_yinyang`);
+            if (hiddenInput) hiddenInput.value = value;
+            // Update button active state
+            const card = document.querySelector(`[data-heiho-id="${heihoId}"]`);
+            if (card) {
+                card.querySelectorAll('.yinyang-toggle button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.value === value);
+                });
+            }
+            updateProgress();
+        }
+
+        // Validate deputy name against general list
+        function validateDeputyName(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const name = input.value.trim();
+            if (!name) {
+                // Empty is OK
+                input.classList.remove('invalid');
+                return;
+            }
+            // Get all general names from datalist
+            const datalist = document.getElementById('generalNameList');
+            const validNames = new Set();
+            if (datalist) {
+                datalist.querySelectorAll('option').forEach(opt => {
+                    validNames.add(opt.value);
+                });
+            }
+            // Also check master data if available
+            if (cachedGeneralMasterData?.generals) {
+                Object.keys(cachedGeneralMasterData.generals).forEach(n => validNames.add(n));
+            }
+            // Also check custom generals
+            if (cachedCustomGenerals) {
+                cachedCustomGenerals.forEach(n => validNames.add(n));
+            }
+            const isValid = validNames.has(name);
+            input.classList.toggle('invalid', !isValid);
         }
 
         // Masks (核心具足) - tap-card style
@@ -5028,21 +5210,32 @@
                 }
             });
 
-            // Academy
+            // Academy - new format with slots and yinyang
             const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
             data.academy = {
-                sword: document.getElementById('gokudenSword').value,
-                body: document.getElementById('gokudenBody').value,
-                tech: document.getElementById('gokudenTech').value,
-                heart1: document.getElementById('gokudenHeart1').value,
-                heart2: document.getElementById('gokudenHeart2').value,
+                slots: {
+                    sword: parseInt(document.getElementById('gokudenSword').value) || 0,
+                    body: parseInt(document.getElementById('gokudenBody').value) || 0,
+                    tech: parseInt(document.getElementById('gokudenTech').value) || 0,
+                    heart1: parseInt(document.getElementById('gokudenHeart1').value) || 0,
+                    heart2: parseInt(document.getElementById('gokudenHeart2').value) || 0
+                },
                 heiho: {}
             };
             gokudenHeiho.forEach(h => {
-                data.academy.heiho[h.toLowerCase()] = {
-                    equipped: document.getElementById(`gokuden${h}_equipped`)?.checked || false,
-                    owned: document.getElementById(`gokuden${h}_owned`)?.checked || false
+                const slotEl = document.getElementById(`gokuden${h}_slot`);
+                const yinyangEl = document.getElementById(`gokuden${h}_yinyang`);
+                const ownedEl = document.getElementById(`gokuden${h}_owned`);
+                const heihoData = {
+                    owned: ownedEl?.checked || false,
+                    slot: slotEl?.value || null
                 };
+                // Only add yinyang for items that support it
+                const yinyangValue = yinyangEl?.value;
+                if (yinyangValue) {
+                    heihoData.yinyang = yinyangValue;
+                }
+                data.academy.heiho[h.toLowerCase()] = heihoData;
             });
 
             // Asura
@@ -5711,26 +5904,59 @@
                 });
             }
 
-            // Academy
+            // Academy - support both old and new format
             if (data.academy) {
-                document.getElementById('gokudenSword').value = data.academy.sword || '';
-                document.getElementById('gokudenBody').value = data.academy.body || '';
-                document.getElementById('gokudenTech').value = data.academy.tech || '';
-                document.getElementById('gokudenHeart1').value = data.academy.heart1 || '';
-                document.getElementById('gokudenHeart2').value = data.academy.heart2 || '';
-                
+                // Handle slots - new format uses data.academy.slots, old format uses direct properties
+                const getSlotValue = (slotName) => {
+                    if (data.academy.slots && data.academy.slots[slotName] !== undefined) {
+                        return data.academy.slots[slotName] || '';
+                    }
+                    return data.academy[slotName] || '';
+                };
+                document.getElementById('gokudenSword').value = getSlotValue('sword');
+                document.getElementById('gokudenBody').value = getSlotValue('body');
+                document.getElementById('gokudenTech').value = getSlotValue('tech');
+                document.getElementById('gokudenHeart1').value = getSlotValue('heart1');
+                document.getElementById('gokudenHeart2').value = getSlotValue('heart2');
+
                 if (data.academy.heiho) {
                     const gokudenHeiho = ['Momiji', 'Banseki', 'Shishi', 'Tengu', 'Attack', 'Defense', 'Combo', 'Resist', 'Shield', 'Pierce', 'Evade', 'Accuracy', 'Barrier'];
                     gokudenHeiho.forEach(h => {
                         const hData = data.academy.heiho[h.toLowerCase()];
                         if (hData) {
-                            const equippedEl = document.getElementById(`gokuden${h}_equipped`);
                             const ownedEl = document.getElementById(`gokuden${h}_owned`);
-                            if (equippedEl) equippedEl.checked = hData.equipped || false;
-                            if (ownedEl) ownedEl.checked = hData.owned || false;
+                            const slotEl = document.getElementById(`gokuden${h}_slot`);
+                            const yinyangEl = document.getElementById(`gokuden${h}_yinyang`);
+
+                            // Owned status - handle both old (equipped/owned) and new (owned/slot) format
+                            if (ownedEl) {
+                                // Old format: owned or equipped means owned
+                                // New format: owned field
+                                ownedEl.checked = hData.owned || hData.equipped || false;
+                            }
+
+                            // Slot - new format only (old format equipped=true becomes slot=null)
+                            if (slotEl) {
+                                slotEl.value = hData.slot || '';
+                            }
+
+                            // Yinyang - new format only
+                            if (yinyangEl && hData.yinyang) {
+                                yinyangEl.value = hData.yinyang;
+                                // Update button visual
+                                const card = document.querySelector(`[data-heiho-id="${h}"]`);
+                                if (card) {
+                                    card.querySelectorAll('.yinyang-toggle button').forEach(btn => {
+                                        btn.classList.toggle('active', btn.dataset.value === hData.yinyang);
+                                    });
+                                }
+                            }
                         }
                     });
                 }
+                // Update slot availability and level displays
+                updateAcademySlotAvailability();
+                updateAllAcademyLevelDisplays();
             }
 
             // Asura
