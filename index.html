@@ -2712,12 +2712,15 @@
         // Toggle between category view and index order view
         function toggleGeneralDisplayMode() {
             const checkbox = document.getElementById('showByIndexOrder');
-            showByIndexOrder = checkbox.checked;
 
-            // Collect current general states before re-rendering
+            // Collect current general states BEFORE changing the sort mode
+            // (getAllGenerals() depends on showByIndexOrder)
             const savedStates = collectGeneralStates();
 
-            // Re-render the grid
+            // Now change the sort mode
+            showByIndexOrder = checkbox.checked;
+
+            // Re-render the grid in new order
             initGeneralGrid();
 
             // Restore states after re-rendering
@@ -3940,7 +3943,7 @@
                 if (JSON.stringify(newGenerals) !== JSON.stringify(cachedCustomGenerals) || JSON.stringify(newRaw) !== JSON.stringify(cachedCustomGeneralsRaw)) {
                     cachedCustomGenerals = newGenerals;
                     cachedCustomGeneralsRaw = newRaw;
-                    initGeneralGrid();
+                    reRenderWithDataPreservation(initGeneralGrid, 'カスタム武将が更新されました');
                 }
             });
 
