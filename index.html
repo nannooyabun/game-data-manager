@@ -5329,6 +5329,9 @@
             const success = await saveUserData(data.username, teamName, data);
 
             if (success) {
+                // Update local draft with saved data (so reload shows correct data)
+                autoSaveToLocal();
+
                 // Apply team membership changes (always, regardless of sync choice)
                 if (teamMembershipChanged) {
                     try {
