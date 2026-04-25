@@ -94,9 +94,103 @@
             font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s;
+            width: 100%;
         }
         .excel-export-btn:hover {
             background: #1a5c38;
+        }
+
+        /* Settings button and menu */
+        .settings-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        .settings-btn:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        .settings-menu-wrapper {
+            position: relative;
+        }
+
+        .settings-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.5rem);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.8rem;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 0.8rem;
+            min-width: 200px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .settings-menu.show {
+            display: flex;
+        }
+
+        .settings-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .settings-checkbox input {
+            cursor: pointer;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 1.1rem;
+                flex: 1;
+            }
+            .header-actions {
+                gap: 0.4rem;
+            }
+            .header-actions a {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            .header-actions select {
+                padding: 0.4rem 0.5rem;
+                font-size: 0.8rem;
+                max-width: 100px;
+            }
+            .settings-btn {
+                position: fixed;
+                bottom: 1rem;
+                right: 1rem;
+                z-index: 1001;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                font-size: 1.5rem;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .settings-menu {
+                position: fixed;
+                bottom: 4.5rem;
+                right: 1rem;
+                top: auto;
+            }
         }
 
         /* Status area */
@@ -1196,17 +1290,26 @@
 <body>
     <div class="header-section" id="headerSection">
         <div class="header">
-            <h1>武将データ一覧 - チーム編成ビュー</h1>
+            <h1>武将データ一覧</h1>
             <div class="header-actions">
-                <a href="index.html">← 入力画面へ戻る</a>
-                <button onclick="exportToExcel()" class="excel-export-btn">📊 Excel出力</button>
+                <a href="index.html">← 入力画面へ</a>
                 <select id="teamFilter">
-                    <option value="__all__">全ユーザー</option>
+                    <option value="__all__">チーム</option>
                 </select>
-                <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem;">
-                    <input type="checkbox" id="includeInactiveTeams" onchange="populateTeamFilter(); populateComparisonTeamSelect();">
-                    無効含む
-                </label>
+                <div class="settings-menu-wrapper">
+                    <button class="settings-btn" onclick="toggleSettingsMenu()">⚙</button>
+                    <div class="settings-menu" id="settingsMenu">
+                        <button onclick="exportToExcel(); toggleSettingsMenu();" class="excel-export-btn">📊 Excel出力</button>
+                        <label class="settings-checkbox">
+                            <input type="checkbox" id="includeInactiveTeams" onchange="populateTeamFilter(); populateComparisonTeamSelect();">
+                            無効チーム含む
+                        </label>
+                        <label class="settings-checkbox">
+                            <input type="checkbox" id="filterOwnedOnly" onchange="applyRowFilter()">
+                            所持/編成中のみ表示
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1593,11 +1696,104 @@
             return team.active !== false;
         }
 
+        // Settings menu toggle
+        function toggleSettingsMenu() {
+            const menu = document.getElementById('settingsMenu');
+            menu.classList.toggle('show');
+        }
+
+        // Close settings menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('settingsMenu');
+            const btn = e.target.closest('.settings-btn');
+            const wrapper = e.target.closest('.settings-menu-wrapper');
+            if (!wrapper && menu?.classList.contains('show')) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // Row filter state
+        let filterOwnedOnly = false;
+
+        function applyRowFilter() {
+            filterOwnedOnly = document.getElementById('filterOwnedOnly')?.checked || false;
+            renderTable();
+        }
+
+        function hasOwnedOrEquippedItems(userData) {
+            if (!userData) return false;
+            // Check weapons
+            if (userData.weapons) {
+                for (const w of Object.values(userData.weapons)) {
+                    if (w.status === 'owned' || w.status === 'equipped') return true;
+                }
+            }
+            // Check SP generals
+            if (userData.spGenerals) {
+                for (const sp of Object.values(userData.spGenerals)) {
+                    if (sp.owned || sp.formed) return true;
+                }
+            }
+            // Check generals (by category)
+            if (userData.generals) {
+                for (const cat of Object.values(userData.generals)) {
+                    for (const g of Object.values(cat || {})) {
+                        if (typeof g === 'object' && (g.owned || g.formed)) return true;
+                    }
+                }
+            }
+            // Check armor
+            if (userData.armor) {
+                for (const a of Object.values(userData.armor)) {
+                    if (a.owned || a.equipped) return true;
+                }
+            }
+            // Check horse
+            if (userData.horse) {
+                for (const h of Object.values(userData.horse)) {
+                    if (h.owned || h.equipped) return true;
+                }
+            }
+            // Check flower
+            if (userData.flower) {
+                for (const f of Object.values(userData.flower)) {
+                    if (f.owned || f.equipped) return true;
+                }
+            }
+            // Check tactics
+            if (userData.tactics) {
+                for (const t of Object.values(userData.tactics)) {
+                    if (t.owned || t.equipped) return true;
+                }
+            }
+            // Check academy
+            if (userData.academy) {
+                for (const a of Object.values(userData.academy)) {
+                    if (a.checked || a.equipped) return true;
+                }
+            }
+            // Check asura skills
+            if (userData.asuraSkills) {
+                for (const lvl of Object.values(userData.asuraSkills)) {
+                    if (Array.isArray(lvl) && lvl.some(v => v)) return true;
+                }
+            }
+            // Check custom items
+            if (userData.customItems) {
+                for (const cat of Object.values(userData.customItems)) {
+                    for (const item of Object.values(cat || {})) {
+                        if (item.owned || item.formed || item.equipped || item.status === 'owned' || item.status === 'equipped') return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         function populateTeamFilter() {
             const sel = document.getElementById('teamFilter');
             const current = sel.value || '__all__';
             const includeInactive = document.getElementById('includeInactiveTeams')?.checked || false;
-            sel.innerHTML = '<option value="__all__">全ユーザー</option>';
+            sel.innerHTML = '<option value="__all__">チーム</option>';
             Object.values(teams)
                 .filter(t => includeInactive || isTeamActive(t))
                 .forEach(t => {
@@ -2050,6 +2246,10 @@
                     if (!memberFilter(username, team)) return;
                     const teamData = getUserTeamData(userData, team);
                     if (teamData) {
+                        // Apply owned/equipped filter if active
+                        if (filterOwnedOnly && !hasOwnedOrEquippedItems(teamData)) {
+                            return;
+                        }
                         entries.push({ username, team, data: teamData, isVirtual: false });
                     }
                 });
@@ -2057,6 +2257,10 @@
             // Add virtual members only when simulation mode is active
             if (simulationModeActive) {
                 virtualMembers.forEach(vm => {
+                    // Apply filter to virtual members too
+                    if (filterOwnedOnly && !hasOwnedOrEquippedItems(vm.data)) {
+                        return;
+                    }
                     entries.push({
                         username: vm.username,
                         team: vm.team,

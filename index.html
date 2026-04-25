@@ -117,6 +117,11 @@
             text-align: center;
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .progress-item:hover {
+            transform: scale(1.05);
         }
 
         .progress-item.complete {
@@ -4543,6 +4548,14 @@
             // Refresh all tap-card states from hidden checkbox/select inputs
             refreshAllTapCardStates();
 
+            // Setup progress item click to jump to section
+            document.querySelectorAll('.progress-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const section = item.dataset.section;
+                    scrollToSection(section + 'Section');
+                });
+            });
+
             if (!loadedFromUrl) {
                 showToast('データを同期しました', 'success');
             }
@@ -5979,8 +5992,8 @@
             let count = 0;
             const weapons = ['akoni', 'inseki', 'hanya'];
             weapons.forEach(w => {
-                const card = document.querySelector(`#weaponSection .tap-card[data-weapon="${w}"]`);
-                if (card && parseInt(card.dataset.state) > 0) count++;
+                const statusEl = document.getElementById(`${w}Status`);
+                if (statusEl && statusEl.value !== '') count++;
             });
             // Include custom weapons
             const customWeapons = getCustomItemsForCategory('兵器');
