@@ -1497,7 +1497,7 @@
             color: var(--bg-primary);
             padding: 0.5rem 1rem;
             border-radius: 20px;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(60, 184, 120, 0.4);
@@ -1506,9 +1506,13 @@
         .formation-badge:hover {
             transform: scale(1.05);
         }
-        .formation-badge span {
-            font-size: 0.7rem;
-            opacity: 0.8;
+        .formation-badge .count-number {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        .formation-badge .count-unit {
+            font-size: 0.75rem;
+            opacity: 0.9;
         }
 
         /* Formation Panel */
@@ -1581,6 +1585,13 @@
         .formation-panel-item.is-sp {
             border-color: var(--accent-gold);
         }
+        .formation-panel-item.is-owned {
+            border-color: var(--accent-blue);
+            background: rgba(60, 140, 184, 0.1);
+        }
+        .formation-panel-item.is-owned:hover {
+            background: rgba(60, 140, 184, 0.2);
+        }
         .formation-panel-item .name {
             font-size: 0.85rem;
             color: var(--text-primary);
@@ -1592,6 +1603,9 @@
         }
         .formation-panel-item.is-sp .status {
             color: var(--accent-gold);
+        }
+        .formation-panel-item.is-owned .status {
+            color: var(--accent-blue);
         }
         .formation-panel-note {
             color: var(--text-muted);
@@ -2800,7 +2814,7 @@
     <!-- Floating Formation Counter -->
     <div class="floating-formation" id="floatingFormation">
         <div class="formation-badge" onclick="openFormationPanel()">
-            <span id="floatingFormationCount">0</span>人<span>編成中</span>
+            <span id="floatingFormationCount" class="count-number">0</span><span class="count-unit">人編成中</span>
         </div>
     </div>
 
@@ -7374,7 +7388,7 @@
                 const formedCb = document.getElementById(`${sp}Formed`);
                 if (formedCb?.checked) {
                     const nameMap = { nobunaga: 'SP織田信長', hideyoshi: 'SP豊臣秀吉', ieyasu: 'SP徳川家康' };
-                    items.push({ type: 'sp', id: sp, name: nameMap[sp] });
+                    items.push({ type: 'sp', id: sp, name: nameMap[sp], isFormed: true });
                 }
             });
             // Custom SP generals
@@ -7383,7 +7397,7 @@
                 const id = safeId(item.name);
                 const formedCb = document.getElementById(`${id}_formed`);
                 if (formedCb?.checked) {
-                    items.push({ type: 'customSp', id, name: item.name });
+                    items.push({ type: 'customSp', id, name: item.name, isFormed: true });
                 }
             });
             // Collect formed generals (excluding deputies)
@@ -7392,16 +7406,21 @@
                 const genName = allGenerals[i];
                 const state = document.getElementById(`generalState_${i}`)?.value;
                 if (state === '2' && !isGeneralDeputy(genName)) {
-                    items.push({ type: 'general', index: i, name: genName });
+                    items.push({ type: 'general', index: i, name: genName, isFormed: true });
                 }
             }
 
             grid.innerHTML = items.map(item => {
                 const isSp = item.type === 'sp' || item.type === 'customSp';
+                const statusText = isSp ? 'SP武将・編成中' : '編成中';
                 return `
-                    <div class="formation-panel-item ${isSp ? 'is-sp' : ''}" onclick="toggleFormationPanelItem('${item.type}', '${item.id || item.index}')">
+                    <div class="formation-panel-item ${isSp ? 'is-sp' : ''}"
+                         data-type="${item.type}"
+                         data-id="${item.id || item.index}"
+                         data-is-formed="true"
+                         onclick="toggleFormationPanelItem(this)">
                         <div class="name">${item.name}</div>
-                        <div class="status">${isSp ? 'SP武将' : '編成中'}</div>
+                        <div class="status">${statusText}</div>
                     </div>
                 `;
             }).join('') || '<div style="color: var(--text-muted); text-align: center; padding: 2rem;">編成中の武将がいません</div>';
@@ -7415,44 +7434,68 @@
             if (overlay) overlay.classList.remove('show');
         }
 
-        function toggleFormationPanelItem(type, id) {
+        function toggleFormationPanelItem(panelItem) {
+            const type = panelItem.dataset.type;
+            const id = panelItem.dataset.id;
+            const isCurrentlyFormed = panelItem.dataset.isFormed === 'true';
+            const isSp = type === 'sp' || type === 'customSp';
+
             if (type === 'sp') {
-                // Toggle SP general
                 const formedCb = document.getElementById(`${id}Formed`);
                 const ownedCb = document.getElementById(`${id}Owned`);
-                if (formedCb) {
-                    formedCb.checked = false;
-                    if (ownedCb) ownedCb.checked = true;
-                    // Update card visual
+                if (formedCb && ownedCb) {
+                    if (isCurrentlyFormed) {
+                        formedCb.checked = false;
+                        ownedCb.checked = true;
+                    } else {
+                        formedCb.checked = true;
+                        ownedCb.checked = true;
+                    }
                     const card = formedCb.closest('.tap-card');
-                    if (card) setTapState(card, 1);
+                    if (card) setTapState(card, isCurrentlyFormed ? 1 : 2);
                 }
             } else if (type === 'customSp') {
-                // Toggle custom SP general
                 const formedCb = document.getElementById(`${id}_formed`);
                 const ownedCb = document.getElementById(`${id}_owned`);
-                if (formedCb) {
-                    formedCb.checked = false;
-                    if (ownedCb) ownedCb.checked = true;
+                if (formedCb && ownedCb) {
+                    if (isCurrentlyFormed) {
+                        formedCb.checked = false;
+                        ownedCb.checked = true;
+                    } else {
+                        formedCb.checked = true;
+                        ownedCb.checked = true;
+                    }
                     const card = formedCb.closest('.tap-card');
-                    if (card) setTapState(card, 1);
+                    if (card) setTapState(card, isCurrentlyFormed ? 1 : 2);
                 }
             } else if (type === 'general') {
-                // Toggle general to owned
                 const index = parseInt(id);
                 const item = document.getElementById(`generalItem_${index}`);
                 const hiddenInput = document.getElementById(`generalState_${index}`);
                 if (item && hiddenInput) {
-                    item.dataset.state = '1';
-                    hiddenInput.value = '1';
-                    item.classList.remove('formed', 'deputy');
-                    item.classList.add('owned');
+                    const newState = isCurrentlyFormed ? 1 : 2;
+                    item.dataset.state = newState;
+                    hiddenInput.value = newState;
+                    item.classList.remove('formed', 'owned', 'deputy');
+                    item.classList.add(newState === 2 ? 'formed' : 'owned');
                 }
             }
+
+            // Update panel item visual
+            const newIsFormed = !isCurrentlyFormed;
+            panelItem.dataset.isFormed = newIsFormed;
+            panelItem.classList.toggle('is-owned', !newIsFormed);
+            const statusEl = panelItem.querySelector('.status');
+            if (statusEl) {
+                if (isSp) {
+                    statusEl.textContent = newIsFormed ? 'SP武将・編成中' : 'SP武将・所持';
+                } else {
+                    statusEl.textContent = newIsFormed ? '編成中' : '所持';
+                }
+            }
+
             updateProgress();
             updateFormationCount();
-            // Refresh panel
-            openFormationPanel();
         }
 
         // ========== Summary Update ==========
