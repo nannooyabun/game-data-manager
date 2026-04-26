@@ -7448,6 +7448,9 @@
             for (const [catId, tagList] of Object.entries(grouped)) {
                 if (tagList.length === 0) continue;
 
+                // Sort tags by order within category
+                tagList.sort((a, b) => (a.order || 0) - (b.order || 0));
+
                 const catName = catId === 'uncategorized' ? 'その他' : (categories[catId]?.name || catId);
 
                 html += `<div class="tag-filter-group">
@@ -7516,18 +7519,43 @@
             return gen.tags;
         }
 
+        // Sort tag IDs by their defined order (category order first, then tag order within category)
+        function sortTagIdsByDefinedOrder(tagIds) {
+            if (!tagIds || tagIds.length === 0) return [];
+
+            const tags = cachedGeneralTags.tags || {};
+            const categories = cachedGeneralTags.tagCategories || {};
+
+            return [...tagIds].sort((a, b) => {
+                const tagA = tags[a];
+                const tagB = tags[b];
+                if (!tagA || !tagB) return 0;
+
+                // Compare by category order first
+                const catOrderA = categories[tagA.categoryId]?.order ?? 9999;
+                const catOrderB = categories[tagB.categoryId]?.order ?? 9999;
+                if (catOrderA !== catOrderB) return catOrderA - catOrderB;
+
+                // Then by tag order within category
+                return (tagA.order ?? 0) - (tagB.order ?? 0);
+            });
+        }
+
         function getGeneralTagBadgesHtml(generalName) {
             const tagIds = getGeneralTags(generalName);
             if (tagIds.length === 0) return '';
 
+            // Sort by defined order
+            const sortedTagIds = sortTagIdsByDefinedOrder(tagIds);
+
             let html = '<span class="search-result-tags">';
-            for (const tagId of tagIds.slice(0, 3)) {
+            for (const tagId of sortedTagIds.slice(0, 3)) {
                 const tag = cachedGeneralTags.tags?.[tagId];
                 if (!tag) continue;
                 html += `<span class="search-result-tag" style="background-color: ${tag.color || '#90a4ae'}">${escapeHtmlIndex(tag.name)}</span>`;
             }
-            if (tagIds.length > 3) {
-                html += `<span style="font-size: 0.65rem; color: var(--text-muted);">+${tagIds.length - 3}</span>`;
+            if (sortedTagIds.length > 3) {
+                html += `<span style="font-size: 0.65rem; color: var(--text-muted);">+${sortedTagIds.length - 3}</span>`;
             }
             html += '</span>';
             return html;

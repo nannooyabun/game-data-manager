@@ -1911,6 +1911,33 @@
             white-space: nowrap;
         }
 
+        .tag-order-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .tag-order-btns button {
+            padding: 0 0.3rem;
+            font-size: 0.6rem;
+            line-height: 1;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .tag-order-btns button:hover:not(:disabled) {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .tag-order-btns button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
         /* Color Picker Popup */
         .color-picker-popup {
             position: absolute;
@@ -2988,6 +3015,10 @@
                 generalTags = snap.exists() ? snap.val() : { tagCategories: {}, tags: {} };
                 if (!generalTags.tagCategories) generalTags.tagCategories = {};
                 if (!generalTags.tags) generalTags.tags = {};
+
+                // Auto-assign order to tags that don't have it (based on creation timestamp)
+                normalizeTagOrders();
+
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     renderTagCategoryList();
                     renderTagList();
@@ -4687,6 +4718,47 @@
 
         // ========== Tag Management ==========
 
+        // Normalize tag orders - assign order based on creation timestamp for tags without order
+        function normalizeTagOrders() {
+            const tags = generalTags.tags || {};
+            let needsSave = false;
+
+            // Group tags by category
+            const tagsByCategory = {};
+            for (const [tagId, tag] of Object.entries(tags)) {
+                const catId = tag.categoryId || 'uncategorized';
+                if (!tagsByCategory[catId]) tagsByCategory[catId] = [];
+                tagsByCategory[catId].push({ id: tagId, tag });
+            }
+
+            // For each category, sort by creation time (from tag ID) and assign order
+            for (const [catId, tagList] of Object.entries(tagsByCategory)) {
+                // Check if any tag is missing order
+                const missingOrder = tagList.some(({ tag }) => tag.order === undefined);
+                if (!missingOrder) continue;
+
+                // Sort by timestamp extracted from tag ID (tag_1234567890)
+                tagList.sort((a, b) => {
+                    const tsA = parseInt(a.id.replace('tag_', '')) || 0;
+                    const tsB = parseInt(b.id.replace('tag_', '')) || 0;
+                    return tsA - tsB;
+                });
+
+                // Assign order
+                tagList.forEach(({ id }, index) => {
+                    if (tags[id].order === undefined) {
+                        tags[id].order = index;
+                        needsSave = true;
+                    }
+                });
+            }
+
+            // Save if any changes were made (async, don't wait)
+            if (needsSave) {
+                saveGeneralTags();
+            }
+        }
+
         // Save general tags to Firebase
         async function saveGeneralTags() {
             if (!window.firebaseReady) {
@@ -4734,16 +4806,41 @@
             const gen = generalMasterData?.generals?.[generalName];
             if (!gen?.tags?.length) return '';
 
-            const badges = gen.tags.slice(0, 3).map(tagId => {
+            // Sort tags by defined order (category order, then tag order within category)
+            const sortedTagIds = sortTagIdsByDefinedOrder(gen.tags);
+
+            const badges = sortedTagIds.slice(0, 3).map(tagId => {
                 const tag = generalTags.tags?.[tagId];
                 if (!tag) return '';
                 return `<span class="tag-badge" style="background-color: ${tag.color || '#90a4ae'}; font-size: 0.65rem; padding: 0.05rem 0.3rem;">${escapeHtml(tag.name)}</span>`;
             }).filter(Boolean).join('');
 
-            const moreCount = gen.tags.length - 3;
+            const moreCount = sortedTagIds.length - 3;
             const moreText = moreCount > 0 ? `<span style="font-size: 0.65rem; color: var(--text-muted);">+${moreCount}</span>` : '';
 
             return badges ? `<span style="display: inline-flex; gap: 0.15rem; margin-left: 0.3rem;">${badges}${moreText}</span>` : '';
+        }
+
+        // Sort tag IDs by their defined order (category order first, then tag order within category)
+        function sortTagIdsByDefinedOrder(tagIds) {
+            if (!tagIds || tagIds.length === 0) return [];
+
+            const tags = generalTags.tags || {};
+            const categories = generalTags.tagCategories || {};
+
+            return [...tagIds].sort((a, b) => {
+                const tagA = tags[a];
+                const tagB = tags[b];
+                if (!tagA || !tagB) return 0;
+
+                // Compare by category order first
+                const catOrderA = categories[tagA.categoryId]?.order ?? 9999;
+                const catOrderB = categories[tagB.categoryId]?.order ?? 9999;
+                if (catOrderA !== catOrderB) return catOrderA - catOrderB;
+
+                // Then by tag order within category
+                return (tagA.order ?? 0) - (tagB.order ?? 0);
+            });
         }
 
         // ===== Tab 1: Tag Category Management =====
@@ -4903,10 +5000,20 @@
                     continue;
                 }
 
-                for (const tag of tagList) {
+                // Sort tags by order
+                tagList.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                tagList.forEach((tag, index) => {
                     const usageCount = countTagUsage(tag.id);
+                    const isFirst = index === 0;
+                    const isLast = index === tagList.length - 1;
+
                     html += `
                         <div class="tag-item" data-tag-id="${tag.id}">
+                            <div class="tag-order-btns">
+                                <button ${isFirst ? 'disabled' : ''} onclick="moveTagOrder('${tag.id}', 'up')">▲</button>
+                                <button ${isLast ? 'disabled' : ''} onclick="moveTagOrder('${tag.id}', 'down')">▼</button>
+                            </div>
                             <button class="tag-color-btn" style="background-color: ${tag.color || '#90a4ae'}"
                                     onclick="openColorPicker('${tag.id}', this)"></button>
                             <input type="text" value="${escapeHtml(tag.name || '')}"
@@ -4925,7 +5032,7 @@
                             </div>
                         </div>
                     `;
-                }
+                });
             }
 
             container.innerHTML = html;
@@ -4943,10 +5050,16 @@
         async function addTag() {
             const newId = 'tag_' + Date.now();
 
+            // Calculate max order for uncategorized tags
+            const maxOrder = Math.max(0, ...Object.values(generalTags.tags || {})
+                .filter(t => !t.categoryId)
+                .map(t => t.order || 0));
+
             generalTags.tags[newId] = {
                 name: '新規タグ',
                 categoryId: null,
-                color: '#90a4ae'
+                color: '#90a4ae',
+                order: maxOrder + 1
             };
 
             await saveGeneralTags();
@@ -4967,7 +5080,44 @@
         async function updateTagCategory(tagId, categoryId) {
             if (!generalTags.tags[tagId]) return;
 
-            generalTags.tags[tagId].categoryId = categoryId || null;
+            const newCatId = categoryId || null;
+            generalTags.tags[tagId].categoryId = newCatId;
+
+            // Assign order at end of new category
+            const maxOrder = Math.max(0, ...Object.values(generalTags.tags || {})
+                .filter(t => t.categoryId === newCatId && t !== generalTags.tags[tagId])
+                .map(t => t.order || 0));
+            generalTags.tags[tagId].order = maxOrder + 1;
+
+            await saveGeneralTags();
+            renderTagList();
+        }
+
+        async function moveTagOrder(tagId, direction) {
+            const tag = generalTags.tags[tagId];
+            if (!tag) return;
+
+            const catId = tag.categoryId || null;
+
+            // Get tags in the same category, sorted by order
+            const tagsInCategory = Object.entries(generalTags.tags || {})
+                .filter(([id, t]) => (t.categoryId || null) === catId)
+                .sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+
+            const currentIndex = tagsInCategory.findIndex(([id]) => id === tagId);
+            if (currentIndex === -1) return;
+
+            const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+            if (targetIndex < 0 || targetIndex >= tagsInCategory.length) return;
+
+            // Swap orders
+            const [currentId, currentTag] = tagsInCategory[currentIndex];
+            const [targetId, targetTag] = tagsInCategory[targetIndex];
+
+            const tempOrder = currentTag.order;
+            generalTags.tags[currentId].order = targetTag.order;
+            generalTags.tags[targetId].order = tempOrder;
+
             await saveGeneralTags();
             renderTagList();
         }
@@ -5110,7 +5260,7 @@
             for (const [tagId, tag] of Object.entries(tags)) {
                 const catId = tag.categoryId || 'uncategorized';
                 if (!grouped[catId]) grouped[catId] = [];
-                grouped[catId].push({ id: tagId, name: tag.name });
+                grouped[catId].push({ id: tagId, name: tag.name, order: tag.order || 0 });
             }
 
             let html = '<option value="">タグを選択...</option>';
@@ -5123,6 +5273,9 @@
             });
 
             for (const catId of sortedCatIds) {
+                // Sort tags within category by order
+                grouped[catId].sort((a, b) => a.order - b.order);
+
                 const catName = catId === 'uncategorized' ? '未分類' : (categories[catId]?.name || catId);
                 html += `<optgroup label="${escapeHtml(catName)}">`;
                 for (const tag of grouped[catId]) {
