@@ -1329,6 +1329,105 @@
             border-color: var(--accent-gold);
         }
 
+        /* General Search */
+        .general-search-container {
+            margin: 0.5rem 0;
+        }
+
+        .general-search-bar {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .general-search-bar input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .general-search-results {
+            margin-top: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+            padding: 0.5rem;
+        }
+
+        .search-results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .search-select-all {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .search-result-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-result-item label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .search-result-item.deputy {
+            opacity: 0.5;
+        }
+
+        .search-result-item.deputy label::after {
+            content: '(副将)';
+            color: var(--accent-gold);
+            font-size: 0.75rem;
+            margin-left: 0.3rem;
+        }
+
+        .search-result-item select {
+            padding: 0.2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.75rem;
+        }
+
+        .search-results-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
         /* Toggle Switch for Display Mode */
         .toggle-switch .toggle-slider {
             display: inline-block;
@@ -6951,6 +7050,140 @@
             updateSummary();
             refreshAllTapCardStates();
         }
+
+        // ===== General Search Functions =====
+
+        function searchGenerals() {
+            const query = document.getElementById('generalSearchInput').value.trim();
+            if (!query) {
+                closeGeneralSearch();
+                return;
+            }
+
+            // Split by spaces (half-width and full-width)
+            const terms = query.split(/[\s　]+/).filter(t => t.length > 0);
+            const allGenerals = getAllGenerals();
+
+            // Filter: OR search with partial match, exclude hidden
+            const results = allGenerals.filter(name => {
+                if (isHiddenGeneral(name)) return false;
+                return terms.some(term => name.includes(term));
+            });
+
+            displaySearchResults(results);
+        }
+
+        function displaySearchResults(results) {
+            const container = document.getElementById('generalSearchResults');
+            const list = document.getElementById('searchResultList');
+            const countEl = document.getElementById('searchResultCount');
+            const selectAllEl = document.getElementById('searchSelectAll');
+
+            if (results.length === 0) {
+                countEl.textContent = '検索結果: 0件';
+                list.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted);">該当する武将が見つかりません</div>';
+                container.style.display = 'block';
+                selectAllEl.checked = false;
+                return;
+            }
+
+            countEl.textContent = `検索結果: ${results.length}件`;
+            selectAllEl.checked = false;
+
+            let html = '';
+            results.forEach((name, i) => {
+                const index = getGeneralIndex(name);
+                const stateEl = document.getElementById(`generalState_${index}`);
+                const currentState = stateEl ? parseInt(stateEl.value || '0') : 0;
+                const isDeputy = isGeneralDeputy(name);
+
+                const deputyClass = isDeputy ? ' deputy' : '';
+                const disabledAttr = isDeputy ? ' disabled' : '';
+
+                html += `
+                    <div class="search-result-item${deputyClass}" data-general="${name}" data-index="${index}">
+                        <input type="checkbox" id="searchCheck_${i}" ${disabledAttr}>
+                        <label for="searchCheck_${i}">${name}</label>
+                        <select onchange="setGeneralStateByName('${name}', this.value)" ${disabledAttr}>
+                            <option value="0" ${currentState === 0 ? 'selected' : ''}>未所持</option>
+                            <option value="1" ${currentState === 1 ? 'selected' : ''}>所持</option>
+                            <option value="2" ${currentState === 2 ? 'selected' : ''}>編成</option>
+                        </select>
+                    </div>
+                `;
+            });
+
+            list.innerHTML = html;
+            container.style.display = 'block';
+        }
+
+        function toggleAllSearchResults() {
+            const selectAll = document.getElementById('searchSelectAll').checked;
+            document.querySelectorAll('#searchResultList input[type="checkbox"]:not(:disabled)').forEach(cb => {
+                cb.checked = selectAll;
+            });
+        }
+
+        function bulkSetSearchResults(stateType) {
+            const stateMap = { 'none': 0, 'owned': 1, 'formed': 2 };
+            const newState = stateMap[stateType];
+            if (newState === undefined) return;
+
+            document.querySelectorAll('#searchResultList .search-result-item').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (!checkbox || !checkbox.checked) return;
+
+                const name = item.dataset.general;
+                if (!name || isGeneralDeputy(name)) return;
+
+                setGeneralStateByName(name, newState);
+
+                // Update the select in search results
+                const select = item.querySelector('select');
+                if (select) select.value = newState;
+            });
+
+            // Uncheck all after bulk operation
+            document.getElementById('searchSelectAll').checked = false;
+            document.querySelectorAll('#searchResultList input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+        }
+
+        function setGeneralStateByName(generalName, state) {
+            state = parseInt(state);
+            const index = getGeneralIndex(generalName);
+            if (index === -1) return;
+
+            // Check if deputy
+            if (isGeneralDeputy(generalName)) return;
+
+            const item = document.getElementById(`generalItem_${index}`);
+            const hiddenInput = document.getElementById(`generalState_${index}`);
+            if (!item || !hiddenInput) return;
+
+            // Update data
+            item.dataset.state = state;
+            hiddenInput.value = state;
+
+            // Update visual classes
+            item.classList.remove('owned', 'formed', 'deputy');
+            if (state === 1) item.classList.add('owned');
+            if (state === 2) item.classList.add('formed');
+
+            // Update related UI
+            updateProgress();
+            updateDeputyStates();
+            updateFormationCount();
+        }
+
+        function closeGeneralSearch() {
+            document.getElementById('generalSearchResults').style.display = 'none';
+            document.getElementById('generalSearchInput').value = '';
+            document.getElementById('searchSelectAll').checked = false;
+        }
+
+        // ===== End General Search Functions =====
 
         function bulkSelectGenerals(category, action) {
             // Map button IDs to original category title patterns
