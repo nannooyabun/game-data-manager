@@ -882,6 +882,12 @@
             color: var(--text-primary);
         }
 
+        .category-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: 0.5rem;
+        }
+
         /* Collapsible category */
         .general-category.collapsed .general-grid {
             display: none;
@@ -5540,10 +5546,11 @@
                     const collapsedClass = isCollapsible ? ' collapsed' : '';
                     const toggleOnclick = isCollapsible ? ` onclick="toggleGeneralCategory(this)"` : '';
                     const toggleIcon = isCollapsible ? '<span class="collapse-icon">▶</span>' : '';
+                    const categoryNote = isCollapsible ? '<span class="category-note">※基本的に入力不要</span>' : '';
                     html += `
                         <div class="general-category${collapsedClass}" data-category-index="${catIndex}" id="category-${cat.title.replace(/[^a-zA-Z0-9]/g, '_')}">
                             <div class="general-category-header"${toggleOnclick}>
-                                ${toggleIcon}<span class="general-category-title">●${cat.title}（${cat.generals.length}名）</span>
+                                ${toggleIcon}<span class="general-category-title">●${cat.title}（${cat.generals.length}名）</span>${categoryNote}
                                 <div class="category-bulk-actions">
                                     <button class="category-bulk-btn" onclick="event.stopPropagation(); bulkSelectGeneralsByIndex(${catIndex}, 'owned')">所持一括ON</button>
                                     <button class="category-bulk-btn level-btn" onclick="event.stopPropagation(); showBulkLevelPopup(${catIndex})">守護霊Lv一括設定</button>
