@@ -4670,7 +4670,12 @@
 
         // Save general tags to Firebase
         async function saveGeneralTags() {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
             try {
+                const { database, ref, set } = window.firebaseDB;
                 generalTags.updatedAt = new Date().toISOString();
                 await set(ref(database, 'settings/generalTags'), generalTags);
             } catch (error) {
@@ -4961,6 +4966,7 @@
 
             // Remove tag from all generals
             if (generalMasterData?.generals) {
+                const { database, ref, set } = window.firebaseDB;
                 let modified = false;
                 for (const [genName, gen] of Object.entries(generalMasterData.generals)) {
                     if (gen.tags?.includes(tagId)) {
@@ -5195,6 +5201,7 @@
             });
 
             if (modified) {
+                const { database, ref, set } = window.firebaseDB;
                 await set(ref(database, 'settings/generalMasterData'), generalMasterData);
                 showToast(`${checkboxes.length}人の武将にタグを追加しました`);
             }
@@ -5231,6 +5238,7 @@
             });
 
             if (modified) {
+                const { database, ref, set } = window.firebaseDB;
                 await set(ref(database, 'settings/generalMasterData'), generalMasterData);
                 showToast(`${checkboxes.length}人の武将からタグを削除しました`);
             }
@@ -5333,6 +5341,7 @@
             generalMasterData.generals[currentTagEditGeneral].tags = [...currentTagEditSelection];
 
             try {
+                const { database, ref, set } = window.firebaseDB;
                 await set(ref(database, 'settings/generalMasterData'), generalMasterData);
                 showToast('タグを保存しました');
             } catch (error) {
@@ -5342,6 +5351,7 @@
 
             closeTagEditModal();
             renderGeneralTagList();
+            renderGenCatList('unified');  // Refresh category list to show tag badges
         }
 
         // ========== Custom Generals Management ==========
