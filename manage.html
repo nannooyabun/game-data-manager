@@ -2255,6 +2255,47 @@
             color: var(--text-muted);
             font-size: 0.9rem;
         }
+
+        /* Backup Status Panel */
+        .backup-status-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .backup-status-panel h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .manual-backup-list {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .manual-backup-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+            border-left: 2px solid var(--border-color);
+            padding-left: 0.5rem;
+            margin-left: 0.5rem;
+        }
+
+        .manual-backup-item:first-child {
+            border-left-color: var(--accent-primary);
+        }
+
+        .manual-backup-item .backup-type {
+            color: var(--text-primary);
+        }
+
+        .manual-backup-item .backup-date {
+            color: var(--text-muted);
+        }
     </style>
 </head>
 <body>
@@ -2291,6 +2332,14 @@
 
         <!-- Admin Content (hidden until login) -->
         <div class="admin-content" id="adminContent">
+
+            <!-- Backup Status Panel -->
+            <div id="backupStatusPanel" class="backup-status-panel">
+                <h4>📦 手動バックアップ: <span id="manualBackupCount">0</span>件</h4>
+                <div id="manualBackupList" class="manual-backup-list">
+                    <div style="color: var(--text-muted);">読み込み中...</div>
+                </div>
+            </div>
 
             <!-- ① 武将管理 Section -->
             <div class="section-card" id="generalManagementSection">
@@ -2862,7 +2911,7 @@
         }
 
         // Verify admin password
-        function verifyPassword() {
+        async function verifyPassword() {
             const password = document.getElementById('adminPwd').value;
 
             if (!ADMIN_PASSWORD) {
@@ -2882,6 +2931,9 @@
                 renderGenCatList('unified');  // カテゴリ一覧を表示
                 snapshotCategoriesState();  // Take initial snapshot for change tracking
                 showToast('ログインしました', 'success');
+
+                // ログイン成功時に自動バックアップを実行
+                await checkAutoBackup();
             } else {
                 showToast('パスワードが違います', 'error');
             }
@@ -6264,6 +6316,46 @@
                     </div>
                 `;
             }).join('');
+
+            // Update manual backup status panel
+            renderManualBackupStatus();
+        }
+
+        // Render manual backup status at top of page
+        function renderManualBackupStatus() {
+            const manualBackups = Object.entries(backups || {})
+                .filter(([id, b]) => !b.auto)
+                .sort((a, b) => new Date(b[1].timestamp) - new Date(a[1].timestamp));
+
+            const countEl = document.getElementById('manualBackupCount');
+            const listEl = document.getElementById('manualBackupList');
+
+            if (!countEl || !listEl) return;
+
+            countEl.textContent = manualBackups.length;
+
+            if (manualBackups.length === 0) {
+                listEl.innerHTML = '<div style="color: var(--text-muted);">手動バックアップはありません</div>';
+                return;
+            }
+
+            const typeLabels = {
+                gameData: 'ユーザーデータ',
+                generalMasterData: '武将データ',
+                generalTags: 'タグデータ',
+                generalCategories: 'カテゴリ設定',
+                customItems: 'カスタムアイテム',
+                customGenerals: 'カスタム武将',
+                teams: 'チームデータ',
+                fullBackup: '全データ'
+            };
+
+            listEl.innerHTML = manualBackups.map(([id, b]) => {
+                const date = new Date(b.timestamp);
+                const dateStr = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}/${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+                const label = typeLabels[b.type] || b.type;
+                return `<div class="manual-backup-item"><span class="backup-type">${label}</span><span class="backup-date">${dateStr}</span></div>`;
+            }).join('');
         }
 
         // Create manual backup
@@ -6541,9 +6633,8 @@
             const lastBackup = localStorage.getItem(lastBackupKey);
 
             if (lastBackup !== today) {
-                // Create daily auto backups (most important data)
+                // Create daily auto backups (user data only - most important)
                 await createBackup('gameData', true);
-                await createBackup('generalMasterData', true);
                 await createBackup('teams', true);
                 localStorage.setItem(lastBackupKey, today);
             }
@@ -7799,7 +7890,7 @@
             subscribeBackups();
             await loadHiddenUsers();
             subscribeHiddenUsers();
-            await checkAutoBackup();
+            // 自動バックアップはログイン成功時に実行（verifyPassword内）
         });
 
         if (window.firebaseReady) {
@@ -7810,7 +7901,7 @@
                         subscribeBackups();
                         loadHiddenUsers().then(() => {
                             subscribeHiddenUsers();
-                            checkAutoBackup();
+                            // 自動バックアップはログイン成功時に実行（verifyPassword内）
                         });
                     });
                 });
