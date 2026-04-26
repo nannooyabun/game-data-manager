@@ -7859,9 +7859,8 @@
                 message: 'ようこそ！このアプリは、一門メンバーの武将・装備データを共有して、集結の編成検討を効率化するツールです。\n\n🎯 こんな時に便利:\n• 集結で誰が何を持っているか確認したい\n• 足りない装備や武将を把握したい\n• 編成のシミュレーションをしたい\n\nまずはユーザー名を入力して、あなたのデータを登録しましょう！',
                 options: [
                     { label: '🆕 初めての方はこちら', action: 'beginner' },
-                    { label: '➕ 2軍以降の入力方法', action: 'multiArmy' },
-                    { label: '💾 データを保存したい', action: 'save' },
-                    { label: '📂 過去のデータを読み込みたい', action: 'load' },
+                    { label: '🔄 保存済みデータを更新したい', action: 'update' },
+                    { label: '➕ 2軍以降を入力したい', action: 'multiArmy' },
                     { label: '⚔️ 武将の入力方法', action: 'general' },
                     { label: '🔫 兵器・装備の入力', action: 'equipment' },
                     { label: '📊 一覧画面(view)の使い方', action: 'view' }
@@ -7888,6 +7887,15 @@
             load: {
                 message: '📂 データの読み込み方法:\n\n1. 画面上部の「🔍 既存データ呼び出し」ボタンをタップ\n2. ユーザー名を検索（または一覧から選択）\n3. 軍団を選んでタップ\n\n※ 自分の過去データや他のユーザーのデータを参照できます。',
                 options: [
+                    { label: '🔄 保存済みデータを更新したい', action: 'update' },
+                    { label: '➕ 2軍以降を入力したい', action: 'multiArmy' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            update: {
+                message: '🔄 保存済みデータの更新方法:\n\n📝 手順:\n① 画面上部の「🔍 既存データ呼び出し」をタップ\n② 自分のユーザー名を検索\n③ 更新したい軍団をタップ\n④ データが読み込まれるので、変更箇所を修正\n⑤ 右下の「💾 保存」ボタンで上書き保存\n\n💡 ポイント:\n• 既存データの上から修正するだけでOK\n• 保存すると即座に反映されます\n• 他のメンバーの一覧画面にも反映されます',
+                options: [
+                    { label: '➕ 2軍以降を入力したい', action: 'multiArmy' },
                     { label: '💾 データの保存方法', action: 'save' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
@@ -8033,7 +8041,8 @@
             // Simple keyword matching
             const keywords = {
                 '保存': 'save', 'セーブ': 'save',
-                '読み込': 'load', 'ロード': 'load', '読込': 'load',
+                '更新': 'update', '修正': 'update', '編集': 'update', '変更': 'update',
+                '読み込': 'load', 'ロード': 'load', '読込': 'load', '呼び出': 'load',
                 '武将': 'general', 'ぶしょう': 'general',
                 'sp': 'spgeneral', 'SP': 'spgeneral', '信長': 'spgeneral', '秀吉': 'spgeneral', '家康': 'spgeneral',
                 '兵器': 'weapon', '赤鬼': 'weapon', '隕石': 'weapon', '般若': 'weapon',
