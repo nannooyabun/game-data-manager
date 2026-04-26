@@ -4058,17 +4058,7 @@
                 const usernameRow = e.target.closest('.username-row');
                 if (usernameRow) {
                     const item = usernameRow.closest('.load-user-item');
-                    const uIdx = parseInt(item.dataset.userIdx);
-                    const entry = listEl._loadUserList?.[uIdx];
-                    if (!entry) return;
-
-                    // If only one team, load directly without expansion
-                    if (entry.teams.length === 1) {
-                        loadUserTeamData(entry.username, entry.teams[0]);
-                        return;
-                    }
-
-                    // Toggle expansion
+                    // Always toggle expansion to allow new army creation even for single-team users
                     item.classList.toggle('expanded');
                 }
             };
