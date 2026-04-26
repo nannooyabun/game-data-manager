@@ -2688,6 +2688,7 @@
                     <button class="action-btn primary" onclick="createManualBackup('generalTags')">🏷️ タグデータ</button>
                     <button class="action-btn primary" onclick="createManualBackup('generalCategories')">📁 カテゴリ設定</button>
                     <button class="action-btn primary" onclick="createManualBackup('customItems')">✨ カスタムアイテム</button>
+                    <button class="action-btn primary" onclick="createManualBackup('teams')">👥 チームデータ</button>
                 </div>
                 <div class="backup-list-container">
                     <h4 style="color: var(--accent-gold); margin: 1rem 0 0.5rem; font-size: 0.9rem;">📋 バックアップ一覧</h4>
@@ -6357,6 +6358,12 @@
                     icon: '🎭',
                     countFn: (data) => Array.isArray(data) ? data.length : Object.keys(data || {}).length
                 },
+                teams: {
+                    path: 'teams',
+                    label: 'チームデータ',
+                    icon: '👥',
+                    countFn: (data) => Object.keys(data || {}).length
+                },
                 fullBackup: {
                     path: null,  // Special handling
                     label: '全データ',
@@ -6381,7 +6388,7 @@
                 // Collect all data
                 const fullData = {};
                 const paths = ['gameData', 'settings/generalMasterData', 'settings/generalTags',
-                              'settings/generalCategories', 'customItems', 'customGenerals'];
+                              'settings/generalCategories', 'customItems', 'customGenerals', 'teams'];
 
                 for (const path of paths) {
                     const snap = await get(ref(database, path));
@@ -6392,6 +6399,7 @@
                 const userCount = Object.keys(fullData.gameData || {}).length;
                 const generalCount = fullData.generalMasterData?.generals ? Object.keys(fullData.generalMasterData.generals).length : 0;
                 const tagCount = fullData.generalTags?.tags ? Object.keys(fullData.generalTags.tags).length : 0;
+                const teamCount = Object.keys(fullData.teams || {}).length;
 
                 // Create backup entry
                 const backupId = `backup_full_${Date.now()}`;
@@ -6399,7 +6407,7 @@
                     type: 'fullBackup',
                     timestamp: new Date().toISOString(),
                     auto: false,
-                    itemCount: `${userCount}ユーザー, ${generalCount}武将, ${tagCount}タグ`,
+                    itemCount: `${userCount}ユーザー, ${generalCount}武将, ${tagCount}タグ, ${teamCount}チーム`,
                     data: fullData
                 };
 
@@ -6456,6 +6464,7 @@
                     if (data.generalCategories !== undefined) await set(ref(database, 'settings/generalCategories'), data.generalCategories);
                     if (data.customItems !== undefined) await set(ref(database, 'customItems'), data.customItems);
                     if (data.customGenerals !== undefined) await set(ref(database, 'customGenerals'), data.customGenerals);
+                    if (data.teams !== undefined) await set(ref(database, 'teams'), data.teams);
                     showToast('全データを復元しました', 'success');
                 } else {
                     const path = typeConfig?.path;
@@ -6532,9 +6541,10 @@
             const lastBackup = localStorage.getItem(lastBackupKey);
 
             if (lastBackup !== today) {
-                // Create daily auto backups
+                // Create daily auto backups (most important data)
                 await createBackup('gameData', true);
                 await createBackup('generalMasterData', true);
+                await createBackup('teams', true);
                 localStorage.setItem(lastBackupKey, today);
             }
         }
