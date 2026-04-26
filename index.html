@@ -1364,7 +1364,12 @@
 
         /* General Search */
         .general-search-container {
-            margin: 0.5rem 0;
+            margin: 0.75rem 0;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.08) 0%, rgba(0, 242, 254, 0.05) 100%);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
 
         .general-search-bar {
@@ -1375,7 +1380,7 @@
 
         .general-search-bar input {
             flex: 1;
-            padding: 0.5rem;
+            padding: 0.5rem 0.75rem;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             background: var(--bg-input);
@@ -1463,11 +1468,11 @@
 
         /* Tag Filter Bar */
         .tag-filter-bar {
-            margin: 0.5rem 0;
-            padding: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--bg-secondary);
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .tag-filter-header {
@@ -2606,13 +2611,31 @@
                     <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'clear')" style="color: var(--text-muted);">クリア</button>
                 </div>
 
-                <!-- General Search Bar -->
+                <!-- General Search & Tag Filter Container -->
                 <div class="general-search-container">
+                    <!-- Tag Filter Bar (上部に配置) -->
+                    <div class="tag-filter-bar" id="tagFilterBar" style="display: none;">
+                        <div class="tag-filter-header">
+                            <span>🏷️ タグ絞り込み:</span>
+                            <select class="tag-filter-mode" id="tagFilterMode" onchange="changeTagFilterMode()">
+                                <option value="AND">AND (全一致)</option>
+                                <option value="OR">OR (いずれか)</option>
+                            </select>
+                            <button class="tag-filter-clear" onclick="clearTagFilters()">クリア</button>
+                        </div>
+                        <div class="tag-filter-groups" id="tagFilterGroups">
+                            <!-- Populated by renderTagFilterBar() -->
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
                     <div class="general-search-bar">
-                        <input type="text" id="generalSearchInput" placeholder="検索した武将を一括設定（例）：明智 秀吉 家康" onkeypress="if(event.key==='Enter')searchGenerals()">
-                        <button class="bulk-btn" onclick="searchGenerals()">🔍 検索</button>
+                        <input type="text" id="generalSearchInput" placeholder="🔍 武将を検索して一括設定（例）：明智 秀吉 家康" onkeypress="if(event.key==='Enter')searchGenerals()">
+                        <button class="bulk-btn" onclick="searchGenerals()">検索</button>
                         <button class="bulk-btn" onclick="closeGeneralSearch()" style="color: var(--text-muted);">閉じる</button>
                     </div>
+
+                    <!-- Search Results -->
                     <div id="generalSearchResults" class="general-search-results" style="display:none;">
                         <div class="search-results-header">
                             <span id="searchResultCount">検索結果: 0件</span>
@@ -2626,21 +2649,6 @@
                             <button class="bulk-btn" onclick="bulkSetSearchResults('owned')">選択を所持ON</button>
                             <button class="bulk-btn" onclick="bulkSetSearchResults('formed')">選択を編成ON</button>
                             <button class="bulk-btn" onclick="bulkSetSearchResults('none')" style="color: var(--text-muted);">選択を未所持</button>
-                        </div>
-                    </div>
-
-                    <!-- Tag Filter Bar -->
-                    <div class="tag-filter-bar" id="tagFilterBar" style="display: none;">
-                        <div class="tag-filter-header">
-                            <span>🏷️ タグ絞り込み:</span>
-                            <select class="tag-filter-mode" id="tagFilterMode" onchange="changeTagFilterMode()">
-                                <option value="AND">AND (全一致)</option>
-                                <option value="OR">OR (いずれか)</option>
-                            </select>
-                            <button class="tag-filter-clear" onclick="clearTagFilters()">クリア</button>
-                        </div>
-                        <div class="tag-filter-groups" id="tagFilterGroups">
-                            <!-- Populated by renderTagFilterBar() -->
                         </div>
                     </div>
                 </div>
