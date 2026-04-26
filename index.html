@@ -3330,6 +3330,21 @@
                     const orderB = titleToOrder[b.title] ?? 9999;
                     return orderA - orderB;
                 });
+
+                // Apply saved general order within each category
+                for (const cat of filteredResult) {
+                    const catId = Object.keys(cachedCategoriesIndex.categories)
+                        .find(id => cachedCategoriesIndex.categories[id].title === cat.title);
+
+                    if (catId && cachedCategoriesIndex.categories[catId].generals) {
+                        const savedOrder = cachedCategoriesIndex.categories[catId].generals;
+                        cat.generals.sort((a, b) => {
+                            const indexA = savedOrder.indexOf(a);
+                            const indexB = savedOrder.indexOf(b);
+                            return (indexA === -1 ? 9999 : indexA) - (indexB === -1 ? 9999 : indexB);
+                        });
+                    }
+                }
             }
 
             // Add uncategorized generals at the end (those with empty category)
@@ -3352,6 +3367,12 @@
             }
 
             return filteredResult;
+        }
+
+        // Get category notes from generalMasterData
+        function getCategoryNotes(categoryTitle) {
+            if (!cachedGeneralMasterData?.categories) return '';
+            return cachedGeneralMasterData.categories[categoryTitle]?.notes || '';
         }
 
         // ========== Update Info Functions ==========
@@ -5548,7 +5569,10 @@
                     const collapsedClass = isCollapsible ? ' collapsed' : '';
                     const toggleOnclick = isCollapsible ? ` onclick="toggleGeneralCategory(this)"` : '';
                     const toggleIcon = isCollapsible ? '<span class="collapse-icon">▶</span>' : '';
-                    const categoryNote = isCollapsible ? '<span class="category-note">※基本的に入力不要</span>' : '';
+                    const defaultNote = isCollapsible ? '※基本的に入力不要' : '';
+                    const masterNotes = getCategoryNotes(cat.title);
+                    const notesText = masterNotes || defaultNote;
+                    const categoryNote = notesText ? `<span class="category-note">${notesText}</span>` : '';
                     html += `
                         <div class="general-category${collapsedClass}" data-category-index="${catIndex}" id="category-${cat.title.replace(/[^a-zA-Z0-9]/g, '_')}">
                             <div class="general-category-header"${toggleOnclick}>

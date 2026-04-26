@@ -236,6 +236,34 @@
             gap: 0.5rem;
         }
 
+        /* Collapsible section */
+        .section-card.collapsible > h3 {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-card.collapsible > h3:hover {
+            opacity: 0.8;
+        }
+
+        .section-card.collapsible > h3 .collapse-icon {
+            font-size: 0.8rem;
+            transition: transform 0.2s;
+            margin-right: 0.3rem;
+        }
+
+        .section-card.collapsible.collapsed > h3 .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .section-card.collapsible.collapsed > .section-content {
+            display: none;
+        }
+
+        .section-content {
+            /* default: visible */
+        }
+
         /* Action buttons row */
         .action-row {
             display: flex;
@@ -1133,22 +1161,27 @@
             color: var(--accent-gold);
         }
 
-        .gen-cat-general-tag .gen-order-btns {
-            display: inline-flex;
-            gap: 1px;
+        .gen-cat-general-tag.drag-over-before {
+            border-left: 3px solid var(--accent-gold);
+            margin-left: -1px;
         }
 
-        .gen-cat-general-tag .order-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 0.55rem;
-            padding: 0 1px;
-            line-height: 1;
+        .gen-cat-general-tag.drag-over-after {
+            border-right: 3px solid var(--accent-gold);
+            margin-right: -1px;
         }
 
-        .gen-cat-general-tag .order-btn:hover {
+        /* Change highlighting */
+        .gen-cat-general-tag.changed {
+            background: rgba(255, 193, 7, 0.25);
+            border-color: var(--accent-gold);
+        }
+
+        .gen-cat-card.changed .gen-cat-card-header {
+            background: rgba(255, 193, 7, 0.15);
+        }
+
+        .gen-cat-card.changed .gen-cat-card-title input {
             color: var(--accent-gold);
         }
 
@@ -1883,24 +1916,27 @@
             </div>
 
             <!-- ② 武将カテゴリ管理 Section -->
-            <div class="section-card" id="generalCategorySection">
-                <h3>📋 武将カテゴリ管理</h3>
-                <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
-                    武将のカテゴリ（グループ）の追加・編集・並び替えを行います。入力フォームと比較表で共通のカテゴリを使用します。
-                </p>
+            <div class="section-card collapsible" id="generalCategorySection">
+                <h3 onclick="toggleSection('generalCategorySection')"><span class="collapse-icon">▼</span>📋 武将カテゴリ管理</h3>
+                <div class="section-content">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        武将のカテゴリ（グループ）の追加・編集・並び替えを行います。入力フォームと比較表で共通のカテゴリを使用します。
+                    </p>
 
-                <!-- Undo Toolbar -->
-                <div class="undo-toolbar" id="categoryUndoToolbar">
-                    <button class="undo-btn" onclick="undoCategoryAction()" id="categoryUndoBtn" disabled>↩ 元に戻す</button>
-                    <button class="undo-btn restore" onclick="restoreCategoryInitialState()" id="categoryRestoreBtn">🔄 編集前の状態に戻す</button>
-                </div>
-
-                <div class="gen-cat-panel" id="genCatPanelUnified">
-                    <div class="gen-cat-toolbar">
-                        <button class="gen-cat-btn" onclick="addNewCategory('unified')">＋ カテゴリ追加</button>
+                    <!-- Undo Toolbar -->
+                    <div class="undo-toolbar" id="categoryUndoToolbar">
+                        <button class="undo-btn" onclick="undoCategoryAction()" id="categoryUndoBtn" disabled>↩ 元に戻す</button>
+                        <button class="undo-btn restore" onclick="restoreCategoryInitialState()" id="categoryRestoreBtn">🔄 編集前の状態に戻す</button>
                     </div>
-                    <div class="gen-cat-list" id="genCatListUnified">
-                        <span style="color: var(--text-muted);">読み込み中...</span>
+
+                    <div class="gen-cat-panel" id="genCatPanelUnified">
+                        <div class="gen-cat-toolbar">
+                            <button class="gen-cat-btn" onclick="addNewCategory('unified')">＋ カテゴリ追加</button>
+                            <button class="gen-cat-btn" onclick="clearChangeMarkers(); renderGenCatList('unified');" style="margin-left: auto;">✕ ハイライトクリア</button>
+                        </div>
+                        <div class="gen-cat-list" id="genCatListUnified">
+                            <span style="color: var(--text-muted);">読み込み中...</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2117,6 +2153,11 @@
         // Default generals data (empty - managed via CSV import)
         const DEFAULT_GENERAL_CATEGORIES = [];
 
+        // Change tracking for highlighting
+        let initialCategoriesSnapshot = null;
+        let changedGenerals = new Set();  // generals that have been moved/reordered
+        let changedCategories = new Set();  // categories that have been renamed/modified
+
         // Get all default generals as a flat list
         const ALL_DEFAULT_GENERALS = DEFAULT_GENERAL_CATEGORIES.flatMap(cat => cat.generals);
 
@@ -2148,6 +2189,51 @@
             toast.textContent = message;
             toast.className = 'toast ' + type + ' show';
             setTimeout(() => { toast.className = 'toast'; }, 2500);
+        }
+
+        // Toggle collapsible section
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (!section) return;
+
+            const icon = section.querySelector('h3 .collapse-icon');
+            if (section.classList.contains('collapsed')) {
+                section.classList.remove('collapsed');
+                if (icon) icon.textContent = '▼';
+            } else {
+                section.classList.add('collapsed');
+                if (icon) icon.textContent = '▶';
+            }
+        }
+
+        // Take snapshot of current categories state for change tracking
+        function snapshotCategoriesState() {
+            if (!generalCategories) return;
+            initialCategoriesSnapshot = JSON.parse(JSON.stringify(generalCategories));
+            changedGenerals.clear();
+            changedCategories.clear();
+        }
+
+        // Mark a general as changed
+        function markGeneralChanged(generalName) {
+            changedGenerals.add(generalName);
+        }
+
+        // Mark a category as changed
+        function markCategoryChanged(catId) {
+            changedCategories.add(catId);
+        }
+
+        // Clear all change markers
+        function clearChangeMarkers() {
+            changedGenerals.clear();
+            changedCategories.clear();
+            snapshotCategoriesState();
+        }
+
+        // Check if there are pending changes
+        function hasChanges() {
+            return changedGenerals.size > 0 || changedCategories.size > 0;
         }
 
         // Load passwords from Firebase
@@ -2190,6 +2276,7 @@
                 renderCustomItems();
                 updateCategorySelect();
                 renderGenCatList('unified');  // カテゴリ一覧を表示
+                snapshotCategoriesState();  // Take initial snapshot for change tracking
                 showToast('ログインしました', 'success');
             } else {
                 showToast('パスワードが違います', 'error');
@@ -3369,8 +3456,9 @@
                 const canMoveDown = idx < categories.length - 1 && categories[idx + 1].id !== '_unassigned';
 
                 const categoryNotes = getCategoryNotesFromMaster(cat.title);
+                const isCatChanged = changedCategories.has(cat.id);
                 return `
-                    <div class="gen-cat-card ${isUnassigned ? 'unassigned' : ''}" data-cat-id="${cat.id}">
+                    <div class="gen-cat-card ${isUnassigned ? 'unassigned' : ''}${isCatChanged ? ' changed' : ''}" data-cat-id="${cat.id}">
                         <div class="gen-cat-card-header">
                             <div class="gen-cat-card-title">
                                 ${isUnassigned ?
@@ -3400,18 +3488,20 @@
                             ondrop="onGeneralDrop(event, '${configType}', '${cat.id}')">
                             ${cat.generals.length === 0 ?
                                 '<span style="color: var(--text-muted); font-size: 0.8rem;">（武将なし - ドラッグでここに追加）</span>' :
-                                cat.generals.map((gen, genIdx) => `
-                                    <div class="gen-cat-general-tag" draggable="true"
+                                cat.generals.map((gen, genIdx) => {
+                                    const isGenChanged = changedGenerals.has(gen);
+                                    return `
+                                    <div class="gen-cat-general-tag${isGenChanged ? ' changed' : ''}" draggable="true"
+                                        data-cat-id="${cat.id}" data-general="${escapeHtml(gen)}" data-index="${genIdx}"`
                                         ondragstart="onGeneralDragStart(event, '${configType}', '${cat.id}', '${escapeHtml(gen)}')"
-                                        ondragend="onGeneralDragEnd(event)">
-                                        <span class="gen-order-btns">
-                                            ${genIdx > 0 ? `<button class="order-btn" onclick="event.stopPropagation(); moveGeneralOrder('${configType}', '${cat.id}', ${genIdx}, -1)">◀</button>` : ''}
-                                            ${genIdx < cat.generals.length - 1 ? `<button class="order-btn" onclick="event.stopPropagation(); moveGeneralOrder('${configType}', '${cat.id}', ${genIdx}, 1)">▶</button>` : ''}
-                                        </span>
+                                        ondragend="onGeneralDragEnd(event)"
+                                        ondragover="onGeneralTagDragOver(event)"
+                                        ondragleave="onGeneralTagDragLeave(event)"
+                                        ondrop="onGeneralTagDrop(event, '${configType}', '${cat.id}', '${escapeHtml(gen)}', ${genIdx})">
                                         <span>${escapeHtml(gen)}</span>
                                         <button class="move-btn" onclick="showMoveModal('${configType}', '${cat.id}', '${escapeHtml(gen)}')">⇄</button>
                                     </div>
-                                `).join('')
+                                `;}).join('')
                             }
                         </div>
                     </div>
@@ -3449,21 +3539,69 @@
         // Rename category
         async function renameCategoryTitle(configType, catId, newTitle) {
             if (!newTitle || !newTitle.trim()) return;
+            newTitle = newTitle.trim();
+
+            let oldTitle = null;
 
             if (!generalCategories || !generalCategories.categories || !generalCategories.categories[catId]) {
                 // Initialize config first
                 const categories = getMergedCategories(configType);
                 const cat = categories.find(c => c.id === catId);
-                if (cat) cat.title = newTitle.trim();
+                if (cat) {
+                    oldTitle = cat.title;
+                    cat.title = newTitle;
+                }
                 const newConfig = categoriesToConfig(categories);
                 generalCategories = newConfig;
                 generalCategoriesIndex = newConfig;
                 generalCategoriesView = newConfig;
             } else {
-                generalCategories.categories[catId].title = newTitle.trim();
+                oldTitle = generalCategories.categories[catId].title;
+                generalCategories.categories[catId].title = newTitle;
             }
 
+            markCategoryChanged(catId);
+
             await saveCategoryConfig(configType);
+
+            // Sync category rename to generalMasterData
+            if (oldTitle && oldTitle !== newTitle) {
+                try {
+                    const { database, ref, get, set } = window.firebaseDB;
+                    const snap = await get(ref(database, 'settings/generalMasterData'));
+                    if (snap.exists()) {
+                        const masterData = snap.val();
+                        const now = new Date().toISOString();
+                        let updated = false;
+
+                        // Update generals' category field
+                        if (masterData.generals) {
+                            for (const [genName, genData] of Object.entries(masterData.generals)) {
+                                if (genData.category === oldTitle) {
+                                    masterData.generals[genName].category = newTitle;
+                                    masterData.generals[genName].updatedAt = now;
+                                    updated = true;
+                                }
+                            }
+                        }
+
+                        // Rename category key in categories
+                        if (masterData.categories && masterData.categories[oldTitle]) {
+                            masterData.categories[newTitle] = masterData.categories[oldTitle];
+                            delete masterData.categories[oldTitle];
+                            updated = true;
+                        }
+
+                        if (updated) {
+                            masterData.updatedAt = now;
+                            await set(ref(database, 'settings/generalMasterData'), masterData);
+                            generalMasterData = masterData;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to sync category rename to masterData:', error);
+                }
+            }
         }
 
         // Get category notes from generalMasterData
@@ -3515,6 +3653,8 @@
             generalCategoriesIndex = config;
             generalCategoriesView = config;
 
+            markCategoryChanged(catId);
+
             await saveCategoryConfig(configType);
             renderGenCatList(configType);
         }
@@ -3527,7 +3667,10 @@
             const cat = categories.find(c => c.id === catId);
             if (!cat) return;
 
-            if (!confirm(`「${cat.title}」を削除しますか？\n所属武将は「未分類」に移動されます。`)) return;
+            const catTitle = cat.title;
+            const affectedGenerals = [...cat.generals];
+
+            if (!confirm(`「${catTitle}」を削除しますか？\n所属武将は「未分類」に移動されます。`)) return;
 
             // Move generals to unassigned
             const unassigned = categories.find(c => c.id === '_unassigned');
@@ -3545,6 +3688,43 @@
             generalCategoriesView = config;
 
             await saveCategoryConfig(configType);
+
+            // Sync category deletion to generalMasterData
+            try {
+                const { database, ref, get, set } = window.firebaseDB;
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                if (snap.exists()) {
+                    const masterData = snap.val();
+                    const now = new Date().toISOString();
+                    let updated = false;
+
+                    // Clear category for affected generals
+                    if (masterData.generals) {
+                        for (const genName of affectedGenerals) {
+                            if (masterData.generals[genName]) {
+                                masterData.generals[genName].category = '';
+                                masterData.generals[genName].updatedAt = now;
+                                updated = true;
+                            }
+                        }
+                    }
+
+                    // Delete category from categories
+                    if (masterData.categories && masterData.categories[catTitle]) {
+                        delete masterData.categories[catTitle];
+                        updated = true;
+                    }
+
+                    if (updated) {
+                        masterData.updatedAt = now;
+                        await set(ref(database, 'settings/generalMasterData'), masterData);
+                        generalMasterData = masterData;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to sync category deletion to masterData:', error);
+            }
+
             renderGenCatList(configType);
         }
 
@@ -3602,6 +3782,136 @@
             await moveGeneral(configType, dragData.fromCatId, toCatId, dragData.generalName);
         }
 
+        // Drag over individual general tag (for same-category reordering)
+        function onGeneralTagDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const tag = event.currentTarget;
+            // Determine drop position (before or after)
+            const rect = tag.getBoundingClientRect();
+            const midX = rect.left + rect.width / 2;
+
+            // Clear previous states
+            tag.classList.remove('drag-over-before', 'drag-over-after');
+
+            if (event.clientX < midX) {
+                tag.classList.add('drag-over-before');
+            } else {
+                tag.classList.add('drag-over-after');
+            }
+        }
+
+        function onGeneralTagDragLeave(event) {
+            event.currentTarget.classList.remove('drag-over-before', 'drag-over-after');
+        }
+
+        async function onGeneralTagDrop(event, configType, toCatId, targetGeneral, targetIndex) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const tag = event.currentTarget;
+            const insertBefore = tag.classList.contains('drag-over-before');
+            tag.classList.remove('drag-over-before', 'drag-over-after');
+
+            if (!dragData || dragData.configType !== configType) return;
+
+            const sourceGeneral = dragData.generalName;
+            const sourceCatId = dragData.fromCatId;
+
+            // Same category: reorder
+            if (sourceCatId === toCatId) {
+                if (sourceGeneral === targetGeneral) return; // Dropped on itself
+                await reorderGeneralInCategory(configType, toCatId, sourceGeneral, targetGeneral, insertBefore);
+            } else {
+                // Different category: move and insert at position
+                await moveGeneralToPosition(configType, sourceCatId, toCatId, sourceGeneral, targetIndex, insertBefore);
+            }
+        }
+
+        // Reorder general within same category
+        async function reorderGeneralInCategory(configType, catId, sourceGeneral, targetGeneral, insertBefore) {
+            const categories = getMergedCategories(configType);
+            const cat = categories.find(c => c.id === catId);
+            if (!cat || !cat.generals) return;
+
+            const sourceIdx = cat.generals.indexOf(sourceGeneral);
+            const targetIdx = cat.generals.indexOf(targetGeneral);
+            if (sourceIdx === -1 || targetIdx === -1) return;
+
+            // Remove source
+            cat.generals.splice(sourceIdx, 1);
+
+            // Calculate new target index (after removal)
+            let newTargetIdx = cat.generals.indexOf(targetGeneral);
+            if (newTargetIdx === -1) newTargetIdx = cat.generals.length;
+
+            // Insert at correct position
+            if (!insertBefore) {
+                newTargetIdx++;
+            }
+
+            cat.generals.splice(newTargetIdx, 0, sourceGeneral);
+
+            const config = categoriesToConfig(categories);
+            generalCategories = config;
+            generalCategoriesIndex = config;
+            generalCategoriesView = config;
+
+            markGeneralChanged(sourceGeneral);
+
+            await saveCategoryConfig(configType);
+            renderGenCatList(configType);
+        }
+
+        // Move general to specific position in another category
+        async function moveGeneralToPosition(configType, fromCatId, toCatId, generalName, targetIndex, insertBefore) {
+            const categories = getMergedCategories(configType);
+
+            const fromCat = categories.find(c => c.id === fromCatId);
+            const toCat = categories.find(c => c.id === toCatId);
+            if (!fromCat || !toCat) return;
+
+            const idx = fromCat.generals.indexOf(generalName);
+            if (idx < 0) return;
+
+            fromCat.generals.splice(idx, 1);
+
+            // Insert at specific position
+            const insertIdx = insertBefore ? targetIndex : targetIndex + 1;
+            toCat.generals.splice(insertIdx, 0, generalName);
+
+            const config = categoriesToConfig(categories);
+            generalCategories = config;
+            generalCategoriesIndex = config;
+            generalCategoriesView = config;
+
+            markGeneralChanged(generalName);
+
+            await saveCategoryConfig(configType);
+
+            // Sync category change to generalMasterData
+            try {
+                const { database, ref, get, set } = window.firebaseDB;
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                if (snap.exists()) {
+                    const masterData = snap.val();
+                    if (masterData.generals && masterData.generals[generalName]) {
+                        const newCategory = (toCatId === '_unassigned') ? '' : (toCat?.title || '');
+                        const now = new Date().toISOString();
+                        masterData.generals[generalName].category = newCategory;
+                        masterData.generals[generalName].updatedAt = now;
+                        masterData.updatedAt = now;
+                        await set(ref(database, 'settings/generalMasterData'), masterData);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to sync category to masterData:', error);
+            }
+
+            renderGenCatList(configType);
+        }
+
         // Move general between categories
         async function moveGeneral(configType, fromCatId, toCatId, generalName) {
             const categories = getMergedCategories(configType);
@@ -3620,6 +3930,8 @@
             generalCategories = config;
             generalCategoriesIndex = config;
             generalCategoriesView = config;
+
+            markGeneralChanged(generalName);
 
             await saveCategoryConfig(configType);
 

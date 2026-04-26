@@ -1664,6 +1664,21 @@
                     const orderB = titleToOrder[b.title] ?? 9999;
                     return orderA - orderB;
                 });
+
+                // Apply saved general order within each category
+                for (const cat of filteredResult) {
+                    const catId = Object.keys(categoriesViewConfig.categories)
+                        .find(id => categoriesViewConfig.categories[id].title === cat.title);
+
+                    if (catId && categoriesViewConfig.categories[catId].generals) {
+                        const savedOrder = categoriesViewConfig.categories[catId].generals;
+                        cat.generals.sort((a, b) => {
+                            const indexA = savedOrder.indexOf(a);
+                            const indexB = savedOrder.indexOf(b);
+                            return (indexA === -1 ? 9999 : indexA) - (indexB === -1 ? 9999 : indexB);
+                        });
+                    }
+                }
             }
 
             return filteredResult;
