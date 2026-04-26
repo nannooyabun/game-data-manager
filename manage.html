@@ -2745,6 +2745,17 @@
                         <div class="empty-state">バックアップを読み込んでいます...</div>
                     </div>
                 </div>
+
+                <!-- メンテナンス -->
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                    <h4 style="color: var(--text-muted); margin: 0 0 0.5rem; font-size: 0.85rem;">🔧 メンテナンス</h4>
+                    <div id="legacyDataStatus" style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        レガシーデータを確認中...
+                    </div>
+                    <button class="action-btn" id="cleanupLegacyBtn" onclick="cleanupLegacyData()" style="font-size: 0.8rem;" disabled>
+                        🗑️ レガシーデータを削除
+                    </button>
+                </div>
             </div>
 
         </div>
@@ -6608,6 +6619,87 @@
             }
         }
 
+        // ========== Legacy Data Cleanup ==========
+
+        const LEGACY_PATHS = [
+            'settings/generalCategoriesIndex',
+            'settings/generalCategoriesView'
+        ];
+
+        // Check for legacy data and update UI
+        async function checkLegacyData() {
+            if (!window.firebaseReady) return;
+            const { database, ref, get } = window.firebaseDB;
+
+            const statusEl = document.getElementById('legacyDataStatus');
+            const btnEl = document.getElementById('cleanupLegacyBtn');
+            if (!statusEl || !btnEl) return;
+
+            const foundPaths = [];
+
+            for (const path of LEGACY_PATHS) {
+                try {
+                    const snap = await get(ref(database, path));
+                    if (snap.exists()) {
+                        foundPaths.push(path.replace('settings/', ''));
+                    }
+                } catch (e) {
+                    console.error('Error checking path:', path, e);
+                }
+            }
+
+            if (foundPaths.length === 0) {
+                statusEl.textContent = 'レガシーデータはありません';
+                statusEl.style.color = 'var(--text-muted)';
+                btnEl.disabled = true;
+            } else {
+                statusEl.innerHTML = `<span style="color: var(--accent-gold);">検出: ${foundPaths.join(', ')}</span>`;
+                btnEl.disabled = false;
+            }
+        }
+
+        // Delete legacy data from Firebase
+        async function cleanupLegacyData() {
+            if (!confirm('以下のレガシーデータを削除しますか？\n\n・generalCategoriesIndex\n・generalCategoriesView\n\n※ 現在使用中の generalCategories には影響しません。')) {
+                return;
+            }
+
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, remove } = window.firebaseDB;
+
+            const statusEl = document.getElementById('legacyDataStatus');
+            const btnEl = document.getElementById('cleanupLegacyBtn');
+
+            btnEl.disabled = true;
+            statusEl.textContent = '削除中...';
+
+            let deletedCount = 0;
+            let errorCount = 0;
+
+            for (const path of LEGACY_PATHS) {
+                try {
+                    await remove(ref(database, path));
+                    deletedCount++;
+                    console.log('Deleted:', path);
+                } catch (e) {
+                    console.error('Failed to delete:', path, e);
+                    errorCount++;
+                }
+            }
+
+            if (errorCount === 0) {
+                showToast(`レガシーデータを削除しました (${deletedCount}件)`, 'success');
+                statusEl.textContent = 'レガシーデータはありません';
+                statusEl.style.color = 'var(--text-muted)';
+            } else {
+                showToast(`一部の削除に失敗しました (成功: ${deletedCount}, 失敗: ${errorCount})`, 'error');
+                await checkLegacyData(); // Re-check status
+            }
+        }
+
         // Clean old auto backups (keep last 7 days)
         async function cleanOldBackups() {
             if (!window.firebaseReady) return;
@@ -7890,6 +7982,7 @@
             subscribeBackups();
             await loadHiddenUsers();
             subscribeHiddenUsers();
+            await checkLegacyData();
             // 自動バックアップはログイン成功時に実行（verifyPassword内）
         });
 
@@ -7901,6 +7994,7 @@
                         subscribeBackups();
                         loadHiddenUsers().then(() => {
                             subscribeHiddenUsers();
+                            checkLegacyData();
                             // 自動バックアップはログイン成功時に実行（verifyPassword内）
                         });
                     });
