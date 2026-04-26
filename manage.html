@@ -1932,6 +1932,7 @@
                     <div class="gen-cat-panel" id="genCatPanelUnified">
                         <div class="gen-cat-toolbar">
                             <button class="gen-cat-btn" onclick="addNewCategory('unified')">＋ カテゴリ追加</button>
+                            <button class="gen-cat-btn" onclick="syncCategoriesToMasterData()" style="background: var(--accent-gold); color: #000;">🔄 マスターデータに同期</button>
                             <button class="gen-cat-btn" onclick="clearChangeMarkers(); renderGenCatList('unified');" style="margin-left: auto;">✕ ハイライトクリア</button>
                         </div>
                         <div class="gen-cat-list" id="genCatListUnified">
@@ -3414,6 +3415,77 @@
             } catch (error) {
                 console.error('Failed to save category config:', error);
                 showToast('保存に失敗しました', 'error');
+            }
+        }
+
+        // Sync generalCategories to generalMasterData
+        async function syncCategoriesToMasterData() {
+            if (!window.firebaseReady) return;
+            if (!generalCategories || !generalCategories.categories) {
+                showToast('カテゴリ設定がありません', 'error');
+                return;
+            }
+
+            const { database, ref, get, set } = window.firebaseDB;
+
+            try {
+                // Get current master data
+                const snap = await get(ref(database, 'settings/generalMasterData'));
+                const masterData = snap.exists() ? snap.val() : { generals: {}, categories: {} };
+
+                if (!masterData.generals) {
+                    masterData.generals = {};
+                }
+                if (!masterData.categories) {
+                    masterData.categories = {};
+                }
+
+                const now = new Date().toISOString();
+                let updatedCount = 0;
+
+                // Build category title lookup from generalCategories
+                const catIdToTitle = {};
+                for (const [catId, cat] of Object.entries(generalCategories.categories)) {
+                    if (cat && cat.title) {
+                        catIdToTitle[catId] = cat.title;
+                    }
+                }
+
+                // Update each general's category based on generalCategories
+                for (const [catId, cat] of Object.entries(generalCategories.categories)) {
+                    if (!cat || !cat.generals) continue;
+
+                    const categoryTitle = catId === '_unassigned' ? '' : (cat.title || '');
+
+                    for (const genName of cat.generals) {
+                        // Initialize general if not exists
+                        if (!masterData.generals[genName]) {
+                            masterData.generals[genName] = {};
+                        }
+
+                        // Update category if different
+                        if (masterData.generals[genName].category !== categoryTitle) {
+                            masterData.generals[genName].category = categoryTitle;
+                            masterData.generals[genName].updatedAt = now;
+                            updatedCount++;
+                        }
+                    }
+                }
+
+                // Save updated master data
+                masterData.updatedAt = now;
+                await set(ref(database, 'settings/generalMasterData'), masterData);
+                generalMasterData = masterData;
+
+                if (updatedCount > 0) {
+                    showToast(`${updatedCount}件の武将カテゴリを同期しました`, 'success');
+                } else {
+                    showToast('すべて同期済みです', 'success');
+                }
+
+            } catch (error) {
+                console.error('Failed to sync categories to master data:', error);
+                showToast('同期に失敗しました: ' + error.message, 'error');
             }
         }
 
