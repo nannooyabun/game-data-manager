@@ -1461,6 +1461,106 @@
             flex-wrap: wrap;
         }
 
+        /* Tag Filter Bar */
+        .tag-filter-bar {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+        }
+
+        .tag-filter-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tag-filter-header span {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .tag-filter-mode {
+            margin-left: auto;
+            padding: 0.2rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .tag-filter-groups {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .tag-filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            align-items: center;
+        }
+
+        .tag-filter-group-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            min-width: 50px;
+        }
+
+        .tag-filter-btn {
+            padding: 0.2rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-input);
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag-filter-btn:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        .tag-filter-btn.active {
+            border-color: var(--accent-gold);
+            background: rgba(201, 162, 39, 0.2);
+            color: var(--accent-gold);
+        }
+
+        .tag-filter-clear {
+            padding: 0.2rem 0.5rem;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .tag-filter-clear:hover {
+            color: var(--text-primary);
+        }
+
+        /* Tag badge in search results */
+        .search-result-tags {
+            display: flex;
+            gap: 0.2rem;
+            flex-wrap: wrap;
+            margin-right: 0.5rem;
+        }
+
+        .search-result-tag {
+            padding: 0.1rem 0.3rem;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            color: #fff;
+        }
+
         /* Toggle Switch for Display Mode */
         .toggle-switch .toggle-slider {
             display: inline-block;
@@ -2528,6 +2628,21 @@
                             <button class="bulk-btn" onclick="bulkSetSearchResults('none')" style="color: var(--text-muted);">選択を未所持</button>
                         </div>
                     </div>
+
+                    <!-- Tag Filter Bar -->
+                    <div class="tag-filter-bar" id="tagFilterBar" style="display: none;">
+                        <div class="tag-filter-header">
+                            <span>🏷️ タグ絞り込み:</span>
+                            <select class="tag-filter-mode" id="tagFilterMode" onchange="changeTagFilterMode()">
+                                <option value="AND">AND (全一致)</option>
+                                <option value="OR">OR (いずれか)</option>
+                            </select>
+                            <button class="tag-filter-clear" onclick="clearTagFilters()">クリア</button>
+                        </div>
+                        <div class="tag-filter-groups" id="tagFilterGroups">
+                            <!-- Populated by renderTagFilterBar() -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Display Mode Toggle -->
@@ -3170,8 +3285,11 @@
         let cachedTeams = {};  // teams keyed by team.id (for manage-screen team membership)
         let cachedCategoriesIndex = null;  // Custom category config for index.html
         let cachedGeneralMasterData = null;  // General master data with rally limits, notes, categories
+        let cachedGeneralTags = { tagCategories: {}, tags: {} };  // Tag definitions
         let cachedHiddenUsers = {};  // Users hidden from searches and lists
         let showByIndexOrder = false;  // Toggle for index order display
+        let selectedTagFilters = [];  // Currently selected tag IDs for filtering
+        let tagFilterMode = 'AND';  // 'AND' or 'OR'
 
         // Toggle between category view and index order view
         function toggleGeneralDisplayMode() {
@@ -4480,6 +4598,17 @@
             // Listen for hidden users changes
             onValue(ref(database, 'settings/hiddenUsers'), (snapshot) => {
                 cachedHiddenUsers = snapshot.exists() ? snapshot.val() : {};
+            });
+
+            // Listen for general tags changes
+            onValue(ref(database, 'settings/generalTags'), (snapshot) => {
+                const newTags = snapshot.exists() ? snapshot.val() : { tagCategories: {}, tags: {} };
+                if (JSON.stringify(newTags) !== JSON.stringify(cachedGeneralTags)) {
+                    cachedGeneralTags = newTags;
+                    if (!cachedGeneralTags.tagCategories) cachedGeneralTags.tagCategories = {};
+                    if (!cachedGeneralTags.tags) cachedGeneralTags.tags = {};
+                    renderTagFilterBar();
+                }
             });
         }
 
@@ -7136,19 +7265,25 @@
 
         function searchGenerals() {
             const query = document.getElementById('generalSearchInput').value.trim();
-            if (!query) {
+
+            // If no query and no tag filters, close search
+            if (!query && selectedTagFilters.length === 0) {
                 closeGeneralSearch();
                 return;
             }
 
             // Split by spaces (half-width and full-width)
-            const terms = query.split(/[\s　]+/).filter(t => t.length > 0);
+            const terms = query ? query.split(/[\s　]+/).filter(t => t.length > 0) : [];
             const allGenerals = getAllGenerals();
 
-            // Filter: OR search with partial match
-            // Note: isHiddenGeneral check removed - uncategorized generals are now in the grid
+            // Filter: OR search with partial match + tag filter
             const results = allGenerals.filter(name => {
-                return terms.some(term => name.includes(term));
+                // Name match (if query exists)
+                const nameMatch = terms.length === 0 || terms.some(term => name.includes(term));
+                if (!nameMatch) return false;
+
+                // Tag match
+                return matchesTagFilter(name);
             });
 
             displaySearchResults(results);
@@ -7181,10 +7316,13 @@
                 const deputyClass = isDeputy ? ' deputy' : '';
                 const disabledAttr = isDeputy ? ' disabled' : '';
 
+                const tagBadges = getGeneralTagBadgesHtml(name);
+
                 html += `
                     <div class="search-result-item${deputyClass}" data-general="${name}" data-index="${index}">
                         <input type="checkbox" id="searchCheck_${i}" ${disabledAttr}>
                         <label for="searchCheck_${i}">${name}</label>
+                        ${tagBadges}
                         <select onchange="setGeneralStateByName('${name}', this.value)" ${disabledAttr}>
                             <option value="0" ${currentState === 0 ? 'selected' : ''}>未所持</option>
                             <option value="1" ${currentState === 1 ? 'selected' : ''}>所持</option>
@@ -7262,6 +7400,143 @@
             document.getElementById('generalSearchResults').style.display = 'none';
             document.getElementById('generalSearchInput').value = '';
             document.getElementById('searchSelectAll').checked = false;
+            // Clear tag filters
+            selectedTagFilters = [];
+            renderTagFilterBar();
+        }
+
+        // ===== Tag Filter Functions =====
+
+        function renderTagFilterBar() {
+            const bar = document.getElementById('tagFilterBar');
+            const groups = document.getElementById('tagFilterGroups');
+            if (!bar || !groups) return;
+
+            const tags = cachedGeneralTags.tags || {};
+            const categories = cachedGeneralTags.tagCategories || {};
+
+            // If no tags, hide the bar
+            if (Object.keys(tags).length === 0) {
+                bar.style.display = 'none';
+                return;
+            }
+
+            bar.style.display = 'block';
+
+            // Group tags by category
+            const grouped = { uncategorized: [] };
+            for (const [catId, cat] of Object.entries(categories).sort((a, b) => (a[1].order || 0) - (b[1].order || 0))) {
+                grouped[catId] = [];
+            }
+
+            for (const [tagId, tag] of Object.entries(tags)) {
+                const catId = tag.categoryId || 'uncategorized';
+                if (!grouped[catId]) grouped[catId] = [];
+                grouped[catId].push({ id: tagId, ...tag });
+            }
+
+            let html = '';
+            for (const [catId, tagList] of Object.entries(grouped)) {
+                if (tagList.length === 0) continue;
+
+                const catName = catId === 'uncategorized' ? 'その他' : (categories[catId]?.name || catId);
+
+                html += `<div class="tag-filter-group">
+                    <span class="tag-filter-group-label">${escapeHtml(catName)}:</span>`;
+
+                for (const tag of tagList) {
+                    const isActive = selectedTagFilters.includes(tag.id);
+                    html += `<button class="tag-filter-btn ${isActive ? 'active' : ''}"
+                        data-tag-id="${tag.id}"
+                        style="${isActive ? '' : `border-color: ${tag.color || '#90a4ae'}30`}"
+                        onclick="toggleTagFilter('${tag.id}')">${escapeHtml(tag.name)}</button>`;
+                }
+
+                html += '</div>';
+            }
+
+            groups.innerHTML = html;
+        }
+
+        function toggleTagFilter(tagId) {
+            const index = selectedTagFilters.indexOf(tagId);
+            if (index === -1) {
+                selectedTagFilters.push(tagId);
+            } else {
+                selectedTagFilters.splice(index, 1);
+            }
+
+            // Update button UI
+            const btn = document.querySelector(`.tag-filter-btn[data-tag-id="${tagId}"]`);
+            if (btn) {
+                btn.classList.toggle('active', selectedTagFilters.includes(tagId));
+            }
+
+            // Re-run search if there's a query or tags selected
+            const query = document.getElementById('generalSearchInput').value.trim();
+            if (query || selectedTagFilters.length > 0) {
+                searchGenerals();
+            }
+        }
+
+        function changeTagFilterMode() {
+            tagFilterMode = document.getElementById('tagFilterMode').value;
+
+            // Re-run search if there are tags selected
+            if (selectedTagFilters.length > 0) {
+                searchGenerals();
+            }
+        }
+
+        function clearTagFilters() {
+            selectedTagFilters = [];
+            renderTagFilterBar();
+
+            // Re-run search if there's a query
+            const query = document.getElementById('generalSearchInput').value.trim();
+            if (query) {
+                searchGenerals();
+            } else {
+                closeGeneralSearch();
+            }
+        }
+
+        function getGeneralTags(generalName) {
+            const gen = cachedGeneralMasterData?.generals?.[generalName];
+            if (!gen?.tags?.length) return [];
+            return gen.tags;
+        }
+
+        function getGeneralTagBadgesHtml(generalName) {
+            const tagIds = getGeneralTags(generalName);
+            if (tagIds.length === 0) return '';
+
+            let html = '<span class="search-result-tags">';
+            for (const tagId of tagIds.slice(0, 3)) {
+                const tag = cachedGeneralTags.tags?.[tagId];
+                if (!tag) continue;
+                html += `<span class="search-result-tag" style="background-color: ${tag.color || '#90a4ae'}">${escapeHtml(tag.name)}</span>`;
+            }
+            if (tagIds.length > 3) {
+                html += `<span style="font-size: 0.65rem; color: var(--text-muted);">+${tagIds.length - 3}</span>`;
+            }
+            html += '</span>';
+            return html;
+        }
+
+        function matchesTagFilter(generalName) {
+            if (selectedTagFilters.length === 0) return true;
+
+            const genTags = getGeneralTags(generalName);
+            if (genTags.length === 0) return false;
+
+            if (tagFilterMode === 'AND') {
+                // All selected tags must be present
+                return selectedTagFilters.every(tagId => genTags.includes(tagId));
+            } else {
+                // At least one selected tag must be present
+                return selectedTagFilters.some(tagId => genTags.includes(tagId));
+            }
         }
 
         // ===== End General Search Functions =====
