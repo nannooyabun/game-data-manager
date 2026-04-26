@@ -7817,6 +7817,9 @@
             // Update floating formation counter
             const floatingCount = document.getElementById('floatingFormationCount');
             if (floatingCount) floatingCount.textContent = count;
+            // Update panel count if panel is open
+            const panelCount = document.getElementById('formationPanelCount');
+            if (panelCount) panelCount.textContent = count;
             // Update deputy states for generals
             updateDeputyStates();
         }
