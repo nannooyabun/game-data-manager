@@ -498,14 +498,17 @@
             border-color: #e74c3c !important;
             background: rgba(231, 76, 60, 0.1) !important;
         }
+        .deputy-name-input.warning {
+            border-color: #f39c12 !important;
+            background: rgba(243, 156, 18, 0.1) !important;
+        }
         .deputy-warning {
-            color: #e74c3c;
+            color: #f39c12;
             font-size: 0.7rem;
             margin-top: 0.2rem;
-            display: none;
         }
         .deputy-name-input.invalid + .deputy-warning {
-            display: block;
+            color: #e74c3c;
         }
         .deputy-input-wrapper {
             position: relative;
@@ -1867,6 +1870,15 @@
             border-color: var(--accent-gold);
             color: var(--accent-gold);
             background: var(--bg-hover, #2a2a2a);
+        }
+        .load-user-item .new-army-btn {
+            background: var(--bg-tertiary, #2a2a2a);
+            border: 1px dashed var(--accent-gold);
+            color: var(--accent-gold);
+        }
+        .load-user-item .new-army-btn:hover {
+            background: var(--accent-gold);
+            color: var(--bg-primary, #0a0a0a);
         }
         /* Update info section */
         .update-info-section {
@@ -3821,35 +3833,43 @@
             document.getElementById('username').value = username;
 
             if (isNewArmy) {
-                // New army: load from existing army but convert 編成 to 所持
-                const userData = cachedGameData[username];
-                if (!userData) return;
-
-                const existingTeams = getUserTeams(userData);
-                if (existingTeams.length === 0) return;
-
-                // Get data from first existing team
-                const sourceTeam = existingTeams[0];
-                const sourceData = getUserTeamData(userData, sourceTeam);
-                if (!sourceData) return;
-
-                // Deep copy and convert 編成 to 所持
-                const newData = JSON.parse(JSON.stringify(sourceData));
-                convertFormedToOwned(newData);
-
-                // Set team selector to next available team
-                const nextTeam = getNextAvailableTeam(existingTeams);
-                setCurrentTeam(nextTeam);
-
-                // Load the converted data
-                loadDataToForm(newData);
-                showToast(`${username} の新規軍団として ${nextTeam} を作成します（編成→所持に変換）`, 'info');
+                createNewArmyFromExisting(username);
             } else {
                 // Existing army: load directly
                 setCurrentTeam(teamName);
                 await loadUserTeamData(username, teamName);
             }
 
+            updateProgress();
+        }
+
+        function createNewArmyFromExisting(username) {
+            // New army: load from existing army but convert 編成 to 所持
+            const userData = cachedGameData[username];
+            if (!userData) return;
+
+            const existingTeams = getUserTeams(userData);
+            if (existingTeams.length === 0) return;
+
+            // Get data from first existing team
+            const sourceTeam = existingTeams[0];
+            const sourceData = getUserTeamData(userData, sourceTeam);
+            if (!sourceData) return;
+
+            // Deep copy and convert 編成 to 所持
+            const newData = JSON.parse(JSON.stringify(sourceData));
+            convertFormedToOwned(newData);
+
+            // Set team selector to next available team
+            const nextTeam = getNextAvailableTeam(existingTeams);
+
+            // Set username and team
+            document.getElementById('username').value = username;
+            setCurrentTeam(nextTeam);
+
+            // Load the converted data
+            loadDataToForm(newData);
+            showToast(`${username} の新規軍団として ${nextTeam} を作成します（編成→所持に変換）`, 'info');
             updateProgress();
         }
 
@@ -3991,13 +4011,14 @@
                 const teamButtons = teams.map((team, tIdx) => {
                     return `<button class="team-btn" data-user-idx="${uIdx}" data-team-idx="${tIdx}">${escapeHtmlText(team)}</button>`;
                 }).join('');
+                const newArmyButton = `<button class="team-btn new-army-btn" data-user-idx="${uIdx}">+ 新規軍団</button>`;
                 return `
                     <div class="load-user-item" data-user-idx="${uIdx}">
                         <div class="username-row">
                             <span class="username">${escapeHtmlText(username)}</span>
                             <span class="team-count">${teamCount}軍団 <span class="expand-icon">▶</span></span>
                         </div>
-                        <div class="teams">${teamButtons || '<span style="color: var(--text-muted);">データなし</span>'}</div>
+                        <div class="teams">${teamButtons}${newArmyButton}</div>
                     </div>
                 `;
             }).join('');
@@ -4010,6 +4031,17 @@
 
             // Attach click delegator for both username expansion and team selection
             listEl.onclick = (e) => {
+                // Check if clicked on new army button
+                const newArmyBtn = e.target.closest('.new-army-btn');
+                if (newArmyBtn) {
+                    const uIdx = parseInt(newArmyBtn.dataset.userIdx);
+                    const entry = listEl._loadUserList?.[uIdx];
+                    if (!entry) return;
+                    createNewArmyFromExisting(entry.username);
+                    closeLoadDataModal();
+                    return;
+                }
+
                 // Check if clicked on team button
                 const btn = e.target.closest('.team-btn');
                 if (btn) {
@@ -5081,9 +5113,14 @@
             const input = document.getElementById(inputId);
             if (!input) return;
             const name = input.value.trim();
+
+            // Remove previous warning
+            const existingWarning = input.parentElement?.querySelector('.deputy-warning');
+            if (existingWarning) existingWarning.remove();
+
             if (!name) {
                 // Empty is OK
-                input.classList.remove('invalid');
+                input.classList.remove('invalid', 'warning');
                 return;
             }
             // Get all general names from master data
@@ -5098,6 +5135,51 @@
             }
             const isValid = validNames.has(name);
             input.classList.toggle('invalid', !isValid);
+
+            // Check if general is formed in any army
+            if (isValid) {
+                const formedInfo = isGeneralFormedAnywhere(name);
+                if (formedInfo) {
+                    input.classList.add('warning');
+                    const warning = document.createElement('div');
+                    warning.className = 'deputy-warning';
+                    warning.textContent = `⚠️ ${formedInfo.team}で編成中です`;
+                    input.parentElement?.appendChild(warning);
+                } else {
+                    input.classList.remove('warning');
+                }
+            }
+        }
+
+        // Check if a general is formed in any army
+        function isGeneralFormedAnywhere(generalName) {
+            const username = document.getElementById('username')?.value;
+            if (!username || !cachedGameData[username]) return null;
+
+            const userData = cachedGameData[username];
+            const allTeams = getUserTeams(userData);
+
+            for (const team of allTeams) {
+                const teamData = getUserTeamData(userData, team);
+                if (!teamData?.generals) continue;
+
+                const g = teamData.generals[generalName];
+                if (g && g.formed) {
+                    return { team, generalName };
+                }
+            }
+
+            // Also check current form
+            const allGenerals = getAllGenerals();
+            const index = allGenerals.indexOf(generalName);
+            if (index >= 0) {
+                const stateEl = document.getElementById(`generalState_${index}`);
+                if (stateEl?.value === '2') {
+                    const currentTeam = document.getElementById('teamSelector')?.value || '1軍';
+                    return { team: currentTeam, generalName };
+                }
+            }
+            return null;
         }
 
         // Masks (核心具足) - tap-card style
@@ -5266,26 +5348,50 @@
             return allGenerals.indexOf(generalName);
         }
 
-        // Check if a general is a deputy of a formed SP general
+        // Check if a general is a deputy of any SP general (across all armies)
+        // 方式B: deputy設定がある限り、全軍団で編成不可
         function isGeneralDeputy(generalName) {
-            // Check built-in SP generals
+            // First check current form (for real-time updates)
             const spGeneralIds = ['nobunaga', 'hideyoshi', 'ieyasu'];
             for (const spId of spGeneralIds) {
-                const formedCb = document.getElementById(`${spId}Formed`);
                 const deputyInput = document.getElementById(`${spId}Deputy`);
-                if (formedCb?.checked && deputyInput?.value === generalName) {
+                if (deputyInput?.value === generalName) {
                     return true;
                 }
             }
-            // Check custom SP generals
+            // Check custom SP generals in current form
             const customSpGenerals = getCustomItemsForCategory('SP武将');
             if (customSpGenerals && customSpGenerals.length > 0) {
                 for (const item of customSpGenerals) {
                     const id = safeId(item.name);
-                    const formedCb = document.getElementById(`${id}_formed`);
                     const deputyInput = document.getElementById(`${id}_deputy`);
-                    if (formedCb?.checked && deputyInput?.value === generalName) {
+                    if (deputyInput?.value === generalName) {
                         return true;
+                    }
+                }
+            }
+
+            // Also check all armies in cached data (for cross-army block)
+            const username = document.getElementById('username')?.value;
+            if (!username || !cachedGameData[username]) return false;
+
+            const userData = cachedGameData[username];
+            const allTeams = getUserTeams(userData);
+
+            for (const team of allTeams) {
+                const teamData = getUserTeamData(userData, team);
+                if (!teamData) continue;
+
+                // Check built-in SP generals
+                if (teamData.spGenerals) {
+                    for (const [spKey, sp] of Object.entries(teamData.spGenerals)) {
+                        if (sp.deputy === generalName) return true;
+                    }
+                }
+                // Check custom SP generals
+                if (teamData.customItems?.spGenerals) {
+                    for (const [spKey, sp] of Object.entries(teamData.customItems.spGenerals)) {
+                        if (sp.deputy === generalName) return true;
                     }
                 }
             }
