@@ -882,6 +882,31 @@
             color: var(--text-primary);
         }
 
+        /* Collapsible category */
+        .general-category.collapsed .general-grid {
+            display: none;
+        }
+
+        .general-category .collapse-icon {
+            display: inline-block;
+            transition: transform 0.2s;
+            margin-right: 0.3rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .general-category:not(.collapsed) .collapse-icon {
+            transform: rotate(90deg);
+        }
+
+        .general-category.collapsed .general-category-header {
+            cursor: pointer;
+        }
+
+        .general-category:not(.collapsed) .general-category-header[onclick] {
+            cursor: pointer;
+        }
+
         /* Bulk level popup */
         .bulk-level-popup {
             position: fixed;
@@ -3299,6 +3324,25 @@
                 });
             }
 
+            // Add uncategorized generals at the end (those with empty category)
+            if (hasMasterData) {
+                const uncategorizedGenerals = [];
+                for (const [genName, genData] of Object.entries(cachedGeneralMasterData.generals)) {
+                    if (genData.category === '' || genData.category === undefined) {
+                        uncategorizedGenerals.push(genName);
+                    }
+                }
+                if (uncategorizedGenerals.length > 0) {
+                    // Sort by indexNo if available
+                    uncategorizedGenerals.sort((a, b) => {
+                        const indexA = cachedGeneralMasterData.generals[a]?.indexNo ?? 9999;
+                        const indexB = cachedGeneralMasterData.generals[b]?.indexNo ?? 9999;
+                        return indexA - indexB;
+                    });
+                    filteredResult.push({ title: '未分類', generals: uncategorizedGenerals, isCollapsible: true });
+                }
+            }
+
             return filteredResult;
         }
 
@@ -5492,13 +5536,17 @@
                 const effectiveCategories = getEffectiveGeneralCategories();
                 effectiveCategories.forEach((cat, catIndex) => {
                     if (cat.generals.length === 0) return;
+                    const isCollapsible = cat.isCollapsible === true;
+                    const collapsedClass = isCollapsible ? ' collapsed' : '';
+                    const toggleOnclick = isCollapsible ? ` onclick="toggleGeneralCategory(this)"` : '';
+                    const toggleIcon = isCollapsible ? '<span class="collapse-icon">▶</span>' : '';
                     html += `
-                        <div class="general-category" data-category-index="${catIndex}" id="category-${cat.title.replace(/[^a-zA-Z0-9]/g, '_')}">
-                            <div class="general-category-header">
-                                <span class="general-category-title">●${cat.title}（${cat.generals.length}名）</span>
+                        <div class="general-category${collapsedClass}" data-category-index="${catIndex}" id="category-${cat.title.replace(/[^a-zA-Z0-9]/g, '_')}">
+                            <div class="general-category-header"${toggleOnclick}>
+                                ${toggleIcon}<span class="general-category-title">●${cat.title}（${cat.generals.length}名）</span>
                                 <div class="category-bulk-actions">
-                                    <button class="category-bulk-btn" onclick="bulkSelectGeneralsByIndex(${catIndex}, 'owned')">所持一括ON</button>
-                                    <button class="category-bulk-btn level-btn" onclick="showBulkLevelPopup(${catIndex})">守護霊Lv一括設定</button>
+                                    <button class="category-bulk-btn" onclick="event.stopPropagation(); bulkSelectGeneralsByIndex(${catIndex}, 'owned')">所持一括ON</button>
+                                    <button class="category-bulk-btn level-btn" onclick="event.stopPropagation(); showBulkLevelPopup(${catIndex})">守護霊Lv一括設定</button>
                                 </div>
                             </div>
                             <div class="general-grid">
@@ -7299,6 +7347,14 @@
 
             closeBulkLevelPopup();
             showToast(`${targetName}のLvを${level}に設定しました`, 'success');
+        }
+
+        // Toggle collapsible general category
+        function toggleGeneralCategory(headerEl) {
+            const category = headerEl.closest('.general-category');
+            if (category) {
+                category.classList.toggle('collapsed');
+            }
         }
 
         // Bulk select generals by category index (for dynamic category buttons)

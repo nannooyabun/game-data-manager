@@ -2616,7 +2616,47 @@
                 };
             }).filter(Boolean);  // Remove nulls
 
+            // Add "その他" column for uncategorized generals (formed only)
+            const uncategorizedGenerals = getUncategorizedGenerals();
+            if (uncategorizedGenerals.length > 0) {
+                const otherCategory = {
+                    key: 'general_other',
+                    title: '②-2 その他',
+                    colorClass: 'cat-general',
+                    isTextCategory: true,
+                    items: [{ id: 'uncategorized', name: 'その他' }],
+                    getCellText: (user, item) => {
+                        if (!user) return '';
+                        // Get formed uncategorized generals
+                        const formedNames = uncategorizedGenerals.filter(genName => {
+                            const genData = user.generals?.[genName];
+                            return genData?.formed === true;
+                        });
+                        return formedNames.join(', ');
+                    }
+                };
+                genCats.push(otherCategory);
+            }
+
             return [summaryCategory, ...genCats];
+        }
+
+        // Get uncategorized generals (those with empty category)
+        function getUncategorizedGenerals() {
+            if (!generalMasterData?.generals) return [];
+            const uncategorized = [];
+            for (const [genName, genData] of Object.entries(generalMasterData.generals)) {
+                if (genData.category === '' || genData.category === undefined) {
+                    uncategorized.push(genName);
+                }
+            }
+            // Sort by indexNo if available
+            uncategorized.sort((a, b) => {
+                const indexA = generalMasterData.generals[a]?.indexNo ?? 9999;
+                const indexB = generalMasterData.generals[b]?.indexNo ?? 9999;
+                return indexA - indexB;
+            });
+            return uncategorized;
         }
 
         // Get flattened list of custom items for a category
