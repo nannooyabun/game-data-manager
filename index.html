@@ -503,12 +503,16 @@
             background: rgba(243, 156, 18, 0.1) !important;
         }
         .deputy-warning {
-            color: #f39c12;
+            color: #e74c3c;
             font-size: 0.7rem;
             margin-top: 0.2rem;
+            display: none;
         }
-        .deputy-name-input.invalid + .deputy-warning {
-            color: #e74c3c;
+        .deputy-warning.visible {
+            display: block;
+        }
+        .deputy-warning.warning-formed {
+            color: #f39c12;
         }
         .deputy-input-wrapper {
             position: relative;
@@ -5074,9 +5078,9 @@
                 return;
             }
 
-            // Build dropdown items
+            // Build dropdown items (use onmousedown to fire before blur closes dropdown)
             dropdown.innerHTML = matchingNames.map(name =>
-                `<div class="deputy-suggest-item" onclick="selectDeputySuggest('${inputId}', '${escapeHtmlText(name)}')">${escapeHtmlText(name)}</div>`
+                `<div class="deputy-suggest-item" onmousedown="event.preventDefault(); selectDeputySuggest('${inputId}', '${escapeHtmlText(name)}')">${escapeHtmlText(name)}</div>`
             ).join('');
             dropdown.style.display = 'block';
         }
@@ -5104,13 +5108,20 @@
             if (!input) return;
             const name = input.value.trim();
 
-            // Remove previous warning
-            const existingWarning = input.parentElement?.querySelector('.deputy-warning');
-            if (existingWarning) existingWarning.remove();
+            // Find the static warning element (sibling of deputy-input-wrapper)
+            const wrapper = input.closest('.deputy-input-wrapper');
+            const formGroup = wrapper?.parentElement;
+            const staticWarning = formGroup?.querySelector('.deputy-warning');
+
+            // Reset state
+            input.classList.remove('invalid', 'warning');
+            if (staticWarning) {
+                staticWarning.classList.remove('visible', 'warning-formed');
+                staticWarning.textContent = '⚠ 武将データに存在しません';
+            }
 
             if (!name) {
                 // Empty is OK
-                input.classList.remove('invalid', 'warning');
                 return;
             }
 
@@ -5136,19 +5147,23 @@
             }
 
             const isValid = validNames.has(name);
-            input.classList.toggle('invalid', !isValid);
+
+            if (!isValid) {
+                input.classList.add('invalid');
+                if (staticWarning) {
+                    staticWarning.textContent = '⚠ 武将データに存在しません';
+                    staticWarning.classList.add('visible');
+                }
+                return;
+            }
 
             // Check if general is formed in any army
-            if (isValid) {
-                const formedInfo = isGeneralFormedAnywhere(name);
-                if (formedInfo) {
-                    input.classList.add('warning');
-                    const warning = document.createElement('div');
-                    warning.className = 'deputy-warning';
-                    warning.textContent = `⚠️ ${formedInfo.team}で編成中です`;
-                    input.parentElement?.appendChild(warning);
-                } else {
-                    input.classList.remove('warning');
+            const formedInfo = isGeneralFormedAnywhere(name);
+            if (formedInfo) {
+                input.classList.add('warning');
+                if (staticWarning) {
+                    staticWarning.textContent = `⚠ ${formedInfo.team}で編成中です`;
+                    staticWarning.classList.add('visible', 'warning-formed');
                 }
             }
         }
