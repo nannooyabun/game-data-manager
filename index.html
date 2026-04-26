@@ -255,6 +255,8 @@
             color: var(--text-primary);
             font-size: 0.95rem;
             transition: all 0.2s ease;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .form-group input:focus,
@@ -2275,11 +2277,11 @@
                             <option value="equipped">装備中</option>
                         </select>
                         <div class="form-group">
-                            <label>昇級レベル</label>
+                            <label>昇級</label>
                             <input type="number" id="akoniUpgrade" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                         <div class="form-group">
-                            <label>改装レベル</label>
+                            <label>改装</label>
                             <input type="number" id="akoniReform" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                     </div>
@@ -2294,11 +2296,11 @@
                             <option value="equipped">装備中</option>
                         </select>
                         <div class="form-group">
-                            <label>昇級レベル</label>
+                            <label>昇級</label>
                             <input type="number" id="insekiUpgrade" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                         <div class="form-group">
-                            <label>改装レベル</label>
+                            <label>改装</label>
                             <input type="number" id="insekiReform" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                     </div>
@@ -2313,11 +2315,11 @@
                             <option value="equipped">装備中</option>
                         </select>
                         <div class="form-group">
-                            <label>昇級レベル</label>
+                            <label>昇級</label>
                             <input type="number" id="hanyaUpgrade" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                         <div class="form-group">
-                            <label>改装レベル</label>
+                            <label>改装</label>
                             <input type="number" id="hanyaReform" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                     </div>
@@ -4851,11 +4853,11 @@
                             <option value="equipped">装備中</option>
                         </select>
                         <div class="form-group">
-                            <label>昇級レベル</label>
+                            <label>昇級</label>
                             <input type="number" id="${safeId(item.name)}_upgrade" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                         <div class="form-group">
-                            <label>改装レベル</label>
+                            <label>改装</label>
                             <input type="number" id="${safeId(item.name)}_reform" min="0" placeholder="0" onchange="updateProgress()">
                         </div>
                     </div>
@@ -7572,7 +7574,7 @@
                 ]
             },
             weapon: {
-                message: '🔫 兵器の入力:\n\n赤鬼・隕石・般若の3種類があります:\n• 状態：未所持/所持/装備\n• 段階：なし〜10段階\n• 改造：なし〜3改造',
+                message: '🔫 兵器の入力:\n\n赤鬼・隕石・般若の3種類があります:\n• 状態：未所持/所持/装備\n• 昇級：0〜50\n• 改装：0〜10\n（🟡🟡🟡🟡🟡＝5、🔥🔥🔥🔥🔥＝10）',
                 jump: 'weaponSection',
                 jumpLabel: '▶ 兵器セクションへ',
                 options: [
