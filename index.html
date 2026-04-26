@@ -4601,13 +4601,17 @@
             });
 
             // Listen for general tags changes
+            let tagsInitialized = false;
             onValue(ref(database, 'settings/generalTags'), (snapshot) => {
                 const newTags = snapshot.exists() ? snapshot.val() : { tagCategories: {}, tags: {} };
-                if (JSON.stringify(newTags) !== JSON.stringify(cachedGeneralTags)) {
+                const hasChanged = JSON.stringify(newTags) !== JSON.stringify(cachedGeneralTags);
+
+                if (hasChanged || !tagsInitialized) {
                     cachedGeneralTags = newTags;
                     if (!cachedGeneralTags.tagCategories) cachedGeneralTags.tagCategories = {};
                     if (!cachedGeneralTags.tags) cachedGeneralTags.tags = {};
                     renderTagFilterBar();
+                    tagsInitialized = true;
                 }
             });
         }
@@ -5251,6 +5255,11 @@
 
             // Setup real-time sync
             setupRealtimeListeners();
+
+            // Initial render of tag filter bar (Firebase listener may not trigger immediately)
+            setTimeout(() => {
+                renderTagFilterBar();
+            }, 500);
 
             // Setup auto-save for form inputs
             setupAutoSave();
