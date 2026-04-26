@@ -5113,16 +5113,28 @@
                 input.classList.remove('invalid', 'warning');
                 return;
             }
-            // Get all general names from master data
-            const validNames = new Set(cachedGeneralMasterData?.generals ? Object.keys(cachedGeneralMasterData.generals) : []);
-            // Also check master data if available
+
+            // Get all general names from multiple sources
+            const validNames = new Set();
+
+            // From master data
             if (cachedGeneralMasterData?.generals) {
                 Object.keys(cachedGeneralMasterData.generals).forEach(n => validNames.add(n));
             }
-            // Also check custom generals
+
+            // From displayed grid (getAllGenerals)
+            try {
+                const displayedGenerals = getAllGenerals();
+                displayedGenerals.forEach(n => validNames.add(n));
+            } catch (e) {
+                // getAllGenerals may not be available yet
+            }
+
+            // From custom generals
             if (cachedCustomGenerals) {
                 cachedCustomGenerals.forEach(n => validNames.add(n));
             }
+
             const isValid = validNames.has(name);
             input.classList.toggle('invalid', !isValid);
 
