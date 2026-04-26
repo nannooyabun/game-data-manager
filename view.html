@@ -2323,6 +2323,9 @@
                     if (!memberFilter(username, team)) return;
                     const teamData = getUserTeamData(userData, team);
                     if (teamData) {
+                        // Attach full userData for cross-team lookups (e.g., deputy check)
+                        teamData._userData = userData;
+                        teamData._username = username;
                         entries.push({ username, team, data: teamData, isVirtual: false });
                     }
                 });
@@ -2445,14 +2448,36 @@
             return items;
         }
 
-        // Helper to check if a general is a deputy for a formed SP general
+        // Helper to check if a general is a deputy for any SP general (across all armies)
+        // 方式B: deputy設定がある限り、全軍団で編成不可
         function getDeputyInfo(user, generalName) {
-            // Check built-in SP generals
+            const stageMap = { '0': 'C', '1': 'B', '2': 'A', '3': 'S' };
+
+            // Get full user data for cross-team check
+            const userData = user._userData;
+            if (!userData) {
+                // Fallback: check only current team (without formed restriction for 方式B)
+                return checkTeamForDeputy(user, generalName, stageMap);
+            }
+
+            // Check all teams for this user
+            const allTeams = getUserTeams(userData);
+            for (const team of allTeams) {
+                const teamData = getUserTeamData(userData, team);
+                if (!teamData) continue;
+                const result = checkTeamForDeputy(teamData, generalName, stageMap);
+                if (result.isDeputy) return result;
+            }
+            return { isDeputy: false };
+        }
+
+        // Helper to check a single team's SP generals for deputy setting
+        function checkTeamForDeputy(teamData, generalName, stageMap) {
+            // Check built-in SP generals (方式B: don't check formed state)
             const spGeneralIds = ['nobunaga', 'hideyoshi', 'ieyasu'];
             for (const spId of spGeneralIds) {
-                const sp = user.spGenerals?.[spId];
-                if (sp && sp.formed && sp.deputy === generalName) {
-                    const stageMap = { '0': 'C', '1': 'B', '2': 'A', '3': 'S' };
+                const sp = teamData.spGenerals?.[spId];
+                if (sp && sp.deputy === generalName) {
                     return {
                         isDeputy: true,
                         spGeneral: spId,
@@ -2461,10 +2486,9 @@
                 }
             }
             // Check custom SP generals
-            if (user.customItems?.spGenerals) {
-                for (const [spName, sp] of Object.entries(user.customItems.spGenerals)) {
-                    if (sp && sp.formed && sp.deputy === generalName) {
-                        const stageMap = { '0': 'C', '1': 'B', '2': 'A', '3': 'S' };
+            if (teamData.customItems?.spGenerals) {
+                for (const [spName, sp] of Object.entries(teamData.customItems.spGenerals)) {
+                    if (sp && sp.deputy === generalName) {
                         return {
                             isDeputy: true,
                             spGeneral: spName,
