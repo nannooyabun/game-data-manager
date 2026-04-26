@@ -4583,17 +4583,78 @@
             const items = getCustomItemsForCategory('極伝兵法');
             if (items.length === 0) return;
 
-            const html = items.map(item => `
-                <div class="flower-item tap-card" data-custom="1" data-state="0" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
+            const slotOptions = academySlots.map(s =>
+                `<option value="${s.id}">${s.name}</option>`
+            ).join('');
+
+            const html = items.map(item => {
+                const safeItemId = safeId(item.name);
+                // Check if item supports yinyang (default: yes for custom items)
+                const hasYinyang = item.hasYinyang !== false;
+                const yinyangHtml = hasYinyang ? `
+                    <div class="yinyang-toggle">
+                        <button type="button" data-value="yin" onclick="event.stopPropagation(); setCustomAcademyYinyang('${safeItemId}', 'yin')">陰</button>
+                        <button type="button" data-value="yang" onclick="event.stopPropagation(); setCustomAcademyYinyang('${safeItemId}', 'yang')">陽</button>
+                    </div>
+                ` : '';
+
+                return `
+                <div class="flower-item tap-card custom-academy-item" data-custom="1" data-state="0" data-academy-id="${safeItemId}" data-formed-label="装備" onclick="if(event.target===this||event.target.closest('.tap-header')||event.target.closest('.name'))toggleTapState(this)">
                     <div class="tap-header" style="flex:1; display:block;">
                         <div class="name">${item.name}${item.subcategory ? ` <small style="color: var(--text-muted); font-size: 0.7rem;">(${item.subcategory})</small>` : ''}<span class="tap-state-badge">未所持</span></div>
                     </div>
-                    <input type="checkbox" id="${safeId(item.name)}_equipped" data-role="equipped" style="display:none;" onchange="updateProgress()">
-                    <input type="checkbox" id="${safeId(item.name)}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
+                    <div class="academy-controls">
+                        <select class="academy-slot-select" id="${safeItemId}_slot" onchange="event.stopPropagation(); onCustomAcademySlotChange('${safeItemId}')" onclick="event.stopPropagation()">
+                            <option value="">--</option>
+                            ${slotOptions}
+                        </select>
+                        ${yinyangHtml}
+                        <span class="academy-level-display" id="${safeItemId}_levelDisplay"></span>
+                    </div>
+                    <input type="hidden" id="${safeItemId}_yinyang" value="">
+                    <input type="checkbox" id="${safeItemId}_owned" data-role="owned" style="display:none;" onchange="updateProgress()">
                 </div>
-            `).join('');
+            `}).join('');
             grid.insertAdjacentHTML('beforeend', html);
             refreshAllTapCardStates();
+            updateAcademySlotAvailability();
+        }
+
+        // Handle custom academy slot change
+        function onCustomAcademySlotChange(itemId) {
+            updateAcademySlotAvailability();
+            updateCustomAcademyLevelDisplay(itemId);
+            updateProgress();
+        }
+
+        // Update level display for custom academy item
+        function updateCustomAcademyLevelDisplay(itemId) {
+            const select = document.getElementById(`${itemId}_slot`);
+            const display = document.getElementById(`${itemId}_levelDisplay`);
+            if (!select || !display) return;
+            const slotId = select.value;
+            if (!slotId) {
+                display.textContent = '';
+                return;
+            }
+            const slotMap = { sword: 'gokudenSword', body: 'gokudenBody', tech: 'gokudenTech', heart1: 'gokudenHeart1', heart2: 'gokudenHeart2' };
+            const levelEl = document.getElementById(slotMap[slotId]);
+            const level = levelEl?.value || '-';
+            display.textContent = `→ Lv.${level}`;
+        }
+
+        // Set yinyang for custom academy item
+        function setCustomAcademyYinyang(itemId, value) {
+            const hiddenInput = document.getElementById(`${itemId}_yinyang`);
+            if (hiddenInput) hiddenInput.value = value;
+            // Update button active state
+            const card = document.querySelector(`[data-academy-id="${itemId}"]`);
+            if (card) {
+                card.querySelectorAll('.yinyang-toggle button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.value === value);
+                });
+            }
+            updateProgress();
         }
 
         // Render custom weapons
@@ -4990,17 +5051,26 @@
         // Update which slots are available (1:1 mapping)
         function updateAcademySlotAvailability() {
             const usedSlots = new Set();
-            // First pass: collect used slots
+            const allSelects = [];
+
+            // Collect all slot selects (built-in and custom)
             academyHeihoItems.forEach(h => {
                 const select = document.getElementById(`gokuden${h.id}_slot`);
-                if (select && select.value) {
+                if (select) allSelects.push(select);
+            });
+            document.querySelectorAll('.custom-academy-item .academy-slot-select').forEach(select => {
+                allSelects.push(select);
+            });
+
+            // First pass: collect used slots
+            allSelects.forEach(select => {
+                if (select.value) {
                     usedSlots.add(select.value);
                 }
             });
-            // Second pass: disable used slots in other selects
-            academyHeihoItems.forEach(h => {
-                const select = document.getElementById(`gokuden${h.id}_slot`);
-                if (!select) return;
+
+            // Second pass: disable used slots in all selects
+            allSelects.forEach(select => {
                 const currentValue = select.value;
                 Array.from(select.options).forEach(opt => {
                     if (opt.value === '' || opt.value === currentValue) {
@@ -5009,11 +5079,6 @@
                         opt.disabled = usedSlots.has(opt.value);
                     }
                 });
-            });
-            // Also include custom academy items
-            document.querySelectorAll('.custom-academy-item .academy-slot-select').forEach(select => {
-                const currentValue = select.value;
-                if (currentValue) usedSlots.add(currentValue);
             });
         }
 
@@ -5038,8 +5103,8 @@
             academyHeihoItems.forEach(h => updateAcademyLevelDisplay(h.id));
             // Also custom items
             document.querySelectorAll('.custom-academy-item').forEach(item => {
-                const heihoId = item.dataset.heihoId;
-                if (heihoId) updateAcademyLevelDisplay(heihoId);
+                const academyId = item.dataset.academyId;
+                if (academyId) updateCustomAcademyLevelDisplay(academyId);
             });
         }
 
@@ -5790,20 +5855,25 @@
                 });
             }
 
-            // Custom academy (極伝兵法)
+            // Custom academy (極伝兵法) - new format with slot and yinyang
             const customAcademy = getCustomItemsForCategory('極伝兵法');
             if (customAcademy.length > 0) {
                 data.customItems.academy = {};
                 customAcademy.forEach(item => {
                     const id = safeId(item.name);
-                    const equippedEl = document.getElementById(`${id}_equipped`);
                     const ownedEl = document.getElementById(`${id}_owned`);
-                    if (equippedEl) {
-                        data.customItems.academy[item.name] = {
-                            equipped: equippedEl.checked,
-                            owned: ownedEl?.checked || false
-                        };
+                    const slotEl = document.getElementById(`${id}_slot`);
+                    const yinyangEl = document.getElementById(`${id}_yinyang`);
+                    const academyData = {
+                        owned: ownedEl?.checked || false,
+                        slot: slotEl?.value || null
+                    };
+                    // Only add yinyang if set
+                    const yinyangValue = yinyangEl?.value;
+                    if (yinyangValue) {
+                        academyData.yinyang = yinyangValue;
                     }
+                    data.customItems.academy[item.name] = academyData;
                 });
             }
 
@@ -6492,15 +6562,41 @@
                     });
                 }
 
-                // Custom academy
+                // Custom academy - handle both old (equipped/owned) and new (owned/slot/yinyang) format
                 if (data.customItems.academy) {
                     Object.entries(data.customItems.academy).forEach(([name, academyData]) => {
                         const id = safeId(name);
-                        const equippedEl = document.getElementById(`${id}_equipped`);
                         const ownedEl = document.getElementById(`${id}_owned`);
-                        if (equippedEl) equippedEl.checked = academyData.equipped || false;
-                        if (ownedEl) ownedEl.checked = academyData.owned || false;
+                        const slotEl = document.getElementById(`${id}_slot`);
+                        const yinyangEl = document.getElementById(`${id}_yinyang`);
+
+                        // Owned status - handle both formats
+                        if (ownedEl) {
+                            ownedEl.checked = academyData.owned || academyData.equipped || false;
+                        }
+
+                        // Slot - new format
+                        if (slotEl) {
+                            slotEl.value = academyData.slot || '';
+                        }
+
+                        // Yinyang - new format
+                        if (yinyangEl && academyData.yinyang) {
+                            yinyangEl.value = academyData.yinyang;
+                            // Update button visual
+                            const card = document.querySelector(`[data-academy-id="${id}"]`);
+                            if (card) {
+                                card.querySelectorAll('.yinyang-toggle button').forEach(btn => {
+                                    btn.classList.toggle('active', btn.dataset.value === academyData.yinyang);
+                                });
+                            }
+                        }
+
+                        // Update level display
+                        updateCustomAcademyLevelDisplay(id);
                     });
+                    // Update slot availability after loading
+                    updateAcademySlotAvailability();
                 }
 
                 // Custom masks
