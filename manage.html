@@ -1778,6 +1778,437 @@
         .unassigned-item:hover {
             filter: brightness(1.2);
         }
+
+        /* ===== Tag Management Styles ===== */
+        .tag-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .tag-tab {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .tag-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tag-tab.active {
+            color: var(--accent-gold);
+            border-bottom-color: var(--accent-gold);
+        }
+
+        .tag-category-list, .tag-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+        }
+
+        .tag-category-item, .tag-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-card);
+        }
+
+        .tag-category-item .drag-handle, .tag-item .drag-handle {
+            cursor: grab;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .tag-category-item input, .tag-item input[type="text"] {
+            flex: 1;
+            padding: 0.3rem 0.5rem;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            border-radius: 3px;
+        }
+
+        .tag-category-item input:focus, .tag-item input[type="text"]:focus {
+            border-color: var(--accent-gold-dim);
+            background: var(--bg-input);
+            outline: none;
+        }
+
+        .tag-category-item .tag-count {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .tag-category-item .action-btns, .tag-item .action-btns {
+            display: flex;
+            gap: 0.3rem;
+        }
+
+        .tag-category-item .action-btns button, .tag-item .action-btns button {
+            padding: 0.2rem 0.4rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .tag-category-item .action-btns button:hover, .tag-item .action-btns button:hover {
+            border-color: var(--accent-gold-dim);
+            color: var(--text-primary);
+        }
+
+        .tag-category-item .action-btns button.danger:hover, .tag-item .action-btns button.danger:hover {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .tag-color-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .tag-color-btn:hover {
+            border-color: var(--text-primary);
+        }
+
+        .tag-item select {
+            padding: 0.2rem 0.4rem;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.8rem;
+        }
+
+        .tag-usage {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* Color Picker Popup */
+        .color-picker-popup {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 1000;
+        }
+
+        .color-preset-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .color-preset {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+
+        .color-preset:hover, .color-preset.selected {
+            border-color: var(--text-primary);
+        }
+
+        .color-picker-custom {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .color-picker-custom input {
+            width: 80px;
+            padding: 0.3rem;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        /* Tag Group Header in Tag List */
+        .tag-group-header {
+            font-size: 0.85rem;
+            color: var(--accent-gold);
+            padding: 0.5rem 0 0.3rem 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 0.3rem;
+        }
+
+        /* General Tag Edit List */
+        .general-tag-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-secondary);
+        }
+
+        .general-tag-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .general-tag-item:last-child {
+            border-bottom: none;
+        }
+
+        .general-tag-item .name {
+            flex: 1;
+            font-size: 0.9rem;
+            min-width: 100px;
+        }
+
+        .general-tag-item .tags {
+            display: flex;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+            flex: 2;
+        }
+
+        .tag-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.15rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #fff;
+        }
+
+        .general-tag-item .edit-btn {
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .general-tag-item .edit-btn:hover {
+            border-color: var(--accent-gold-dim);
+            color: var(--text-primary);
+        }
+
+        /* Tag Edit Modal */
+        .tag-edit-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .tag-edit-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .tag-edit-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tag-edit-modal-header h4 {
+            color: var(--accent-gold);
+            font-size: 1rem;
+        }
+
+        .tag-edit-modal-header .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .tag-edit-modal-header .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tag-edit-category {
+            margin-bottom: 1rem;
+        }
+
+        .tag-edit-category h5 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .tag-edit-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag-edit-option {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .tag-edit-option:hover {
+            background: var(--bg-input);
+        }
+
+        .tag-edit-option.selected {
+            border-color: var(--accent-gold);
+            background: rgba(201, 162, 39, 0.15);
+        }
+
+        .tag-edit-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .tag-edit-modal-footer button {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .tag-edit-modal-footer .cancel-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .tag-edit-modal-footer .save-btn {
+            background: var(--accent-gold);
+            border: none;
+            color: var(--bg-primary);
+            font-weight: 500;
+        }
+
+        /* General Tag Bulk Actions */
+        .general-tag-filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .general-tag-filters input, .general-tag-filters select {
+            padding: 0.4rem 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .general-tag-bulk-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .general-tag-bulk-actions select {
+            padding: 0.3rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+        }
+
+        .general-tag-bulk-actions button {
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .general-tag-bulk-actions button:hover {
+            border-color: var(--accent-gold-dim);
+        }
+
+        .bulk-selection-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
+        /* No tags placeholder */
+        .no-tags-message {
+            padding: 1rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -1912,6 +2343,103 @@
                             <button class="action-btn" onclick="cancelIndexSelection()" style="background: var(--bg-input); color: var(--text-secondary);">キャンセル</button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- ①-b タグ管理 Section -->
+            <div class="section-card collapsible collapsed" id="tagManagementSection">
+                <h3 onclick="toggleSection('tagManagementSection')"><span class="collapse-icon">▶</span>🏷️ タグ管理</h3>
+                <div class="section-content">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        武将に付けるタグを管理します。タグを使って武将を分類・検索できます。
+                    </p>
+
+                    <!-- Tab Navigation -->
+                    <div class="tag-tabs">
+                        <button class="tag-tab active" onclick="showTagTab('category')" data-tab="category">タグカテゴリ編集</button>
+                        <button class="tag-tab" onclick="showTagTab('tags')" data-tab="tags">タグ一覧編集</button>
+                        <button class="tag-tab" onclick="showTagTab('generals')" data-tab="generals">武将タグ一括編集</button>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div id="tagTabContent">
+                        <!-- Tab 1: Tag Categories -->
+                        <div id="tagCategoryTab" class="tag-tab-panel">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="color: var(--text-secondary); font-size: 0.85rem;">タグをグループ分けするカテゴリを管理</span>
+                                <button class="gen-cat-btn" onclick="addTagCategory()">＋ カテゴリ追加</button>
+                            </div>
+                            <div class="tag-category-list" id="tagCategoryList">
+                                <span style="color: var(--text-muted);">読み込み中...</span>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Tags -->
+                        <div id="tagListTab" class="tag-tab-panel" style="display: none;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <span style="color: var(--text-secondary); font-size: 0.85rem;">個別タグの追加・編集・削除</span>
+                                <button class="gen-cat-btn" onclick="addTag()">＋ タグ追加</button>
+                            </div>
+                            <div class="tag-list" id="tagList">
+                                <span style="color: var(--text-muted);">読み込み中...</span>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: General Tags -->
+                        <div id="generalTagTab" class="tag-tab-panel" style="display: none;">
+                            <div class="general-tag-filters">
+                                <input type="text" id="generalTagSearch" placeholder="🔍 武将名で検索..." oninput="filterGeneralTagList()">
+                                <select id="generalTagCategoryFilter" onchange="filterGeneralTagList()">
+                                    <option value="">カテゴリ: 全て</option>
+                                </select>
+                                <label style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; color: var(--text-secondary);">
+                                    <input type="checkbox" id="generalTagUntaggedOnly" onchange="filterGeneralTagList()">
+                                    タグなしのみ
+                                </label>
+                            </div>
+                            <div class="general-tag-list" id="generalTagList">
+                                <span style="color: var(--text-muted);">読み込み中...</span>
+                            </div>
+                            <div class="general-tag-bulk-actions">
+                                <label style="font-size: 0.85rem; color: var(--text-secondary);">選択した武将に:</label>
+                                <select id="bulkTagSelect">
+                                    <option value="">タグを選択...</option>
+                                </select>
+                                <button onclick="bulkAddTagToGenerals()">追加</button>
+                                <button onclick="bulkRemoveTagFromGenerals()">削除</button>
+                                <span class="bulk-selection-info" id="bulkSelectionInfo">選択中: 0人</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tag Edit Modal (for individual general) -->
+            <div class="tag-edit-modal" id="tagEditModal" style="display: none;">
+                <div class="tag-edit-modal-content">
+                    <div class="tag-edit-modal-header">
+                        <h4 id="tagEditModalTitle">武将名 のタグ編集</h4>
+                        <button class="close-btn" onclick="closeTagEditModal()">&times;</button>
+                    </div>
+                    <div id="tagEditModalBody">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div class="tag-edit-modal-footer">
+                        <button class="cancel-btn" onclick="closeTagEditModal()">キャンセル</button>
+                        <button class="save-btn" onclick="saveTagEditModal()">保存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Color Picker Popup -->
+            <div class="color-picker-popup" id="colorPickerPopup" style="display: none;">
+                <div class="color-preset-grid" id="colorPresetGrid">
+                    <!-- Populated dynamically -->
+                </div>
+                <div class="color-picker-custom">
+                    <input type="text" id="customColorInput" placeholder="#ffffff" maxlength="7">
+                    <button onclick="applyCustomColor()">適用</button>
+                    <button onclick="closeColorPicker()">✕</button>
                 </div>
             </div>
 
@@ -2158,6 +2686,19 @@
         let initialCategoriesSnapshot = null;
         let changedGenerals = new Set();  // generals that have been moved/reordered
         let changedCategories = new Set();  // categories that have been renamed/modified
+
+        // Tag management
+        let generalTags = { tagCategories: {}, tags: {} };
+        let currentTagTab = 'category';
+        let currentColorPickerTagId = null;
+        let currentTagEditGeneral = null;
+        let currentTagEditSelection = [];
+
+        // Preset colors for tags
+        const TAG_PRESET_COLORS = [
+            '#e57373', '#ffb74d', '#fff176', '#81c784', '#64b5f6', '#ba68c8',
+            '#90a4ae', '#f48fb1', '#4db6ac', '#a1887f', '#7986cb', '#dce775'
+        ];
 
         // Get all default generals as a flat list
         const ALL_DEFAULT_GENERALS = DEFAULT_GENERAL_CATEGORIES.flatMap(cat => cat.generals);
@@ -2415,8 +2956,24 @@
                 generalMasterData = snap.exists() ? snap.val() : null;
                 if (document.getElementById('adminContent').classList.contains('show')) {
                     populateCategoryDropdowns();
+                    // Refresh general tag list if tab is active
+                    if (currentTagTab === 'generals') {
+                        renderGeneralTagList();
+                    }
                 }
                 tryInitialStateSave();
+            });
+
+            // General tags data
+            onValue(ref(database, 'settings/generalTags'), (snap) => {
+                generalTags = snap.exists() ? snap.val() : { tagCategories: {}, tags: {} };
+                if (!generalTags.tagCategories) generalTags.tagCategories = {};
+                if (!generalTags.tags) generalTags.tags = {};
+                if (document.getElementById('adminContent').classList.contains('show')) {
+                    renderTagCategoryList();
+                    renderTagList();
+                    updateBulkTagSelect();
+                }
             });
         }
 
@@ -3571,6 +4128,8 @@
                                         ondragleave="onGeneralTagDragLeave(event)"
                                         ondrop="onGeneralTagDrop(event, '${configType}', '${cat.id}', '${escapeHtml(gen)}', ${genIdx})">
                                         <span>${escapeHtml(gen)}</span>
+                                        ${getGeneralTagBadges(gen)}
+                                        <button class="move-btn" onclick="openTagEditModal('${escapeHtml(gen)}')" title="タグ編集">🏷</button>
                                         <button class="move-btn" onclick="showMoveModal('${configType}', '${cat.id}', '${escapeHtml(gen)}')">⇄</button>
                                     </div>
                                 `;}).join('')
@@ -4105,6 +4664,684 @@
             } catch (error) {
                 console.error('Failed to load category configs:', error);
             }
+        }
+
+        // ========== Tag Management ==========
+
+        // Save general tags to Firebase
+        async function saveGeneralTags() {
+            try {
+                generalTags.updatedAt = new Date().toISOString();
+                await set(ref(database, 'settings/generalTags'), generalTags);
+            } catch (error) {
+                console.error('Failed to save general tags:', error);
+                showToast('タグの保存に失敗しました', 'error');
+            }
+        }
+
+        // Show tag tab
+        function showTagTab(tabName) {
+            currentTagTab = tabName;
+
+            // Update tab buttons
+            document.querySelectorAll('.tag-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabName);
+            });
+
+            // Show/hide tab panels
+            document.getElementById('tagCategoryTab').style.display = tabName === 'category' ? 'block' : 'none';
+            document.getElementById('tagListTab').style.display = tabName === 'tags' ? 'block' : 'none';
+            document.getElementById('generalTagTab').style.display = tabName === 'generals' ? 'block' : 'none';
+
+            // Render content
+            if (tabName === 'category') {
+                renderTagCategoryList();
+            } else if (tabName === 'tags') {
+                renderTagList();
+            } else if (tabName === 'generals') {
+                renderGeneralTagList();
+                populateGeneralTagCategoryFilter();
+            }
+        }
+
+        // Get tag badges HTML for a general (used in category management view)
+        function getGeneralTagBadges(generalName) {
+            const gen = generalMasterData?.generals?.[generalName];
+            if (!gen?.tags?.length) return '';
+
+            const badges = gen.tags.slice(0, 3).map(tagId => {
+                const tag = generalTags.tags?.[tagId];
+                if (!tag) return '';
+                return `<span class="tag-badge" style="background-color: ${tag.color || '#90a4ae'}; font-size: 0.65rem; padding: 0.05rem 0.3rem;">${escapeHtml(tag.name)}</span>`;
+            }).filter(Boolean).join('');
+
+            const moreCount = gen.tags.length - 3;
+            const moreText = moreCount > 0 ? `<span style="font-size: 0.65rem; color: var(--text-muted);">+${moreCount}</span>` : '';
+
+            return badges ? `<span style="display: inline-flex; gap: 0.15rem; margin-left: 0.3rem;">${badges}${moreText}</span>` : '';
+        }
+
+        // ===== Tab 1: Tag Category Management =====
+
+        function renderTagCategoryList() {
+            const container = document.getElementById('tagCategoryList');
+            if (!container) return;
+
+            const categories = generalTags.tagCategories || {};
+            const sortedCategories = Object.entries(categories)
+                .sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+
+            if (sortedCategories.length === 0) {
+                container.innerHTML = '<div class="no-tags-message">タグカテゴリがありません。「＋ カテゴリ追加」で追加してください。</div>';
+                return;
+            }
+
+            let html = '';
+            sortedCategories.forEach(([catId, cat], index) => {
+                const tagCount = countTagsInCategory(catId);
+                html += `
+                    <div class="tag-category-item" data-cat-id="${catId}">
+                        <span class="drag-handle">☰</span>
+                        <input type="text" value="${escapeHtml(cat.name || '')}"
+                               onblur="updateTagCategoryName('${catId}', this.value)"
+                               onkeydown="if(event.key==='Enter') this.blur()">
+                        <span class="tag-count">タグ数: ${tagCount}</span>
+                        <div class="action-btns">
+                            <button onclick="moveTagCategory('${catId}', -1)" ${index === 0 ? 'disabled' : ''}>▲</button>
+                            <button onclick="moveTagCategory('${catId}', 1)" ${index === sortedCategories.length - 1 ? 'disabled' : ''}>▼</button>
+                            <button class="danger" onclick="deleteTagCategory('${catId}')">🗑</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function countTagsInCategory(categoryId) {
+            let count = 0;
+            for (const tag of Object.values(generalTags.tags || {})) {
+                if (tag.categoryId === categoryId) count++;
+            }
+            return count;
+        }
+
+        async function addTagCategory() {
+            const newId = 'tc_' + Date.now();
+            const maxOrder = Math.max(0, ...Object.values(generalTags.tagCategories || {}).map(c => c.order || 0));
+
+            generalTags.tagCategories[newId] = {
+                name: '新規カテゴリ',
+                order: maxOrder + 1
+            };
+
+            await saveGeneralTags();
+            renderTagCategoryList();
+            showToast('カテゴリを追加しました');
+        }
+
+        async function updateTagCategoryName(catId, newName) {
+            if (!generalTags.tagCategories[catId]) return;
+            if (generalTags.tagCategories[catId].name === newName) return;
+
+            generalTags.tagCategories[catId].name = newName.trim() || '未設定';
+            await saveGeneralTags();
+        }
+
+        async function moveTagCategory(catId, direction) {
+            const categories = Object.entries(generalTags.tagCategories || {})
+                .sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+
+            const currentIndex = categories.findIndex(([id]) => id === catId);
+            if (currentIndex === -1) return;
+
+            const newIndex = currentIndex + direction;
+            if (newIndex < 0 || newIndex >= categories.length) return;
+
+            // Swap orders
+            const [otherId] = categories[newIndex];
+            const tempOrder = generalTags.tagCategories[catId].order;
+            generalTags.tagCategories[catId].order = generalTags.tagCategories[otherId].order;
+            generalTags.tagCategories[otherId].order = tempOrder;
+
+            await saveGeneralTags();
+            renderTagCategoryList();
+        }
+
+        async function deleteTagCategory(catId) {
+            const tagCount = countTagsInCategory(catId);
+            const catName = generalTags.tagCategories[catId]?.name || catId;
+
+            let message = `カテゴリ「${catName}」を削除しますか？`;
+            if (tagCount > 0) {
+                message += `\n\n※ このカテゴリには${tagCount}個のタグがあります。タグは「未分類」に移動します。`;
+            }
+
+            if (!confirm(message)) return;
+
+            // Move tags to uncategorized
+            for (const [tagId, tag] of Object.entries(generalTags.tags || {})) {
+                if (tag.categoryId === catId) {
+                    generalTags.tags[tagId].categoryId = null;
+                }
+            }
+
+            delete generalTags.tagCategories[catId];
+            await saveGeneralTags();
+            renderTagCategoryList();
+            renderTagList();
+            showToast('カテゴリを削除しました');
+        }
+
+        // ===== Tab 2: Tag List Management =====
+
+        function renderTagList() {
+            const container = document.getElementById('tagList');
+            if (!container) return;
+
+            const tags = generalTags.tags || {};
+            const categories = generalTags.tagCategories || {};
+
+            if (Object.keys(tags).length === 0) {
+                container.innerHTML = '<div class="no-tags-message">タグがありません。「＋ タグ追加」で追加してください。</div>';
+                return;
+            }
+
+            // Group tags by category
+            const grouped = { uncategorized: [] };
+            for (const [catId, cat] of Object.entries(categories).sort((a, b) => (a[1].order || 0) - (b[1].order || 0))) {
+                grouped[catId] = [];
+            }
+
+            for (const [tagId, tag] of Object.entries(tags)) {
+                const catId = tag.categoryId || 'uncategorized';
+                if (!grouped[catId]) grouped[catId] = [];
+                grouped[catId].push({ id: tagId, ...tag });
+            }
+
+            let html = '';
+
+            // Render each category group
+            for (const [catId, tagList] of Object.entries(grouped)) {
+                if (tagList.length === 0 && catId !== 'uncategorized') continue;
+
+                const catName = catId === 'uncategorized' ? '未分類' : (categories[catId]?.name || catId);
+
+                if (tagList.length > 0 || catId === 'uncategorized') {
+                    html += `<div class="tag-group-header">【${escapeHtml(catName)}】</div>`;
+                }
+
+                if (tagList.length === 0) {
+                    if (catId === 'uncategorized') {
+                        html += '<div style="padding: 0.3rem; color: var(--text-muted); font-size: 0.85rem;">(なし)</div>';
+                    }
+                    continue;
+                }
+
+                for (const tag of tagList) {
+                    const usageCount = countTagUsage(tag.id);
+                    html += `
+                        <div class="tag-item" data-tag-id="${tag.id}">
+                            <button class="tag-color-btn" style="background-color: ${tag.color || '#90a4ae'}"
+                                    onclick="openColorPicker('${tag.id}', this)"></button>
+                            <input type="text" value="${escapeHtml(tag.name || '')}"
+                                   onblur="updateTagName('${tag.id}', this.value)"
+                                   onkeydown="if(event.key==='Enter') this.blur()">
+                            <select onchange="updateTagCategory('${tag.id}', this.value)">
+                                <option value="" ${!tag.categoryId ? 'selected' : ''}>未分類</option>
+                                ${Object.entries(categories)
+                                    .sort((a, b) => (a[1].order || 0) - (b[1].order || 0))
+                                    .map(([cid, cat]) => `<option value="${cid}" ${tag.categoryId === cid ? 'selected' : ''}>${escapeHtml(cat.name || cid)}</option>`)
+                                    .join('')}
+                            </select>
+                            <span class="tag-usage">使用: ${usageCount}武将</span>
+                            <div class="action-btns">
+                                <button class="danger" onclick="deleteTag('${tag.id}')">🗑</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            container.innerHTML = html;
+        }
+
+        function countTagUsage(tagId) {
+            let count = 0;
+            const generals = generalMasterData?.generals || {};
+            for (const gen of Object.values(generals)) {
+                if (gen.tags?.includes(tagId)) count++;
+            }
+            return count;
+        }
+
+        async function addTag() {
+            const newId = 'tag_' + Date.now();
+
+            generalTags.tags[newId] = {
+                name: '新規タグ',
+                categoryId: null,
+                color: '#90a4ae'
+            };
+
+            await saveGeneralTags();
+            renderTagList();
+            updateBulkTagSelect();
+            showToast('タグを追加しました');
+        }
+
+        async function updateTagName(tagId, newName) {
+            if (!generalTags.tags[tagId]) return;
+            if (generalTags.tags[tagId].name === newName) return;
+
+            generalTags.tags[tagId].name = newName.trim() || '未設定';
+            await saveGeneralTags();
+            updateBulkTagSelect();
+        }
+
+        async function updateTagCategory(tagId, categoryId) {
+            if (!generalTags.tags[tagId]) return;
+
+            generalTags.tags[tagId].categoryId = categoryId || null;
+            await saveGeneralTags();
+            renderTagList();
+        }
+
+        async function deleteTag(tagId) {
+            const tag = generalTags.tags[tagId];
+            if (!tag) return;
+
+            const usageCount = countTagUsage(tagId);
+            let message = `タグ「${tag.name}」を削除しますか？`;
+            if (usageCount > 0) {
+                message += `\n\n※ このタグは${usageCount}人の武将に設定されています。削除すると武将からも削除されます。`;
+            }
+
+            if (!confirm(message)) return;
+
+            // Remove tag from all generals
+            if (generalMasterData?.generals) {
+                let modified = false;
+                for (const [genName, gen] of Object.entries(generalMasterData.generals)) {
+                    if (gen.tags?.includes(tagId)) {
+                        gen.tags = gen.tags.filter(t => t !== tagId);
+                        modified = true;
+                    }
+                }
+                if (modified) {
+                    await set(ref(database, 'settings/generalMasterData'), generalMasterData);
+                }
+            }
+
+            delete generalTags.tags[tagId];
+            await saveGeneralTags();
+            renderTagList();
+            updateBulkTagSelect();
+            showToast('タグを削除しました');
+        }
+
+        // ===== Color Picker =====
+
+        function openColorPicker(tagId, buttonElement) {
+            currentColorPickerTagId = tagId;
+            const popup = document.getElementById('colorPickerPopup');
+            const grid = document.getElementById('colorPresetGrid');
+
+            // Position popup near button
+            const rect = buttonElement.getBoundingClientRect();
+            popup.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+            popup.style.left = (rect.left + window.scrollX) + 'px';
+
+            // Render color presets
+            const currentColor = generalTags.tags[tagId]?.color || '#90a4ae';
+            grid.innerHTML = TAG_PRESET_COLORS.map(color => `
+                <div class="color-preset ${color === currentColor ? 'selected' : ''}"
+                     style="background-color: ${color}"
+                     onclick="selectPresetColor('${color}')"></div>
+            `).join('');
+
+            document.getElementById('customColorInput').value = currentColor;
+            popup.style.display = 'block';
+
+            // Close on outside click
+            setTimeout(() => {
+                document.addEventListener('click', closeColorPickerOnOutsideClick);
+            }, 0);
+        }
+
+        function closeColorPickerOnOutsideClick(e) {
+            const popup = document.getElementById('colorPickerPopup');
+            if (!popup.contains(e.target) && !e.target.classList.contains('tag-color-btn')) {
+                closeColorPicker();
+            }
+        }
+
+        function closeColorPicker() {
+            document.getElementById('colorPickerPopup').style.display = 'none';
+            document.removeEventListener('click', closeColorPickerOnOutsideClick);
+            currentColorPickerTagId = null;
+        }
+
+        async function selectPresetColor(color) {
+            if (!currentColorPickerTagId || !generalTags.tags[currentColorPickerTagId]) return;
+
+            generalTags.tags[currentColorPickerTagId].color = color;
+            await saveGeneralTags();
+            renderTagList();
+            closeColorPicker();
+        }
+
+        async function applyCustomColor() {
+            const input = document.getElementById('customColorInput');
+            let color = input.value.trim();
+
+            // Validate color format
+            if (!color.startsWith('#')) color = '#' + color;
+            if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
+                showToast('無効な色コードです（例: #ff0000）', 'error');
+                return;
+            }
+
+            if (!currentColorPickerTagId || !generalTags.tags[currentColorPickerTagId]) return;
+
+            generalTags.tags[currentColorPickerTagId].color = color;
+            await saveGeneralTags();
+            renderTagList();
+            closeColorPicker();
+        }
+
+        // ===== Tab 3: General Tag Assignment =====
+
+        function getGeneralTagCategoryOptions() {
+            // Build category options from generalMasterData
+            const categories = new Set();
+            if (generalMasterData?.generals) {
+                for (const gen of Object.values(generalMasterData.generals)) {
+                    if (gen.category) categories.add(gen.category);
+                }
+            }
+            return Array.from(categories).sort();
+        }
+
+        function populateGeneralTagCategoryFilter() {
+            const select = document.getElementById('generalTagCategoryFilter');
+            if (!select) return;
+
+            const categories = getGeneralTagCategoryOptions();
+            select.innerHTML = '<option value="">カテゴリ: 全て</option>' +
+                categories.map(cat => `<option value="${escapeHtml(cat)}">${escapeHtml(cat)}</option>`).join('');
+        }
+
+        function updateBulkTagSelect() {
+            const select = document.getElementById('bulkTagSelect');
+            if (!select) return;
+
+            const tags = generalTags.tags || {};
+            const categories = generalTags.tagCategories || {};
+
+            // Group tags by category
+            const grouped = {};
+            for (const [tagId, tag] of Object.entries(tags)) {
+                const catId = tag.categoryId || 'uncategorized';
+                if (!grouped[catId]) grouped[catId] = [];
+                grouped[catId].push({ id: tagId, name: tag.name });
+            }
+
+            let html = '<option value="">タグを選択...</option>';
+
+            // Sort categories by order
+            const sortedCatIds = Object.keys(grouped).sort((a, b) => {
+                if (a === 'uncategorized') return 1;
+                if (b === 'uncategorized') return -1;
+                return (categories[a]?.order || 0) - (categories[b]?.order || 0);
+            });
+
+            for (const catId of sortedCatIds) {
+                const catName = catId === 'uncategorized' ? '未分類' : (categories[catId]?.name || catId);
+                html += `<optgroup label="${escapeHtml(catName)}">`;
+                for (const tag of grouped[catId]) {
+                    html += `<option value="${tag.id}">${escapeHtml(tag.name)}</option>`;
+                }
+                html += '</optgroup>';
+            }
+
+            select.innerHTML = html;
+        }
+
+        function renderGeneralTagList() {
+            const container = document.getElementById('generalTagList');
+            if (!container) return;
+
+            const generals = generalMasterData?.generals || {};
+            const searchText = (document.getElementById('generalTagSearch')?.value || '').toLowerCase();
+            const categoryFilter = document.getElementById('generalTagCategoryFilter')?.value || '';
+            const untaggedOnly = document.getElementById('generalTagUntaggedOnly')?.checked || false;
+
+            // Filter and sort generals
+            let filteredGenerals = Object.entries(generals)
+                .filter(([name, data]) => {
+                    if (searchText && !name.toLowerCase().includes(searchText)) return false;
+                    if (categoryFilter && data.category !== categoryFilter) return false;
+                    if (untaggedOnly && data.tags?.length > 0) return false;
+                    return true;
+                })
+                .sort((a, b) => a[0].localeCompare(b[0], 'ja'));
+
+            if (filteredGenerals.length === 0) {
+                container.innerHTML = '<div class="no-tags-message">該当する武将がいません</div>';
+                updateBulkSelectionInfo();
+                return;
+            }
+
+            let html = '';
+            filteredGenerals.forEach(([name, data]) => {
+                const tags = (data.tags || []).map(tagId => {
+                    const tag = generalTags.tags?.[tagId];
+                    if (!tag) return null;
+                    return `<span class="tag-badge" style="background-color: ${tag.color || '#90a4ae'}">${escapeHtml(tag.name)}</span>`;
+                }).filter(Boolean).join('');
+
+                html += `
+                    <div class="general-tag-item" data-general="${escapeHtml(name)}">
+                        <input type="checkbox" class="general-tag-checkbox" onchange="updateBulkSelectionInfo()">
+                        <span class="name">${escapeHtml(name)}</span>
+                        <div class="tags">${tags || '<span style="color: var(--text-muted); font-size: 0.8rem;">(タグなし)</span>'}</div>
+                        <button class="edit-btn" onclick="openTagEditModal('${escapeHtml(name)}')">編集</button>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            updateBulkSelectionInfo();
+        }
+
+        function filterGeneralTagList() {
+            renderGeneralTagList();
+        }
+
+        function updateBulkSelectionInfo() {
+            const checkboxes = document.querySelectorAll('#generalTagList .general-tag-checkbox:checked');
+            const info = document.getElementById('bulkSelectionInfo');
+            if (info) {
+                info.textContent = `選択中: ${checkboxes.length}人`;
+            }
+        }
+
+        async function bulkAddTagToGenerals() {
+            const tagId = document.getElementById('bulkTagSelect').value;
+            if (!tagId) {
+                showToast('タグを選択してください', 'error');
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll('#generalTagList .general-tag-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast('武将を選択してください', 'error');
+                return;
+            }
+
+            let modified = false;
+            checkboxes.forEach(cb => {
+                const item = cb.closest('.general-tag-item');
+                const genName = item?.dataset.general;
+                if (!genName || !generalMasterData?.generals?.[genName]) return;
+
+                const gen = generalMasterData.generals[genName];
+                if (!gen.tags) gen.tags = [];
+                if (!gen.tags.includes(tagId)) {
+                    gen.tags.push(tagId);
+                    modified = true;
+                }
+            });
+
+            if (modified) {
+                await set(ref(database, 'settings/generalMasterData'), generalMasterData);
+                showToast(`${checkboxes.length}人の武将にタグを追加しました`);
+            }
+
+            // Uncheck all
+            checkboxes.forEach(cb => cb.checked = false);
+            renderGeneralTagList();
+        }
+
+        async function bulkRemoveTagFromGenerals() {
+            const tagId = document.getElementById('bulkTagSelect').value;
+            if (!tagId) {
+                showToast('タグを選択してください', 'error');
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll('#generalTagList .general-tag-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast('武将を選択してください', 'error');
+                return;
+            }
+
+            let modified = false;
+            checkboxes.forEach(cb => {
+                const item = cb.closest('.general-tag-item');
+                const genName = item?.dataset.general;
+                if (!genName || !generalMasterData?.generals?.[genName]) return;
+
+                const gen = generalMasterData.generals[genName];
+                if (gen.tags?.includes(tagId)) {
+                    gen.tags = gen.tags.filter(t => t !== tagId);
+                    modified = true;
+                }
+            });
+
+            if (modified) {
+                await set(ref(database, 'settings/generalMasterData'), generalMasterData);
+                showToast(`${checkboxes.length}人の武将からタグを削除しました`);
+            }
+
+            // Uncheck all
+            checkboxes.forEach(cb => cb.checked = false);
+            renderGeneralTagList();
+        }
+
+        // ===== Tag Edit Modal =====
+
+        function openTagEditModal(generalName) {
+            currentTagEditGeneral = generalName;
+            const gen = generalMasterData?.generals?.[generalName];
+            currentTagEditSelection = gen?.tags ? [...gen.tags] : [];
+
+            document.getElementById('tagEditModalTitle').textContent = `${generalName} のタグ編集`;
+
+            renderTagEditModalBody();
+            document.getElementById('tagEditModal').style.display = 'flex';
+        }
+
+        function renderTagEditModalBody() {
+            const body = document.getElementById('tagEditModalBody');
+            const tags = generalTags.tags || {};
+            const categories = generalTags.tagCategories || {};
+
+            if (Object.keys(tags).length === 0) {
+                body.innerHTML = '<div class="no-tags-message">タグがありません。先に「タグ一覧編集」タブでタグを追加してください。</div>';
+                return;
+            }
+
+            // Group tags by category
+            const grouped = { uncategorized: [] };
+            for (const [catId, cat] of Object.entries(categories).sort((a, b) => (a[1].order || 0) - (b[1].order || 0))) {
+                grouped[catId] = [];
+            }
+
+            for (const [tagId, tag] of Object.entries(tags)) {
+                const catId = tag.categoryId || 'uncategorized';
+                if (!grouped[catId]) grouped[catId] = [];
+                grouped[catId].push({ id: tagId, ...tag });
+            }
+
+            let html = '';
+
+            for (const [catId, tagList] of Object.entries(grouped)) {
+                if (tagList.length === 0) continue;
+
+                const catName = catId === 'uncategorized' ? '未分類' : (categories[catId]?.name || catId);
+
+                html += `<div class="tag-edit-category">
+                    <h5>【${escapeHtml(catName)}】</h5>
+                    <div class="tag-edit-options">`;
+
+                for (const tag of tagList) {
+                    const isSelected = currentTagEditSelection.includes(tag.id);
+                    html += `
+                        <div class="tag-edit-option ${isSelected ? 'selected' : ''}"
+                             onclick="toggleTagEditSelection('${tag.id}')"
+                             data-tag-id="${tag.id}">
+                            <span class="tag-badge" style="background-color: ${tag.color || '#90a4ae'}; padding: 0.1rem 0.4rem; font-size: 0.75rem;">${escapeHtml(tag.name)}</span>
+                        </div>
+                    `;
+                }
+
+                html += '</div></div>';
+            }
+
+            body.innerHTML = html;
+        }
+
+        function toggleTagEditSelection(tagId) {
+            const index = currentTagEditSelection.indexOf(tagId);
+            if (index === -1) {
+                currentTagEditSelection.push(tagId);
+            } else {
+                currentTagEditSelection.splice(index, 1);
+            }
+
+            // Update UI
+            const option = document.querySelector(`.tag-edit-option[data-tag-id="${tagId}"]`);
+            if (option) {
+                option.classList.toggle('selected', currentTagEditSelection.includes(tagId));
+            }
+        }
+
+        function closeTagEditModal() {
+            document.getElementById('tagEditModal').style.display = 'none';
+            currentTagEditGeneral = null;
+            currentTagEditSelection = [];
+        }
+
+        async function saveTagEditModal() {
+            if (!currentTagEditGeneral || !generalMasterData?.generals?.[currentTagEditGeneral]) {
+                closeTagEditModal();
+                return;
+            }
+
+            generalMasterData.generals[currentTagEditGeneral].tags = [...currentTagEditSelection];
+
+            try {
+                await set(ref(database, 'settings/generalMasterData'), generalMasterData);
+                showToast('タグを保存しました');
+            } catch (error) {
+                console.error('Failed to save tags:', error);
+                showToast('タグの保存に失敗しました', 'error');
+            }
+
+            closeTagEditModal();
+            renderGeneralTagList();
         }
 
         // ========== Custom Generals Management ==========
@@ -5105,13 +6342,24 @@
             });
         }
 
+        // Get tag names from tag IDs for CSV export
+        function getTagNamesForGeneral(generalName) {
+            const gen = generalMasterData?.generals?.[generalName];
+            if (!gen?.tags?.length) return '';
+
+            return gen.tags.map(tagId => {
+                const tag = generalTags.tags?.[tagId];
+                return tag?.name || '';
+            }).filter(Boolean).join(';');
+        }
+
         // Export general master data to CSV
         function exportGeneralMasterCSV() {
             const categories = getMergedCategories('index');
             const masterData = generalMasterData || { generals: {}, categories: {} };
 
-            // Build CSV rows
-            const rows = [['index用No.', '武将名', '武将-上限人数', '武将-補足事項', '小カテゴリ名', '小カテゴリ-補足事項']];
+            // Build CSV rows (added タグ column)
+            const rows = [['index用No.', '武将名', '武将-上限人数', '武将-補足事項', '小カテゴリ名', '小カテゴリ-補足事項', 'タグ']];
 
             let idx = 1;
             for (const cat of categories) {
@@ -5129,7 +6377,8 @@
                         genData.rallyLimit || '',
                         genData.notes || '',
                         cat.title,
-                        categoryNotes
+                        categoryNotes,
+                        getTagNamesForGeneral(genName)
                     ]);
                     idx++;
                 }
@@ -5147,7 +6396,8 @@
                         genData.rallyLimit || '',
                         genData.notes || '',
                         '',  // Empty category = hidden
-                        ''
+                        '',
+                        getTagNamesForGeneral(genName)
                     ]);
                     idx++;
                 }
@@ -5283,6 +6533,7 @@
                     const notesCol = header.findIndex(h => h.includes('武将') && h.includes('補足'));
                     const catCol = header.findIndex(h => h.includes('カテゴリ名') || h.includes('小カテゴリ'));
                     const catNotesCol = header.findIndex(h => h.includes('カテゴリ') && h.includes('補足') && !h.includes('武将'));
+                    const tagCol = header.findIndex(h => h === 'タグ' || h.includes('tag'));
 
                     // Fallback to fixed positions if headers not found
                     const col = {
@@ -5291,7 +6542,8 @@
                         rally: rallyCol >= 0 ? rallyCol : 2,
                         notes: notesCol >= 0 ? notesCol : 3,
                         category: catCol >= 0 ? catCol : 4,
-                        catNotes: catNotesCol >= 0 ? catNotesCol : 5
+                        catNotes: catNotesCol >= 0 ? catNotesCol : 5,
+                        tag: tagCol >= 0 ? tagCol : -1  // -1 means not found
                     };
 
                     // Parse data rows
@@ -5299,6 +6551,8 @@
                     const categories = {};
                     const categoryOrder = [];
                     const categoryGenerals = {};  // categoryName -> [generalNames]
+                    const tagNamesUsed = new Set();  // Track all unique tag names from CSV
+                    const generalTagNames = {};  // generalName -> [tagName1, tagName2, ...]
 
                     for (let i = 1; i < rows.length; i++) {
                         const row = rows[i];
@@ -5312,11 +6566,20 @@
                         const notes = row[col.notes] || '';
                         const catNotes = row[col.catNotes] || '';
 
+                        // Parse tags from CSV (semicolon separated)
+                        let tagNames = [];
+                        if (col.tag >= 0 && row[col.tag]) {
+                            tagNames = row[col.tag].split(';').map(t => t.trim()).filter(Boolean);
+                            tagNames.forEach(t => tagNamesUsed.add(t));
+                        }
+                        generalTagNames[name] = tagNames;
+
                         generals[name] = {
                             indexNo: indexNo,
                             rallyLimit: rallyLimit,
                             notes: notes,
                             category: category
+                            // tags will be added after we resolve tag IDs
                         };
 
                         if (category) {
@@ -5333,22 +6596,73 @@
                         }
                     }
 
+                    // Process tags: create new tags for names that don't exist
+                    const tagNameToId = {};  // Map tag name -> tag ID
+                    const newTags = {};  // New tags to create
+
+                    // First, map existing tags
+                    for (const [tagId, tag] of Object.entries(generalTags.tags || {})) {
+                        tagNameToId[tag.name] = tagId;
+                    }
+
+                    // Create new tags for names that don't exist
+                    let newTagCount = 0;
+                    for (const tagName of tagNamesUsed) {
+                        if (!tagNameToId[tagName]) {
+                            const newId = 'tag_import_' + Date.now() + '_' + newTagCount++;
+                            newTags[newId] = {
+                                name: tagName,
+                                categoryId: null,  // Uncategorized
+                                color: TAG_PRESET_COLORS[newTagCount % TAG_PRESET_COLORS.length] || '#90a4ae'
+                            };
+                            tagNameToId[tagName] = newId;
+                        }
+                    }
+
+                    // Assign tag IDs to generals
+                    for (const [genName, tagNames] of Object.entries(generalTagNames)) {
+                        if (tagNames.length > 0 && generals[genName]) {
+                            generals[genName].tags = tagNames.map(name => tagNameToId[name]).filter(Boolean);
+                        }
+                    }
+
                     // Show preview and confirm
                     const totalGenerals = Object.keys(generals).length;
                     const totalCategories = categoryOrder.length;
                     const hiddenCount = Object.values(generals).filter(g => !g.category).length;
+                    const newTagNames = Object.values(newTags).map(t => t.name);
+                    const generalsWithTags = Object.values(generals).filter(g => g.tags?.length > 0).length;
 
-                    const confirmMsg = `以下の内容でインポートしますか？\n\n` +
+                    let confirmMsg = `以下の内容でインポートしますか？\n\n` +
                         `・武将数: ${totalGenerals}人\n` +
                         `・カテゴリ数: ${totalCategories}件\n` +
-                        `・編成対象外（空カテゴリ）: ${hiddenCount}人\n\n` +
-                        `※ 既存のユーザーデータ（所持・編成状況）には影響しません。\n` +
+                        `・編成対象外（空カテゴリ）: ${hiddenCount}人\n`;
+
+                    if (col.tag >= 0) {
+                        confirmMsg += `・タグ付き武将: ${generalsWithTags}人\n`;
+                        if (newTagNames.length > 0) {
+                            confirmMsg += `・新規作成タグ: ${newTagNames.slice(0, 5).join(', ')}${newTagNames.length > 5 ? ` 他${newTagNames.length - 5}件` : ''}\n`;
+                        }
+                    }
+
+                    confirmMsg += `\n※ 既存のユーザーデータ（所持・編成状況）には影響しません。\n` +
                         `※ カテゴリ設定は上書きされます。`;
 
                     if (!confirm(confirmMsg)) return;
 
                     // Save to Firebase
                     const { database, ref, set } = window.firebaseDB;
+
+                    // Save new tags first (merge with existing)
+                    if (Object.keys(newTags).length > 0) {
+                        const mergedTags = {
+                            tagCategories: generalTags.tagCategories || {},
+                            tags: { ...generalTags.tags, ...newTags },
+                            updatedAt: new Date().toISOString()
+                        };
+                        await set(ref(database, 'settings/generalTags'), mergedTags);
+                        generalTags = mergedTags;
+                    }
 
                     // Save general master data
                     await set(ref(database, 'settings/generalMasterData'), {
@@ -5390,12 +6704,18 @@
                     generalCategoriesIndex = newCategoryConfig;
                     generalCategoriesView = newCategoryConfig;
 
-                    showToast(`${totalGenerals}人の武将データをインポートしました`, 'success');
+                    let successMsg = `${totalGenerals}人の武将データをインポートしました`;
+                    if (Object.keys(newTags).length > 0) {
+                        successMsg += `（新規タグ${Object.keys(newTags).length}件作成）`;
+                    }
+                    showToast(successMsg, 'success');
 
                     // Refresh UI
                     renderGenCatList('unified');
                     populateCategoryDropdowns();
                     renderGeneralList();
+                    renderTagList();
+                    updateBulkTagSelect();
 
                 } catch (error) {
                     console.error('CSV import error:', error);
