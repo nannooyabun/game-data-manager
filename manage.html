@@ -1307,6 +1307,13 @@
             font-size: 0.65rem;
             margin-left: 0.3rem;
         }
+        .backup-item-full {
+            background: rgba(201, 162, 39, 0.1);
+            border-left: 3px solid var(--accent-gold);
+        }
+        .backup-item-full:hover {
+            background: rgba(201, 162, 39, 0.2);
+        }
         .backup-actions-btns {
             display: flex;
             gap: 0.3rem;
@@ -2671,8 +2678,17 @@
                     データの自動バックアップ（毎日）と手動バックアップを管理します。不要な変更を加えた場合に復元できます。
                 </p>
                 <div class="backup-actions">
-                    <button class="action-btn primary" onclick="createManualBackup('gameData')">📦 ユーザーデータをバックアップ</button>
-                    <button class="action-btn primary" onclick="createManualBackup('generalMasterData')">📦 武将データをバックアップ</button>
+                    <button class="action-btn success" onclick="createFullBackup()" style="font-weight: bold;">
+                        📦 全データ一括バックアップ
+                    </button>
+                </div>
+                <div class="backup-actions" style="margin-top: 0.5rem;">
+                    <button class="action-btn primary" onclick="createManualBackup('gameData')">👤 ユーザーデータ</button>
+                    <button class="action-btn primary" onclick="createManualBackup('generalMasterData')">⚔️ 武将データ</button>
+                    <button class="action-btn primary" onclick="createManualBackup('generalTags')">🏷️ タグデータ</button>
+                    <button class="action-btn primary" onclick="createManualBackup('generalCategories')">📁 カテゴリ設定</button>
+                    <button class="action-btn primary" onclick="createManualBackup('customItems')">✨ カスタムアイテム</button>
+                    <button class="action-btn primary" onclick="createManualBackup('teams')">👥 チームデータ</button>
                 </div>
                 <div class="backup-list-container">
                     <h4 style="color: var(--accent-gold); margin: 1rem 0 0.5rem; font-size: 0.9rem;">📋 バックアップ一覧</h4>
@@ -6216,15 +6232,29 @@
                 const date = new Date(backup.timestamp);
                 const dateStr = date.toLocaleDateString('ja-JP', { year: '2-digit', month: '2-digit', day: '2-digit' });
                 const timeStr = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                const typeLabel = backup.type === 'gameData' ? 'ユーザーデータ' : '武将データ';
+
+                const typeConfig = getBackupTypeConfig(backup.type);
+                const typeIcon = typeConfig?.icon || '📦';
+                const typeLabel = typeConfig?.label || backup.type;
                 const autoBadge = backup.auto ? '<span class="auto-badge">自動</span>' : '';
-                const itemCount = backup.itemCount || '-';
+
+                // Format item count
+                let itemCountStr;
+                if (backup.type === 'fullBackup') {
+                    itemCountStr = backup.itemCount || '全データ';
+                } else {
+                    itemCountStr = `${backup.itemCount || 0}件`;
+                }
+
+                // Highlight full backups
+                const isFullBackup = backup.type === 'fullBackup';
+                const itemClass = isFullBackup ? 'backup-item backup-item-full' : 'backup-item';
 
                 return `
-                    <div class="backup-item">
+                    <div class="${itemClass}">
                         <div class="backup-info">
                             <span class="date">${dateStr} ${timeStr}${autoBadge}</span>
-                            <span class="type">${typeLabel} (${itemCount}件)</span>
+                            <span class="type">${typeIcon} ${typeLabel} (${itemCountStr})</span>
                         </div>
                         <div class="backup-actions-btns">
                             <button class="btn-restore" onclick="restoreBackup('${backup.id}')">復元</button>
@@ -6250,19 +6280,15 @@
             const { database, ref, get, set } = window.firebaseDB;
 
             try {
-                // Get data to backup
-                let data, itemCount;
-                if (type === 'gameData') {
-                    const snap = await get(ref(database, 'gameData'));
-                    data = snap.exists() ? snap.val() : {};
-                    itemCount = Object.keys(data).length;
-                } else if (type === 'generalMasterData') {
-                    const snap = await get(ref(database, 'settings/generalMasterData'));
-                    data = snap.exists() ? snap.val() : {};
-                    itemCount = data.generals ? Object.keys(data.generals).length : 0;
-                } else {
-                    return;
-                }
+                // Get data to backup based on type
+                let data, itemCount, path;
+                const typeConfig = getBackupTypeConfig(type);
+                if (!typeConfig) return;
+
+                path = typeConfig.path;
+                const snap = await get(ref(database, path));
+                data = snap.exists() ? snap.val() : {};
+                itemCount = typeConfig.countFn(data);
 
                 // Create backup entry
                 const backupId = `backup_${Date.now()}`;
@@ -6275,7 +6301,7 @@
                 };
 
                 await set(ref(database, `backups/${backupId}`), backup);
-                showToast(`バックアップを作成しました (${type === 'gameData' ? 'ユーザー' : '武将'}データ)`, 'success');
+                showToast(`バックアップを作成しました (${typeConfig.label})`, 'success');
 
                 // Clean old backups (keep last 7 days for auto, unlimited for manual)
                 if (auto) {
@@ -6283,6 +6309,112 @@
                 }
             } catch (error) {
                 console.error('Backup error:', error);
+                showToast('バックアップの作成に失敗しました', 'error');
+            }
+        }
+
+        // Get backup type configuration
+        function getBackupTypeConfig(type) {
+            const configs = {
+                gameData: {
+                    path: 'gameData',
+                    label: 'ユーザーデータ',
+                    icon: '👤',
+                    countFn: (data) => Object.keys(data || {}).length
+                },
+                generalMasterData: {
+                    path: 'settings/generalMasterData',
+                    label: '武将データ',
+                    icon: '⚔️',
+                    countFn: (data) => data?.generals ? Object.keys(data.generals).length : 0
+                },
+                generalTags: {
+                    path: 'settings/generalTags',
+                    label: 'タグデータ',
+                    icon: '🏷️',
+                    countFn: (data) => data?.tags ? Object.keys(data.tags).length : 0
+                },
+                generalCategories: {
+                    path: 'settings/generalCategories',
+                    label: 'カテゴリ設定',
+                    icon: '📁',
+                    countFn: (data) => data?.categories ? Object.keys(data.categories).length : 0
+                },
+                customItems: {
+                    path: 'customItems',
+                    label: 'カスタムアイテム',
+                    icon: '✨',
+                    countFn: (data) => {
+                        let count = 0;
+                        for (const cat of Object.values(data || {})) {
+                            count += Object.keys(cat || {}).length;
+                        }
+                        return count;
+                    }
+                },
+                customGenerals: {
+                    path: 'customGenerals',
+                    label: 'カスタム武将',
+                    icon: '🎭',
+                    countFn: (data) => Array.isArray(data) ? data.length : Object.keys(data || {}).length
+                },
+                teams: {
+                    path: 'teams',
+                    label: 'チームデータ',
+                    icon: '👥',
+                    countFn: (data) => Object.keys(data || {}).length
+                },
+                fullBackup: {
+                    path: null,  // Special handling
+                    label: '全データ',
+                    icon: '📦',
+                    countFn: () => 0
+                }
+            };
+            return configs[type] || null;
+        }
+
+        // Create full backup (all data types)
+        async function createFullBackup() {
+            if (!window.firebaseReady) {
+                showToast('Firebase未接続', 'error');
+                return;
+            }
+            const { database, ref, get, set } = window.firebaseDB;
+
+            try {
+                showToast('全データをバックアップ中...', 'info');
+
+                // Collect all data
+                const fullData = {};
+                const paths = ['gameData', 'settings/generalMasterData', 'settings/generalTags',
+                              'settings/generalCategories', 'customItems', 'customGenerals', 'teams'];
+
+                for (const path of paths) {
+                    const snap = await get(ref(database, path));
+                    fullData[path.replace('settings/', '')] = snap.exists() ? snap.val() : null;
+                }
+
+                // Count items
+                const userCount = Object.keys(fullData.gameData || {}).length;
+                const generalCount = fullData.generalMasterData?.generals ? Object.keys(fullData.generalMasterData.generals).length : 0;
+                const tagCount = fullData.generalTags?.tags ? Object.keys(fullData.generalTags.tags).length : 0;
+                const teamCount = Object.keys(fullData.teams || {}).length;
+
+                // Create backup entry
+                const backupId = `backup_full_${Date.now()}`;
+                const backup = {
+                    type: 'fullBackup',
+                    timestamp: new Date().toISOString(),
+                    auto: false,
+                    itemCount: `${userCount}ユーザー, ${generalCount}武将, ${tagCount}タグ, ${teamCount}チーム`,
+                    data: fullData
+                };
+
+                await set(ref(database, `backups/${backupId}`), backup);
+                showToast('全データのバックアップを作成しました', 'success');
+            } catch (error) {
+                console.error('Full backup error:', error);
                 showToast('バックアップの作成に失敗しました', 'error');
             }
         }
@@ -6295,8 +6427,15 @@
                 return;
             }
 
-            const typeLabel = backup.type === 'gameData' ? 'ユーザーデータ' : '武将データ';
-            if (!confirm(`${typeLabel}を復元しますか？\n\n現在のデータは上書きされます。`)) {
+            const typeConfig = getBackupTypeConfig(backup.type);
+            const typeLabel = typeConfig?.label || backup.type;
+
+            let confirmMsg = `${typeLabel}を復元しますか？\n\n現在のデータは上書きされます。`;
+            if (backup.type === 'fullBackup') {
+                confirmMsg = '全データを復元しますか？\n\n⚠️ 現在の全データが上書きされます。この操作は取り消せません。';
+            }
+
+            if (!confirm(confirmMsg)) {
                 return;
             }
 
@@ -6307,14 +6446,33 @@
             const { database, ref, set } = window.firebaseDB;
 
             try {
-                // Create backup of current data before restoring
-                await createBackup(backup.type, false);
+                // Create backup of current data before restoring (except for full backup)
+                if (backup.type !== 'fullBackup') {
+                    await createBackup(backup.type, false);
+                } else {
+                    // For full backup, create a full backup first
+                    await createFullBackup();
+                }
 
                 // Restore data
-                const path = backup.type === 'gameData' ? 'gameData' : 'settings/generalMasterData';
-                await set(ref(database, path), backup.data);
-
-                showToast(`${typeLabel}を復元しました`, 'success');
+                if (backup.type === 'fullBackup') {
+                    // Restore all data from full backup
+                    const data = backup.data;
+                    if (data.gameData !== undefined) await set(ref(database, 'gameData'), data.gameData);
+                    if (data.generalMasterData !== undefined) await set(ref(database, 'settings/generalMasterData'), data.generalMasterData);
+                    if (data.generalTags !== undefined) await set(ref(database, 'settings/generalTags'), data.generalTags);
+                    if (data.generalCategories !== undefined) await set(ref(database, 'settings/generalCategories'), data.generalCategories);
+                    if (data.customItems !== undefined) await set(ref(database, 'customItems'), data.customItems);
+                    if (data.customGenerals !== undefined) await set(ref(database, 'customGenerals'), data.customGenerals);
+                    if (data.teams !== undefined) await set(ref(database, 'teams'), data.teams);
+                    showToast('全データを復元しました', 'success');
+                } else {
+                    const path = typeConfig?.path;
+                    if (path) {
+                        await set(ref(database, path), backup.data);
+                        showToast(`${typeLabel}を復元しました`, 'success');
+                    }
+                }
             } catch (error) {
                 console.error('Restore error:', error);
                 showToast('復元に失敗しました', 'error');
@@ -6383,9 +6541,10 @@
             const lastBackup = localStorage.getItem(lastBackupKey);
 
             if (lastBackup !== today) {
-                // Create daily auto backups
+                // Create daily auto backups (most important data)
                 await createBackup('gameData', true);
                 await createBackup('generalMasterData', true);
+                await createBackup('teams', true);
                 localStorage.setItem(lastBackupKey, today);
             }
         }
