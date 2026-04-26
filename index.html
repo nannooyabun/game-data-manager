@@ -2374,6 +2374,30 @@
                     <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'clear')" style="color: var(--text-muted);">クリア</button>
                 </div>
 
+                <!-- General Search Bar -->
+                <div class="general-search-container">
+                    <div class="general-search-bar">
+                        <input type="text" id="generalSearchInput" placeholder="光秀 秀吉 家康" onkeypress="if(event.key==='Enter')searchGenerals()">
+                        <button class="bulk-btn" onclick="searchGenerals()">🔍 検索</button>
+                        <button class="bulk-btn" onclick="closeGeneralSearch()" style="color: var(--text-muted);">閉じる</button>
+                    </div>
+                    <div id="generalSearchResults" class="general-search-results" style="display:none;">
+                        <div class="search-results-header">
+                            <span id="searchResultCount">検索結果: 0件</span>
+                            <label class="search-select-all">
+                                <input type="checkbox" id="searchSelectAll" onchange="toggleAllSearchResults()">
+                                <span>全選択</span>
+                            </label>
+                        </div>
+                        <div id="searchResultList" class="search-result-list"></div>
+                        <div class="search-results-actions">
+                            <button class="bulk-btn" onclick="bulkSetSearchResults('owned')">選択を所持ON</button>
+                            <button class="bulk-btn" onclick="bulkSetSearchResults('formed')">選択を編成ON</button>
+                            <button class="bulk-btn" onclick="bulkSetSearchResults('none')" style="color: var(--text-muted);">選択を未所持</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Display Mode Toggle -->
                 <div style="margin: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
                     <label class="toggle-switch" style="display: inline-flex; align-items: center; cursor: pointer; gap: 0.5rem;">
