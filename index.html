@@ -2374,6 +2374,30 @@
                     <button class="bulk-btn" onclick="bulkSelectGenerals('all', 'clear')" style="color: var(--text-muted);">クリア</button>
                 </div>
 
+                <!-- General Search Bar -->
+                <div class="general-search-container">
+                    <div class="general-search-bar">
+                        <input type="text" id="generalSearchInput" placeholder="光秀 秀吉 家康" onkeypress="if(event.key==='Enter')searchGenerals()">
+                        <button class="bulk-btn" onclick="searchGenerals()">🔍 検索</button>
+                        <button class="bulk-btn" onclick="closeGeneralSearch()" style="color: var(--text-muted);">閉じる</button>
+                    </div>
+                    <div id="generalSearchResults" class="general-search-results" style="display:none;">
+                        <div class="search-results-header">
+                            <span id="searchResultCount">検索結果: 0件</span>
+                            <label class="search-select-all">
+                                <input type="checkbox" id="searchSelectAll" onchange="toggleAllSearchResults()">
+                                <span>全選択</span>
+                            </label>
+                        </div>
+                        <div id="searchResultList" class="search-result-list"></div>
+                        <div class="search-results-actions">
+                            <button class="bulk-btn" onclick="bulkSetSearchResults('owned')">選択を所持ON</button>
+                            <button class="bulk-btn" onclick="bulkSetSearchResults('formed')">選択を編成ON</button>
+                            <button class="bulk-btn" onclick="bulkSetSearchResults('none')" style="color: var(--text-muted);">選択を未所持</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Display Mode Toggle -->
                 <div style="margin: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
                     <label class="toggle-switch" style="display: inline-flex; align-items: center; cursor: pointer; gap: 0.5rem;">
@@ -7190,7 +7214,7 @@
         // ========== Help Chat ==========
         const helpData = {
             main: {
-                message: 'こんにちは！何についてお調べですか？',
+                message: 'ようこそ！このアプリは、一門メンバーの武将・装備データを共有して、集結の編成検討を効率化するツールです。\n\n🎯 こんな時に便利:\n• 集結で誰が何を持っているか確認したい\n• 足りない装備や武将を把握したい\n• 編成のシミュレーションをしたい\n\nまずはユーザー名を入力して、あなたのデータを登録しましょう！',
                 options: [
                     { label: '🆕 初めての方はこちら', action: 'beginner' },
                     { label: '💾 データを保存したい', action: 'save' },
@@ -7201,7 +7225,7 @@
                 ]
             },
             beginner: {
-                message: 'ようこそ！このアプリでは、獅子の如くの武将データを管理できます。\n\n📝 基本の流れ:\n1. 画面上部で「ユーザー名」を入力\n2. 各セクションでデータを入力\n3. 画面下部の「保存」ボタンで保存\n\nまずは基本情報から始めましょう！',
+                message: '📝 登録の流れ:\n① ユーザー名を入力\n② 武将・装備をタップして状態を登録\n③ 右下の💾ボタンで保存\n\n💡 入力のヒント:\n• 全部入力しなくてOK！分かる範囲だけでも保存できます\n• 後からいつでも上書き更新できます\n• 一度登録した武将・装備データは、2軍以降を作る時に自動で引き継がれます\n\n保存したデータは「一覧画面」で全メンバー分を比較できます！',
                 jump: 'basicSection',
                 jumpLabel: '▶ 基本情報へジャンプ',
                 options: [
@@ -7211,7 +7235,7 @@
                 ]
             },
             save: {
-                message: '💾 データの保存方法:\n\n1. 画面上部で「ユーザー名」を入力\n2. 「軍団」を選択（1軍〜5軍）\n3. 各セクションでデータを入力\n4. 画面最下部の「💾 保存」ボタンをタップ\n\n※ 保存したデータは他のメンバーと共有されます。',
+                message: '💾 データの保存方法:\n\n1. 画面上部で「ユーザー名」を入力\n2. 「軍団」を選択（1軍〜5軍）\n3. 各セクションでデータを入力\n4. 右下の「💾 保存」ボタンをタップ\n\n※ 保存したデータは他のメンバーと共有されます。',
                 options: [
                     { label: '📂 データの読み込み方法', action: 'load' },
                     { label: '🔄 軍団の切り替え方法', action: 'team' },
@@ -7219,21 +7243,21 @@
                 ]
             },
             load: {
-                message: '📂 データの読み込み方法:\n\n1. 画面上部の「📂 読込」ボタンをタップ\n2. ユーザー名を検索（または一覧から選択）\n3. 軍団を選んでタップ\n\n※ 自分の過去データや他のユーザーのデータを参照できます。',
+                message: '📂 データの読み込み方法:\n\n1. 画面上部の「🔍 既存データ呼び出し」ボタンをタップ\n2. ユーザー名を検索（または一覧から選択）\n3. 軍団を選んでタップ\n\n※ 自分の過去データや他のユーザーのデータを参照できます。',
                 options: [
                     { label: '💾 データの保存方法', action: 'save' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             team: {
-                message: '🔄 軍団の切り替え:\n\n画面上部の「軍団」セレクターで切り替えできます。\n• 1軍〜5軍まで登録可能\n• 各軍団で別々のデータを管理\n\n新規軍団を作成する場合:\nユーザー名入力時に「+ 新規軍団作成」を選択',
+                message: '🔄 軍団の切り替え:\n\n画面上部の「軍団」セレクターで切り替えできます。\n• 1軍〜5軍まで登録可能\n• 各軍団で別々の編成データを管理\n\n新規軍団を作成する場合:\n「🔍 既存データ呼び出し」から「+ 新規軍団」を選択',
                 options: [
                     { label: '💾 データの保存方法', action: 'save' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             general: {
-                message: '⚔️ 武将の入力方法:\n\n武将カードをタップすると状態が切り替わります:\n• 1回タップ → 所持（黄色）\n• 2回タップ → 編成中（青色）\n• 3回タップ → 未所持に戻る\n\n守護霊レベルは右側のドロップダウンで選択できます。',
+                message: '⚔️ 武将の入力方法:\n\n武将名をタップするだけで状態が切り替わります！\n🔄 未所持 → 所持 → 編成 → 未所持...\n\n各状態の見分け方:\n• ◇ 黄色 = 所持\n• ◆ 青色 = 編成中\n• 灰色 = 未所持\n\n守護霊レベルは右のドロップダウンで選択できます。\n\n💡 便利機能:\n• 右上のカウンターをタップすると、編成中の武将を一覧で確認・切替できます\n• 「所持一括ON」ボタンでカテゴリ単位の一括設定ができます\n• 上部の切替で「図鑑順」「カテゴリ順」を変更できます\n• 「守護霊Lv一括設定」で武将全体、またはカテゴリごとに一括入力できます\n• ※一覧表には所持/編成にした武将のみレベルが反映されます',
                 jump: 'generalSection',
                 jumpLabel: '▶ 武将セクションへ',
                 options: [
@@ -7243,7 +7267,7 @@
                 ]
             },
             spgeneral: {
-                message: '👑 SP武将の入力:\n\nSP武将（信長・秀吉・家康）は専用フォームで入力します:\n• 主義Lv（1〜10）\n• スキルLv（1〜10）\n• 副将段階（C/B/A/S）\n• 副将名（オートコンプリート対応）\n\nヘッダー部分をタップで所持/編成を切り替え。',
+                message: '👑 SP武将の入力:\n\nSP武将（信長、秀吉...）は専用フォームで入力します:\n• 主義Lv（1〜10）\n• スキルLv（1〜10）\n• 副将段階（C/B/A/S）\n• 副将名\n\nヘッダー部分をタップで所持/編成を切り替えます。\n\n💡 副将連動:\n• 副将に設定した武将は、自動的に副将状態になります\n• 副将状態の武将は武将エリアで紫色で表示され、個別の編成切替はできません\n• 副将設定を解除すると、通常の武将に戻ります',
                 jump: 'spGeneralSection',
                 jumpLabel: '▶ SP武将セクションへ',
                 options: [
