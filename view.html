@@ -3355,8 +3355,8 @@
         }
 
         function renderTable() {
-            // Reset row selection when table is re-rendered
-            selectedRowKey = null;
+            // Preserve row selection across re-renders
+            const preservedRowKey = selectedRowKey;
 
             const main = document.getElementById('mainContent');
             const entries = getVisibleEntries();
@@ -3541,6 +3541,26 @@
 
             // Setup scroll observer for indicator highlighting
             setupScrollObserver();
+
+            // Restore row selection if it was preserved
+            if (preservedRowKey) {
+                selectedRowKey = preservedRowKey;
+                const table = document.querySelector('.view-table tbody');
+                if (table) {
+                    const [username, team] = preservedRowKey.split('/');
+                    table.querySelectorAll('tr').forEach(tr => {
+                        const usernameCell = tr.querySelector('.col-username');
+                        const teamCell = tr.querySelector('.col-team');
+                        if (usernameCell && teamCell) {
+                            const rowUsername = usernameCell.getAttribute('data-tooltip') || '';
+                            const rowTeam = teamCell.getAttribute('data-tooltip') || '';
+                            if (rowUsername === username && rowTeam === team) {
+                                tr.classList.add('row-selected');
+                            }
+                        }
+                    });
+                }
+            }
 
             // Restore scroll position if toggle was performed
             restoreScrollPosition();
