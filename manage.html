@@ -3492,7 +3492,7 @@
                                     const isGenChanged = changedGenerals.has(gen);
                                     return `
                                     <div class="gen-cat-general-tag${isGenChanged ? ' changed' : ''}" draggable="true"
-                                        data-cat-id="${cat.id}" data-general="${escapeHtml(gen)}" data-index="${genIdx}"`
+                                        data-cat-id="${cat.id}" data-general="${escapeHtml(gen)}" data-index="${genIdx}"
                                         ondragstart="onGeneralDragStart(event, '${configType}', '${cat.id}', '${escapeHtml(gen)}')"
                                         ondragend="onGeneralDragEnd(event)"
                                         ondragover="onGeneralTagDragOver(event)"
