@@ -7119,9 +7119,9 @@
             const terms = query.split(/[\s　]+/).filter(t => t.length > 0);
             const allGenerals = getAllGenerals();
 
-            // Filter: OR search with partial match, exclude hidden
+            // Filter: OR search with partial match
+            // Note: isHiddenGeneral check removed - uncategorized generals are now in the grid
             const results = allGenerals.filter(name => {
-                if (isHiddenGeneral(name)) return false;
                 return terms.some(term => name.includes(term));
             });
 
