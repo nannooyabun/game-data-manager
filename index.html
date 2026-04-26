@@ -7863,7 +7863,32 @@
                     { label: '➕ 2軍以降を入力したい', action: 'multiArmy' },
                     { label: '⚔️ 武将の入力方法', action: 'general' },
                     { label: '🔫 兵器・装備の入力', action: 'equipment' },
-                    { label: '📊 一覧画面(view)の使い方', action: 'view' }
+                    { label: '📊 一覧画面(view)の使い方', action: 'view' },
+                    { label: '❓ よくある質問（Q&A）', action: 'faq' }
+                ]
+            },
+            faq: {
+                message: '❓ よくある質問（Q&A）\n\nお探しの質問を選んでください。',
+                options: [
+                    { label: '📱 ページを開いた時のデータは何？', action: 'faqLocalData' },
+                    { label: '⚔️ 「編成」と「所持」の違いは？', action: 'faqFormedOwned' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            faqLocalData: {
+                message: '📱 Q: ページを開いた時に表示されるデータは？\n\nA: 前回このブラウザで入力したデータ（ローカル保存）が自動で読み込まれます。\n\n⚠️ 注意点:\n• これは「入力中の下書き」であり、サーバーには未保存の状態です\n• 💾保存ボタンを押すまで、他の人には見えません\n• 別のブラウザ・端末では表示されません\n\n💡 保存済みデータを確認したい場合:\n「🔍 既存データ呼び出し」から自分のユーザー名を検索して、保存済みのデータを読み込んでください。\n\n📝 入力途中のデータについて:\n• ブラウザを閉じても、同じブラウザなら入力途中のデータは残ります\n• ただし、ブラウザのキャッシュをクリアすると消えます\n• 大事なデータは必ず💾保存してください',
+                options: [
+                    { label: '⚔️ 「編成」と「所持」の違いは？', action: 'faqFormedOwned' },
+                    { label: '❓ Q&A一覧に戻る', action: 'faq' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            faqFormedOwned: {
+                message: '⚔️ Q: 「編成」と「所持」の違いは？\n\nA: その軍団での使用状態を表します。\n\n📌 状態の意味:\n• 編成（青◆）= その軍団で使用中\n• 所持（黄◇）= 持っているが、その軍団では未使用\n• 未所持（灰色）= 持っていない\n\n🔄 軍団間の共有データ:\n以下のデータは全軍団で共通です（1軍で入力すれば2軍以降にも反映）:\n• 武将の「所持」状態\n• 守護霊レベル\n• 兵器の昇級・改装レベル\n• 学堂の極伝レベル\n\n⚔️ 軍団ごとに別々のデータ:\n• 武将の「編成」状態\n• 兵器・装備の「装備」状態\n• 兵法の編成スロット\n\n💡 つまり:\n「この武将を持っている」は共通、「この軍団で使う」は軍団別です。',
+                options: [
+                    { label: '📱 ページを開いた時のデータは何？', action: 'faqLocalData' },
+                    { label: '❓ Q&A一覧に戻る', action: 'faq' },
+                    { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             beginner: {
@@ -8051,7 +8076,10 @@
                 '集結': 'simulation', '検討': 'simulation', '仮想': 'simulation',
                 '軍団': 'team', '軍': 'team',
                 '2軍': 'multiArmy', '二軍': 'multiArmy', '新規軍団': 'multiArmy', '複数軍': 'multiArmy',
-                '初めて': 'beginner', '使い方': 'beginner', '初心者': 'beginner'
+                '初めて': 'beginner', '使い方': 'beginner', '初心者': 'beginner',
+                'ローカル': 'faqLocalData', '下書き': 'faqLocalData', '開いた時': 'faqLocalData', '表示': 'faqLocalData',
+                '編成': 'faqFormedOwned', '所持': 'faqFormedOwned', '違い': 'faqFormedOwned', '共有': 'faqFormedOwned', '共通': 'faqFormedOwned',
+                'Q&A': 'faq', 'よくある': 'faq', '質問': 'faq', 'FAQ': 'faq'
             };
 
             let matched = 'main';
