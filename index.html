@@ -7451,14 +7451,14 @@
                 const catName = catId === 'uncategorized' ? 'その他' : (categories[catId]?.name || catId);
 
                 html += `<div class="tag-filter-group">
-                    <span class="tag-filter-group-label">${escapeHtml(catName)}:</span>`;
+                    <span class="tag-filter-group-label">${escapeHtmlIndex(catName)}:</span>`;
 
                 for (const tag of tagList) {
                     const isActive = selectedTagFilters.includes(tag.id);
                     html += `<button class="tag-filter-btn ${isActive ? 'active' : ''}"
                         data-tag-id="${tag.id}"
                         style="${isActive ? '' : `border-color: ${tag.color || '#90a4ae'}30`}"
-                        onclick="toggleTagFilter('${tag.id}')">${escapeHtml(tag.name)}</button>`;
+                        onclick="toggleTagFilter('${tag.id}')">${escapeHtmlIndex(tag.name)}</button>`;
                 }
 
                 html += '</div>';
@@ -7524,7 +7524,7 @@
             for (const tagId of tagIds.slice(0, 3)) {
                 const tag = cachedGeneralTags.tags?.[tagId];
                 if (!tag) continue;
-                html += `<span class="search-result-tag" style="background-color: ${tag.color || '#90a4ae'}">${escapeHtml(tag.name)}</span>`;
+                html += `<span class="search-result-tag" style="background-color: ${tag.color || '#90a4ae'}">${escapeHtmlIndex(tag.name)}</span>`;
             }
             if (tagIds.length > 3) {
                 html += `<span style="font-size: 0.65rem; color: var(--text-muted);">+${tagIds.length - 3}</span>`;
