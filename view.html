@@ -4252,16 +4252,25 @@
             main: {
                 message: 'こんにちは！一覧画面のヘルプです。何についてお調べですか？',
                 options: [
-                    { label: '📊 表の見方', action: 'table' },
-                    { label: '⚙️ 設定メニュー', action: 'settings' },
-                    { label: '✏️ セルの編集方法', action: 'edit' },
+                    { label: '🗺️ 画面構成', action: 'layout' },
+                    { label: '📊 表の操作', action: 'tableOps' },
+                    { label: '✏️ セルの編集', action: 'edit' },
                     { label: '🔄 集結検討モード', action: 'simulation' },
-                    { label: '👥 比較分析機能', action: 'compare' },
-                    { label: '📝 入力画面に戻りたい', action: 'back' }
+                    { label: '⭐ 便利機能まとめ', action: 'features' },
+                    { label: '🆕 アップデート情報', action: 'updates' }
+                ]
+            },
+            layout: {
+                message: '🗺️ 画面構成:\n\n【ヘッダー】\n• ← 入力画面へ: データ入力画面に戻る\n• ⚙ボタン: 設定メニューを開く\n\n【凡例】\n• ● 青: 編成中/装備中\n• ○ 黄: 所持のみ\n• 空欄: 未所持\n\n【データ表】\n• 左固定列: ユーザー名と軍団名\n• 横スクロール: 各カテゴリのデータ\n\n【比較分析】\n• 画面下部でユーザー比較が可能',
+                options: [
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
+                    { label: '📊 表の操作', action: 'tableOps' },
+                    { label: '👥 比較分析', action: 'compare' },
+                    { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             settings: {
-                message: '⚙️ 設定メニュー:\n\n画面右上の⚙ボタンから各種設定ができます。',
+                message: '⚙️ 設定メニュー:\n\n画面右上（モバイルは右下）の⚙ボタンから開きます。',
                 options: [
                     { label: '📋 チームフィルター', action: 'filter' },
                     { label: '🔍 列フィルター', action: 'columnFilter' },
@@ -4269,10 +4278,45 @@
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
-            table: {
-                message: '📊 表の見方:\n\n• ● (青): 編成中/装備中\n• ○ (黄): 所持のみ\n• 空欄: 未所持\n\n横スクロールで他のカテゴリを確認できます。\n固定列（左側）にはユーザー名が表示されます。',
+            tableOps: {
+                message: '📊 表の操作:\n\n表の上部にある操作パネルで様々な設定ができます。',
                 options: [
-                    { label: '✏️ セルの編集方法', action: 'edit' },
+                    { label: '📏 固定列の表示切替', action: 'stickyCol' },
+                    { label: '🔢 数値表示モード', action: 'numericMode' },
+                    { label: '📁 カテゴリ折りたたみ', action: 'collapse' },
+                    { label: '🎯 カテゴリへジャンプ', action: 'jump' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            stickyCol: {
+                message: '📏 固定列の表示切替:\n\n【固定列】の「全表示/最小化」ボタンで切り替えます。\n\n• 全表示: ユーザー名・軍団名をフル表示\n• 最小化: 頭文字のみ表示（横スクロール時に便利）\n\n※ 設定はブラウザに保存されます',
+                options: [
+                    { label: '🔢 数値表示モード', action: 'numericMode' },
+                    { label: '📊 表の操作', action: 'tableOps' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            numericMode: {
+                message: '🔢 数値表示モード:\n\n【表示】の「●○/数値」ボタンで切り替えます。\n\n• ●○モード: シンボルで表示（デフォルト）\n• 数値モード: 武将レベル、スキルLvなどを数値で表示\n\n※ 数値があるカテゴリのみ数字が表示されます',
+                options: [
+                    { label: '📏 固定列の表示切替', action: 'stickyCol' },
+                    { label: '📊 表の操作', action: 'tableOps' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            collapse: {
+                message: '📁 カテゴリ折りたたみ:\n\n表のカテゴリヘッダー（兵器、SP武将など）をクリックすると、そのカテゴリを折りたたみ/展開できます。\n\n• ▼: 展開中（クリックで折りたたみ）\n• ▶: 折りたたみ中（クリックで展開）\n\n不要なカテゴリを隠して見やすくできます。',
+                options: [
+                    { label: '🎯 カテゴリへジャンプ', action: 'jump' },
+                    { label: '📊 表の操作', action: 'tableOps' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            jump: {
+                message: '🎯 カテゴリへジャンプ:\n\n【カテゴリ】のドロップダウンでカテゴリを選び「移動」ボタンを押すと、そのカテゴリまで自動スクロールします。\n\n横に長い表で目的のカテゴリにすぐ移動したい時に便利です。',
+                options: [
+                    { label: '📁 カテゴリ折りたたみ', action: 'collapse' },
+                    { label: '📊 表の操作', action: 'tableOps' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
@@ -4285,7 +4329,7 @@
                 ]
             },
             columnFilter: {
-                message: '🔍 列フィルター:\n\n⚙設定メニュー内の列フィルターで、表示する列を絞り込めます。\n\n• 「すべて表示」→ 全アイテムを表示\n• 「所持/編成中を表示」→ 誰かが持っているアイテムのみ\n• 「編成中のみ表示」→ 誰かが編成中のアイテムのみ\n\n※ チームフィルターと組み合わせると、そのチーム内での所持/編成状況で絞り込まれます。',
+                message: '🔍 列フィルター:\n\n⚙設定メニュー内の列フィルターで、表示する列を絞り込めます。\n\n• 「すべて表示」→ 全アイテムを表示\n• 「所持/編成中を表示」→ 誰かが持っているアイテムのみ\n• 「編成中のみ表示」→ 誰かが編成中のアイテムのみ\n\n※ チームフィルターと組み合わせ可能',
                 options: [
                     { label: '📋 チームフィルター', action: 'filter' },
                     { label: '⚙️ 設定メニュー', action: 'settings' },
@@ -4300,14 +4344,22 @@
                 ]
             },
             edit: {
-                message: '✏️ セルの編集:\n\nセル（●や○）をクリックすると状態が切り替わります:\n• ● (編成) → ○ (所持)\n• ○ (所持) → ● (編成)\n\n※ 未所持のセルは編集できません\n※ 変更は即座にサーバーに保存されます',
+                message: '✏️ セルの編集:\n\n【編集手順】\n1. 編集したい行（ユーザー名）をクリックして選択\n2. 選択中の行内のセル（●や○）をクリック\n3. 状態が切り替わります\n\n• ● (編成) ↔ ○ (所持)\n• 変更は即座にサーバーに保存\n\n※ 未所持（空欄）のセルは編集不可\n※ 行選択なしではセル編集できません（誤操作防止）',
                 options: [
                     { label: '🔄 集結検討モード', action: 'simulation' },
+                    { label: '⚡ 排他的装備の同期', action: 'exclusiveEquip' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            exclusiveEquip: {
+                message: '⚡ 排他的装備の同期:\n\n以下のカテゴリは1軍団でのみ編成可能です:\n• 兵器\n• SP武将\n• 武将\n\n例: 1軍で「赤鬼」を編成 → 2軍では自動的に「所持」に変更\n\nこの同期は自動的に行われます。',
+                options: [
+                    { label: '✏️ セルの編集', action: 'edit' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             simulation: {
-                message: '🔄 集結検討モード:\n\n「集結検討モード」をONにすると:\n\n1. 仮想メンバーを追加可能\n   → 他チームから一時的に追加\n2. セルを自由に編集可能\n   → 実データは変わらない\n3. 編集内容はローカルに保存\n   → ブラウザを閉じても維持\n\n集結メンバーの検討に便利です！',
+                message: '🔄 集結検討モード:\n\n【集結検討】をONにすると:\n\n1. 仮想メンバーを追加可能\n   → 他チームから一時的に追加\n2. セルを自由に編集可能\n   → 実データは変わらない\n   → 行選択なしで編集可能\n3. 編集内容はローカルに保存\n   → ブラウザを閉じても維持\n\n集結メンバーの検討に便利です！',
                 options: [
                     { label: '👤 仮想メンバーの追加', action: 'virtual' },
                     { label: '🔄 リセット方法', action: 'reset' },
@@ -4315,28 +4367,54 @@
                 ]
             },
             virtual: {
-                message: '👤 仮想メンバーの追加:\n\n集結検討モードON時に表示される入力欄で:\n1. ユーザー名を検索\n2. 候補から選択して追加\n\n追加されたメンバーは表の最後に表示されます。\n「×」ボタンで削除できます。',
+                message: '👤 仮想メンバーの追加:\n\n集結検討モードON時に表示される入力欄で:\n1. ユーザー名を検索\n2. 候補から選択して追加\n\n追加されたメンバーは表の最後に🔬マーク付きで表示されます。\n「仮想クリア」ボタンで一括削除できます。',
                 options: [
                     { label: '🔄 集結検討モード', action: 'simulation' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             reset: {
-                message: '🔄 リセット方法:\n\n集結検討モードの内容をリセットするには:\n\n• 「編集をリセット」→ セル編集のみリセット\n• 「仮想メンバーをクリア」→ 追加メンバーを削除\n\n両方を一度にリセットしたい場合は、両方のボタンを押してください。',
+                message: '🔄 リセット方法:\n\n集結検討モードの内容をリセット:\n\n• 「編集リセット」→ セル編集をリセット\n• 「仮想クリア」→ 仮想メンバーを削除\n\nまたは、集結検討モードをOFFにして再度ONにすると初期状態に戻ります。',
                 options: [
                     { label: '🔄 集結検討モード', action: 'simulation' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             compare: {
-                message: '👥 比較分析機能:\n\n画面下部の「比較分析」セクションで:\n1. 比較したいユーザーを2人以上選択\n2. 「比較分析を実行」をクリック\n\n選択ユーザーの装備状況を比較できます。\nチーム全員を一括選択することも可能です。',
+                message: '👥 比較分析機能:\n\n画面下部の「比較分析」セクションで:\n1. 比較したいユーザーを2人以上選択\n2. 「比較分析を実行」をクリック\n\n【結果の見方】\n• 🔴 重複: 複数人が編成中のアイテム\n• 🟡 未使用: 誰も編成していない所持アイテム\n• 🟠 不一致: 編成状況にばらつきがあるアイテム',
                 options: [
-                    { label: '📊 表の見方', action: 'table' },
+                    { label: '📋 チーム一括選択', action: 'compareTeam' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            compareTeam: {
+                message: '📋 チーム一括選択:\n\n比較分析のユーザー選択で、チームを選んで「メンバーを読み込む」をクリックすると、そのチームの全メンバーを一括で選択できます。\n\n「全解除」で選択をクリアできます。',
+                options: [
+                    { label: '👥 比較分析機能', action: 'compare' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            features: {
+                message: '⭐ 便利機能まとめ:\n\n知っておくと便利な機能一覧です。',
+                options: [
+                    { label: '📁 カテゴリ折りたたみ', action: 'collapse' },
+                    { label: '🔢 数値表示モード', action: 'numericMode' },
+                    { label: '📏 固定列の最小化', action: 'stickyCol' },
+                    { label: '🔍 列フィルター', action: 'columnFilter' },
+                    { label: '📊 Excel出力', action: 'excel' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            updates: {
+                message: '🆕 最近のアップデート:\n\n【セル編集の仕様変更】\n• 誤操作防止のため、行選択後にセル編集可能に\n• 集結検討モードでは従来通り直接編集可能\n\n【列フィルター追加】\n• 所持/編成中のアイテムのみ表示可能\n• チームフィルターとの組み合わせ対応\n\n【ヘルプ機能改善】\n• フローティングヘルプボタン追加\n• ヘルプ内容を大幅拡充',
+                options: [
+                    { label: '✏️ セルの編集', action: 'edit' },
+                    { label: '🔍 列フィルター', action: 'columnFilter' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             back: {
-                message: '📝 入力画面への戻り方:\n\n画面上部の「← 入力画面へ戻る」リンクをクリックすると、データ入力画面(index.html)に移動できます。',
+                message: '📝 入力画面への戻り方:\n\n画面上部の「← 入力画面へ」リンクをクリックすると、データ入力画面に移動できます。',
                 options: [
                     { label: '← メニューに戻る', action: 'main' }
                 ]
@@ -4390,16 +4468,25 @@
             input.value = '';
 
             const keywords = {
-                '表': 'table', '見方': 'table', '記号': 'table',
-                'チーム': 'filter', '絞り込み': 'filter', 'メンバー': 'filter',
-                '列': 'columnFilter', '所持': 'columnFilter', '編成': 'columnFilter',
+                '画面': 'layout', '構成': 'layout', 'エリア': 'layout', 'どこ': 'layout',
+                '表': 'tableOps', '操作': 'tableOps', 'ヘッダー': 'tableOps',
+                '見方': 'layout', '記号': 'layout', '凡例': 'layout',
+                'チーム': 'filter', 'フィルタ': 'filter', 'メンバー': 'filter',
+                '列': 'columnFilter', '絞り込み': 'columnFilter',
                 'エクセル': 'excel', 'excel': 'excel', 'ダウンロード': 'excel', '出力': 'excel',
                 '設定': 'settings', '歯車': 'settings',
-                '編集': 'edit', 'セル': 'edit', '変更': 'edit', 'クリック': 'edit',
+                '編集': 'edit', 'セル': 'edit', '変更': 'edit', 'クリック': 'edit', '行選択': 'edit',
+                '排他': 'exclusiveEquip', '同期': 'exclusiveEquip', '1軍': 'exclusiveEquip',
                 '集結': 'simulation', '検討': 'simulation', 'シミュレーション': 'simulation',
                 '仮想': 'virtual', 'メンバー追加': 'virtual',
                 'リセット': 'reset', 'クリア': 'reset',
                 '比較': 'compare', '分析': 'compare',
+                '便利': 'features', '機能': 'features',
+                'アップデート': 'updates', '更新': 'updates', '変更点': 'updates', '新機能': 'updates',
+                '固定': 'stickyCol', '最小': 'stickyCol',
+                '数値': 'numericMode', 'レベル': 'numericMode',
+                '折りたたみ': 'collapse', 'カテゴリ': 'collapse',
+                'ジャンプ': 'jump', '移動': 'jump', 'スクロール': 'jump',
                 '入力': 'back', '戻る': 'back'
             };
 
