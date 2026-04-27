@@ -1908,17 +1908,26 @@
 
         function getVisibleUsernames() {
             const filter = document.getElementById('teamFilter').value;
+            console.log('[DEBUG] getVisibleUsernames - filter:', filter);
+            console.log('[DEBUG] teams keys:', Object.keys(teams));
             const allUsers = Object.keys(gameData).filter(u => !isUserHidden(u));
             if (filter === '__all__') return allUsers.sort();
             const team = teams[filter];
-            if (!team) return [];
+            console.log('[DEBUG] teams[filter]:', team);
+            if (!team) {
+                console.log('[DEBUG] Team not found, returning empty array');
+                return [];
+            }
             const members = team.members || [];
+            console.log('[DEBUG] Team members:', members);
             const unique = new Set();
             members.forEach(e => {
                 const p = parseMemberEntry(e);
                 if (p.username && gameData[p.username] && !isUserHidden(p.username)) unique.add(p.username);
             });
-            return Array.from(unique).sort();
+            const result = Array.from(unique).sort();
+            console.log('[DEBUG] Visible usernames:', result);
+            return result;
         }
 
         // Build a filter predicate: (username, teamName) -> boolean
@@ -4200,6 +4209,8 @@
         });
 
         document.getElementById('teamFilter').addEventListener('change', () => {
+            console.log('[DEBUG] teamFilter change event fired');
+            console.log('[DEBUG] teamFilter value:', document.getElementById('teamFilter').value);
             loadSimulationState();
             renderPreview();
         });
