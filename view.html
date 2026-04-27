@@ -4245,11 +4245,20 @@
                 message: 'こんにちは！一覧画面のヘルプです。何についてお調べですか？',
                 options: [
                     { label: '📊 表の見方', action: 'table' },
-                    { label: '🔍 チームフィルター', action: 'filter' },
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
                     { label: '✏️ セルの編集方法', action: 'edit' },
                     { label: '🔄 集結検討モード', action: 'simulation' },
                     { label: '👥 比較分析機能', action: 'compare' },
                     { label: '📝 入力画面に戻りたい', action: 'back' }
+                ]
+            },
+            settings: {
+                message: '⚙️ 設定メニュー:\n\n画面右上の⚙ボタンから各種設定ができます。',
+                options: [
+                    { label: '📋 チームフィルター', action: 'filter' },
+                    { label: '🔍 列フィルター', action: 'columnFilter' },
+                    { label: '📊 Excel出力', action: 'excel' },
+                    { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             table: {
@@ -4260,9 +4269,25 @@
                 ]
             },
             filter: {
-                message: '🔍 チームフィルター:\n\n画面上部のセレクターでチームを選択すると、そのチームのメンバーのみ表示されます。\n\n「全ユーザー」を選ぶと全員が表示されます。\n\n「無効含む」にチェックを入れると、無効化されたチームも選択できます。',
+                message: '📋 チームフィルター:\n\n⚙設定メニュー内のチームセレクターで、特定のチームのメンバーのみを表示できます。\n\n• 「すべて表示」→ 全ユーザーを表示\n• チーム選択 → そのメンバーのみ表示\n• 「無効チーム含む」→ 無効化チームも選択可能',
                 options: [
-                    { label: '📊 表の見方', action: 'table' },
+                    { label: '🔍 列フィルター', action: 'columnFilter' },
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            columnFilter: {
+                message: '🔍 列フィルター:\n\n⚙設定メニュー内の列フィルターで、表示する列を絞り込めます。\n\n• 「すべて表示」→ 全アイテムを表示\n• 「所持/編成中を表示」→ 誰かが持っているアイテムのみ\n• 「編成中のみ表示」→ 誰かが編成中のアイテムのみ\n\n※ チームフィルターと組み合わせると、そのチーム内での所持/編成状況で絞り込まれます。',
+                options: [
+                    { label: '📋 チームフィルター', action: 'filter' },
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            excel: {
+                message: '📊 Excel出力:\n\n⚙設定メニュー内の「📊 Excel出力」ボタンで、現在表示中のデータをExcelファイル(.xlsx)としてダウンロードできます。\n\n• 現在のフィルター設定が反映されます\n• チームフィルター、列フィルターの状態も反映\n• 編成状況の集計・分析に便利です',
+                options: [
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
@@ -4358,7 +4383,10 @@
 
             const keywords = {
                 '表': 'table', '見方': 'table', '記号': 'table',
-                'フィルタ': 'filter', 'チーム': 'filter', '絞り込み': 'filter',
+                'チーム': 'filter', '絞り込み': 'filter', 'メンバー': 'filter',
+                '列': 'columnFilter', '所持': 'columnFilter', '編成': 'columnFilter',
+                'エクセル': 'excel', 'excel': 'excel', 'ダウンロード': 'excel', '出力': 'excel',
+                '設定': 'settings', '歯車': 'settings',
                 '編集': 'edit', 'セル': 'edit', '変更': 'edit', 'クリック': 'edit',
                 '集結': 'simulation', '検討': 'simulation', 'シミュレーション': 'simulation',
                 '仮想': 'virtual', 'メンバー追加': 'virtual',
