@@ -1345,7 +1345,7 @@
         /* Floating Help Button */
         .floating-help-btn {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             right: 20px;
             width: 48px;
             height: 48px;
@@ -1365,6 +1365,14 @@
         .floating-help-btn:hover {
             transform: scale(1.1);
             background: var(--accent-blue);
+        }
+        @media (max-width: 600px) {
+            .floating-help-btn {
+                bottom: 5rem;
+                right: 1rem;
+                width: 44px;
+                height: 44px;
+            }
         }
     </style>
 </head>
