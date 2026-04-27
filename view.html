@@ -1849,6 +1849,9 @@
         // Check if any user has this item in the specified state
         // Returns: 'equipped', 'owned', or 'none'
         function getItemMaxState(entries, cat, item) {
+            // Text categories don't have cell states
+            if (cat.isTextCategory || !cat.getCellState) return 'none';
+
             let hasEquipped = false;
             let hasOwned = false;
 
@@ -1870,6 +1873,9 @@
         // Check if item should be shown based on column filter
         function shouldShowColumn(entries, cat, item) {
             if (columnFilterMode === 'all') return true;
+
+            // Text categories are always shown (they don't have owned/equipped states)
+            if (cat.isTextCategory || !cat.getCellState) return true;
 
             const maxState = getItemMaxState(entries, cat, item);
 
@@ -1908,26 +1914,17 @@
 
         function getVisibleUsernames() {
             const filter = document.getElementById('teamFilter').value;
-            console.log('[DEBUG] getVisibleUsernames - filter:', filter);
-            console.log('[DEBUG] teams keys:', Object.keys(teams));
             const allUsers = Object.keys(gameData).filter(u => !isUserHidden(u));
             if (filter === '__all__') return allUsers.sort();
             const team = teams[filter];
-            console.log('[DEBUG] teams[filter]:', team);
-            if (!team) {
-                console.log('[DEBUG] Team not found, returning empty array');
-                return [];
-            }
+            if (!team) return [];
             const members = team.members || [];
-            console.log('[DEBUG] Team members:', members);
             const unique = new Set();
             members.forEach(e => {
                 const p = parseMemberEntry(e);
                 if (p.username && gameData[p.username] && !isUserHidden(p.username)) unique.add(p.username);
             });
-            const result = Array.from(unique).sort();
-            console.log('[DEBUG] Visible usernames:', result);
-            return result;
+            return Array.from(unique).sort();
         }
 
         // Build a filter predicate: (username, teamName) -> boolean
@@ -4209,8 +4206,6 @@
         });
 
         document.getElementById('teamFilter').addEventListener('change', () => {
-            console.log('[DEBUG] teamFilter change event fired');
-            console.log('[DEBUG] teamFilter value:', document.getElementById('teamFilter').value);
             loadSimulationState();
             renderPreview();
         });
