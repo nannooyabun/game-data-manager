@@ -1341,6 +1341,31 @@
             border-radius: 6px;
             cursor: pointer;
         }
+
+        /* Floating Help Button */
+        .floating-help-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--accent-gold);
+            color: var(--bg-primary);
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            transition: transform 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .floating-help-btn:hover {
+            transform: scale(1.1);
+            background: var(--accent-blue);
+        }
     </style>
 </head>
 <body>
@@ -1379,7 +1404,6 @@
                         </div>
                         <div class="settings-section settings-actions">
                             <button onclick="exportToExcel(); toggleSettingsMenu();" class="excel-export-btn">📊 Excel出力</button>
-                            <button onclick="openHelpChat(); toggleSettingsMenu();" class="help-export-btn">❓ ヘルプ</button>
                         </div>
                     </div>
                 </div>
@@ -1849,6 +1873,9 @@
         // Check if any user has this item in the specified state
         // Returns: 'equipped', 'owned', or 'none'
         function getItemMaxState(entries, cat, item) {
+            // Text categories don't have cell states
+            if (cat.isTextCategory || !cat.getCellState) return 'none';
+
             let hasEquipped = false;
             let hasOwned = false;
 
@@ -1870,6 +1897,9 @@
         // Check if item should be shown based on column filter
         function shouldShowColumn(entries, cat, item) {
             if (columnFilterMode === 'all') return true;
+
+            // Text categories are always shown (they don't have owned/equipped states)
+            if (cat.isTextCategory || !cat.getCellState) return true;
 
             const maxState = getItemMaxState(entries, cat, item);
 
@@ -1908,26 +1938,17 @@
 
         function getVisibleUsernames() {
             const filter = document.getElementById('teamFilter').value;
-            console.log('[DEBUG] getVisibleUsernames - filter:', filter);
-            console.log('[DEBUG] teams keys:', Object.keys(teams));
             const allUsers = Object.keys(gameData).filter(u => !isUserHidden(u));
             if (filter === '__all__') return allUsers.sort();
             const team = teams[filter];
-            console.log('[DEBUG] teams[filter]:', team);
-            if (!team) {
-                console.log('[DEBUG] Team not found, returning empty array');
-                return [];
-            }
+            if (!team) return [];
             const members = team.members || [];
-            console.log('[DEBUG] Team members:', members);
             const unique = new Set();
             members.forEach(e => {
                 const p = parseMemberEntry(e);
                 if (p.username && gameData[p.username] && !isUserHidden(p.username)) unique.add(p.username);
             });
-            const result = Array.from(unique).sort();
-            console.log('[DEBUG] Visible usernames:', result);
-            return result;
+            return Array.from(unique).sort();
         }
 
         // Build a filter predicate: (username, teamName) -> boolean
@@ -4209,8 +4230,6 @@
         });
 
         document.getElementById('teamFilter').addEventListener('change', () => {
-            console.log('[DEBUG] teamFilter change event fired');
-            console.log('[DEBUG] teamFilter value:', document.getElementById('teamFilter').value);
             loadSimulationState();
             renderPreview();
         });
@@ -4226,11 +4245,20 @@
                 message: 'こんにちは！一覧画面のヘルプです。何についてお調べですか？',
                 options: [
                     { label: '📊 表の見方', action: 'table' },
-                    { label: '🔍 チームフィルター', action: 'filter' },
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
                     { label: '✏️ セルの編集方法', action: 'edit' },
                     { label: '🔄 集結検討モード', action: 'simulation' },
                     { label: '👥 比較分析機能', action: 'compare' },
                     { label: '📝 入力画面に戻りたい', action: 'back' }
+                ]
+            },
+            settings: {
+                message: '⚙️ 設定メニュー:\n\n画面右上の⚙ボタンから各種設定ができます。',
+                options: [
+                    { label: '📋 チームフィルター', action: 'filter' },
+                    { label: '🔍 列フィルター', action: 'columnFilter' },
+                    { label: '📊 Excel出力', action: 'excel' },
+                    { label: '← メニューに戻る', action: 'main' }
                 ]
             },
             table: {
@@ -4241,9 +4269,25 @@
                 ]
             },
             filter: {
-                message: '🔍 チームフィルター:\n\n画面上部のセレクターでチームを選択すると、そのチームのメンバーのみ表示されます。\n\n「全ユーザー」を選ぶと全員が表示されます。\n\n「無効含む」にチェックを入れると、無効化されたチームも選択できます。',
+                message: '📋 チームフィルター:\n\n⚙設定メニュー内のチームセレクターで、特定のチームのメンバーのみを表示できます。\n\n• 「すべて表示」→ 全ユーザーを表示\n• チーム選択 → そのメンバーのみ表示\n• 「無効チーム含む」→ 無効化チームも選択可能',
                 options: [
-                    { label: '📊 表の見方', action: 'table' },
+                    { label: '🔍 列フィルター', action: 'columnFilter' },
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            columnFilter: {
+                message: '🔍 列フィルター:\n\n⚙設定メニュー内の列フィルターで、表示する列を絞り込めます。\n\n• 「すべて表示」→ 全アイテムを表示\n• 「所持/編成中を表示」→ 誰かが持っているアイテムのみ\n• 「編成中のみ表示」→ 誰かが編成中のアイテムのみ\n\n※ チームフィルターと組み合わせると、そのチーム内での所持/編成状況で絞り込まれます。',
+                options: [
+                    { label: '📋 チームフィルター', action: 'filter' },
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
+                    { label: '← メニューに戻る', action: 'main' }
+                ]
+            },
+            excel: {
+                message: '📊 Excel出力:\n\n⚙設定メニュー内の「📊 Excel出力」ボタンで、現在表示中のデータをExcelファイル(.xlsx)としてダウンロードできます。\n\n• 現在のフィルター設定が反映されます\n• チームフィルター、列フィルターの状態も反映\n• 編成状況の集計・分析に便利です',
+                options: [
+                    { label: '⚙️ 設定メニュー', action: 'settings' },
                     { label: '← メニューに戻る', action: 'main' }
                 ]
             },
@@ -4339,7 +4383,10 @@
 
             const keywords = {
                 '表': 'table', '見方': 'table', '記号': 'table',
-                'フィルタ': 'filter', 'チーム': 'filter', '絞り込み': 'filter',
+                'チーム': 'filter', '絞り込み': 'filter', 'メンバー': 'filter',
+                '列': 'columnFilter', '所持': 'columnFilter', '編成': 'columnFilter',
+                'エクセル': 'excel', 'excel': 'excel', 'ダウンロード': 'excel', '出力': 'excel',
+                '設定': 'settings', '歯車': 'settings',
                 '編集': 'edit', 'セル': 'edit', '変更': 'edit', 'クリック': 'edit',
                 '集結': 'simulation', '検討': 'simulation', 'シミュレーション': 'simulation',
                 '仮想': 'virtual', 'メンバー追加': 'virtual',
@@ -4655,7 +4702,8 @@
 
     <div class="toast" id="toast"></div>
 
-    <!-- Help Button -->
+    <!-- Floating Help Button -->
+    <button class="floating-help-btn" onclick="openHelpChat()" title="ヘルプ">❓</button>
 
     <!-- Help Chat Modal -->
     <div class="help-chat-overlay" id="helpChatOverlay" onclick="closeHelpChat()"></div>
