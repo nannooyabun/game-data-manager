@@ -2205,7 +2205,7 @@
                     <div class="label">花陣</div>
                     <div class="status">未入力</div>
                 </div>
-                <div class="progress-item empty" data-section="horse">
+                <div class="progress-item empty" data-section="horse" style="display:none;">
                     <div class="label">軍馬</div>
                     <div class="status">未入力</div>
                 </div>
@@ -2630,7 +2630,7 @@
 
                     <!-- Search Bar -->
                     <div class="general-search-bar">
-                        <input type="text" id="generalSearchInput" placeholder="🔍 武将を検索して一括設定（例）：明智 秀吉 家康" onkeypress="if(event.key==='Enter')searchGenerals()">
+                        <input type="text" id="generalSearchInput" placeholder="武将一括検索(例)信長 早雲 政宗" onkeypress="if(event.key==='Enter')searchGenerals()" style="background: #fff; color: #333;">
                         <button class="bulk-btn" onclick="searchGenerals()">検索</button>
                         <button class="bulk-btn" onclick="closeGeneralSearch()" style="color: var(--text-muted);">閉じる</button>
                     </div>
@@ -2919,8 +2919,8 @@
             </div>
         </div>
 
-        <!-- Horse Section -->
-        <div class="section" id="horseSection">
+        <!-- Horse Section (hidden - data preserved internally) -->
+        <div class="section" id="horseSection" style="display:none;">
             <div class="section-header" onclick="toggleSection('horseSection')">
                 <h3>
                     <span>🐴</span>
@@ -3145,7 +3145,7 @@
             <button class="floating-menu-item" onclick="scrollToSection('asuraSection')">④ 阿修羅</button>
             <button class="floating-menu-item" onclick="scrollToSection('armorSection')">⑤ 核心具足</button>
             <button class="floating-menu-item" onclick="scrollToSection('flowerSection')">⑥ 花陣</button>
-            <button class="floating-menu-item" onclick="scrollToSection('horseSection')">⑦ 軍馬</button>
+            <button class="floating-menu-item" onclick="scrollToSection('horseSection')" style="display:none;">⑦ 軍馬</button>
             <button class="floating-menu-item" onclick="scrollToSection('tacticSection')">⑧ 戦法</button>
             <button class="floating-menu-item help-btn" onclick="openHelpChat()">❓ 使い方・ヘルプ</button>
         </div>

@@ -4045,11 +4045,11 @@
                 }
             });
 
-            // Add horse analysis
-            const horseAnalysis = analyzeHorseSkills(usersData);
-            if (horseAnalysis.overlaps.length > 0) {
-                horseAnalysis.overlaps.forEach(item => equipped.push(item));
-            }
+            // Horse analysis disabled (feature hidden)
+            // const horseAnalysis = analyzeHorseSkills(usersData);
+            // if (horseAnalysis.overlaps.length > 0) {
+            //     horseAnalysis.overlaps.forEach(item => equipped.push(item));
+            // }
 
             displayComparisonResults(equipped, unused, ownedNotEquipped);
         }
