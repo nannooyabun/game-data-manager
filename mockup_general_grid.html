@@ -64,9 +64,29 @@
             border-radius: 8px;
         }
 
+        /* スマホでも4列固定（ゲームUIに合わせる） */
         @media (max-width: 600px) {
             .general-grid-4col {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.3rem;
+            }
+
+            .general-item {
+                padding: 0.3rem;
+                min-height: 55px;
+            }
+
+            .general-item .general-name {
+                font-size: 0.65rem;
+            }
+
+            .general-item .index-no {
+                font-size: 0.55rem;
+            }
+
+            .general-item .general-level select {
+                font-size: 0.6rem;
+                padding: 0.15rem 0.2rem;
             }
         }
 
