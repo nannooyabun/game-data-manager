@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武将グリッド UIモックアップ</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: #1f2940;
+            --bg-input: #0f1626;
+            --text-primary: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --text-muted: #606060;
+            --border-color: #2a3a5a;
+            --accent-blue: #3c8cb8;
+            --accent-gold: #d4a03c;
+            --accent-green: #4a9c6d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        h2 {
+            margin-bottom: 1rem;
+            color: var(--accent-gold);
+        }
+
+        h3 {
+            margin: 2rem 0 1rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .description {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ========== 4列グリッドレイアウト ========== */
+        .general-grid-4col {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-input);
+            border-radius: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .general-grid-4col {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .general-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            transition: all 0.2s ease;
+            min-height: 70px;
+        }
+
+        .general-item .general-name {
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            text-align: center;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .general-item .index-no {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            margin-right: 0.2rem;
+        }
+
+        .general-item .general-level {
+            margin-top: 0.3rem;
+        }
+
+        .general-item .general-level select {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        /* 状態: 未所持 */
+        .general-item.none {
+            opacity: 0.7;
+        }
+
+        /* 状態: 所持 */
+        .general-item.owned {
+            border-color: var(--accent-blue);
+            background: rgba(60, 140, 184, 0.15);
+        }
+
+        .general-item.owned .general-name {
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .general-item.owned .general-name::before {
+            content: '◇ ';
+        }
+
+        /* 状態: 編成 */
+        .general-item.formed {
+            border-color: var(--accent-gold);
+            background: rgba(212, 160, 60, 0.15);
+        }
+
+        .general-item.formed .general-name {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .general-item.formed .general-name::before {
+            content: '★ ';
+        }
+
+        /* 状態: 非表示（グレーアウト） */
+        .general-item.hidden-general {
+            opacity: 0.35;
+            background: var(--bg-input);
+            border-color: var(--border-color);
+            border-style: dashed;
+        }
+
+        .general-item.hidden-general .general-name {
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .general-item.hidden-general .general-level {
+            visibility: hidden;
+        }
+
+        /* ヘッダー */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            color: var(--accent-gold);
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .bulk-btn {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .bulk-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        /* 比較セクション */
+        .comparison {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .comparison > div {
+            flex: 1;
+        }
+
+        .label-box {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+
+        .label-owned {
+            background: rgba(60, 140, 184, 0.3);
+            color: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+        }
+
+        .label-formed {
+            background: rgba(212, 160, 60, 0.3);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+        }
+
+        .label-hidden {
+            background: rgba(96, 96, 96, 0.3);
+            color: var(--text-muted);
+            border: 1px dashed var(--text-muted);
+        }
+
+        .label-none {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <h2>武将グリッド UIモックアップ</h2>
+
+    <div class="description">
+        <strong>変更点:</strong><br>
+        ・4人1行のグリッドレイアウト（モバイルは2列）<br>
+        ・図鑑番号順で全武将を表示<br>
+        ・非表示武将は破線枠+グレーアウト+取り消し線で表示（操作不可）<br>
+        ・レベル選択は各武将の下に配置
+    </div>
+
+    <div style="margin-bottom: 1rem;">
+        <span class="label-box label-none">未所持</span>
+        <span class="label-box label-owned">◇ 所持</span>
+        <span class="label-box label-formed">★ 編成</span>
+        <span class="label-box label-hidden">非表示</span>
+    </div>
+
+    <h3>パターンA: コンパクト表示（推奨）</h3>
+
+    <div class="section-header">
+        <span class="section-title">●武将図鑑順（20名）</span>
+        <div class="bulk-actions">
+            <button class="bulk-btn">所持一括ON</button>
+            <button class="bulk-btn">守護霊Lv一括設定</button>
+        </div>
+    </div>
+
+    <div class="general-grid-4col">
+        <!-- 1行目 -->
+        <div class="general-item formed">
+            <span class="general-name"><span class="index-no">1.</span>明智光秀</span>
+            <div class="general-level"><select><option>12</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">2.</span>徳川家康</span>
+            <div class="general-level"><select><option>8</option></select></div>
+        </div>
+        <div class="general-item hidden-general">
+            <span class="general-name"><span class="index-no">3.</span>豊臣秀吉</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item formed">
+            <span class="general-name"><span class="index-no">4.</span>織田信長</span>
+            <div class="general-level"><select><option>10</option></select></div>
+        </div>
+
+        <!-- 2行目 -->
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">5.</span>伊達政宗</span>
+            <div class="general-level"><select><option>6</option></select></div>
+        </div>
+        <div class="general-item none">
+            <span class="general-name"><span class="index-no">6.</span>武田信玄</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item hidden-general">
+            <span class="general-name"><span class="index-no">7.</span>上杉謙信</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">8.</span>北条早雲</span>
+            <div class="general-level"><select><option>5</option></select></div>
+        </div>
+
+        <!-- 3行目 -->
+        <div class="general-item none">
+            <span class="general-name"><span class="index-no">9.</span>毛利元就</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item formed">
+            <span class="general-name"><span class="index-no">10.</span>島津義弘</span>
+            <div class="general-level"><select><option>11</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">11.</span>真田幸村</span>
+            <div class="general-level"><select><option>7</option></select></div>
+        </div>
+        <div class="general-item hidden-general">
+            <span class="general-name"><span class="index-no">12.</span>加藤清正</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+
+        <!-- 4行目 -->
+        <div class="general-item none">
+            <span class="general-name"><span class="index-no">13.</span>黒田官兵衛</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">14.</span>本多忠勝</span>
+            <div class="general-level"><select><option>4</option></select></div>
+        </div>
+        <div class="general-item formed">
+            <span class="general-name"><span class="index-no">15.</span>前田利家</span>
+            <div class="general-level"><select><option>9</option></select></div>
+        </div>
+        <div class="general-item none">
+            <span class="general-name"><span class="index-no">16.</span>柴田勝家</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+    </div>
+
+    <h3>パターンB: 非表示武将を薄く表示（枠なし）</h3>
+
+    <style>
+        .general-item.hidden-general-alt {
+            opacity: 0.25;
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .general-item.hidden-general-alt .general-name {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        .general-item.hidden-general-alt .general-level {
+            display: none;
+        }
+    </style>
+
+    <div class="general-grid-4col">
+        <div class="general-item formed">
+            <span class="general-name"><span class="index-no">1.</span>明智光秀</span>
+            <div class="general-level"><select><option>12</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">2.</span>徳川家康</span>
+            <div class="general-level"><select><option>8</option></select></div>
+        </div>
+        <div class="general-item hidden-general-alt">
+            <span class="general-name"><span class="index-no">3.</span>豊臣秀吉</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item formed">
+            <span class="general-name"><span class="index-no">4.</span>織田信長</span>
+            <div class="general-level"><select><option>10</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">5.</span>伊達政宗</span>
+            <div class="general-level"><select><option>6</option></select></div>
+        </div>
+        <div class="general-item none">
+            <span class="general-name"><span class="index-no">6.</span>武田信玄</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item hidden-general-alt">
+            <span class="general-name"><span class="index-no">7.</span>上杉謙信</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">8.</span>北条早雲</span>
+            <div class="general-level"><select><option>5</option></select></div>
+        </div>
+    </div>
+
+    <h3>パターンC: 非表示武将を完全スキップ（番号のみ表示）</h3>
+
+    <style>
+        .general-item.hidden-number-only {
+            opacity: 0.3;
+            background: var(--bg-input);
+            border-color: transparent;
+            min-height: 40px;
+            justify-content: center;
+        }
+
+        .general-item.hidden-number-only .general-name {
+            color: var(--text-muted);
+            font-size: 0.65rem;
+        }
+
+        .general-item.hidden-number-only .general-level {
+            display: none;
+        }
+    </style>
+
+    <div class="general-grid-4col">
+        <div class="general-item formed">
+            <span class="general-name"><span class="index-no">1.</span>明智光秀</span>
+            <div class="general-level"><select><option>12</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">2.</span>徳川家康</span>
+            <div class="general-level"><select><option>8</option></select></div>
+        </div>
+        <div class="general-item hidden-number-only">
+            <span class="general-name"><span class="index-no">3.</span>(非表示)</span>
+        </div>
+        <div class="general-item formed">
+            <span class="general-name"><span class="index-no">4.</span>織田信長</span>
+            <div class="general-level"><select><option>10</option></select></div>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">5.</span>伊達政宗</span>
+            <div class="general-level"><select><option>6</option></select></div>
+        </div>
+        <div class="general-item none">
+            <span class="general-name"><span class="index-no">6.</span>武田信玄</span>
+            <div class="general-level"><select><option>0</option></select></div>
+        </div>
+        <div class="general-item hidden-number-only">
+            <span class="general-name"><span class="index-no">7.</span>(非表示)</span>
+        </div>
+        <div class="general-item owned">
+            <span class="general-name"><span class="index-no">8.</span>北条早雲</span>
+            <div class="general-level"><select><option>5</option></select></div>
+        </div>
+    </div>
+
+    <div class="description" style="margin-top: 2rem;">
+        <strong>どのパターンがよろしいですか？</strong><br><br>
+        <strong>パターンA:</strong> 破線枠+グレーアウト+取り消し線（非表示であることが明確）<br>
+        <strong>パターンB:</strong> 薄く表示、枠なし（目立たないがスペースは維持）<br>
+        <strong>パターンC:</strong> 番号と「(非表示)」のみ表示（最もコンパクト）
+    </div>
+
+</body>
+</html>
