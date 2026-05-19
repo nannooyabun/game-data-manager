@@ -1688,26 +1688,6 @@
             opacity: 0.8;
         }
 
-        .floating-nav .drag-handle {
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 2px 8px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            cursor: move;
-            display: none;
-        }
-
-        .floating-nav:hover .drag-handle,
-        .floating-nav.dragging .drag-handle {
-            display: block;
-        }
-
         .floating-btn-group {
             display: flex;
             flex-direction: column;
@@ -3323,7 +3303,6 @@
 
     <!-- Floating Navigation -->
     <div class="floating-nav" id="floatingNav">
-        <span class="drag-handle">⋮⋮ ドラッグで移動</span>
         <div class="floating-menu" id="floatingMenu">
             <button class="floating-menu-item reset-btn" onclick="resetFloatingNavPosition()">↩ 位置をリセット</button>
             <div class="floating-menu-label">📍 セクションへジャンプ</div>
@@ -5571,6 +5550,9 @@
 
             // Check for first visit and show help
             checkFirstVisit();
+
+            // Start inactivity timer for help
+            initInactivityTimer();
         }
 
         // First visit check - show help automatically for new users
@@ -5580,10 +5562,40 @@
             if (!localStorage.getItem(FIRST_VISIT_KEY)) {
                 // First visit - show help automatically after a short delay
                 setTimeout(() => {
-                    openHelpChat();
+                    openHelpChat(true);  // true = show beginner content
                 }, 800);
                 localStorage.setItem(FIRST_VISIT_KEY, 'true');
             }
+        }
+
+        // Inactivity timer for help (input-based, not scroll/tap)
+        const INACTIVITY_HELP_KEY = 'gameDataManager_inactivityHelpShown';
+        const INACTIVITY_TIMEOUT = 60000; // 60 seconds
+        let inactivityTimer = null;
+
+        function resetInactivityTimer() {
+            if (inactivityTimer) clearTimeout(inactivityTimer);
+
+            // Skip if already shown this session
+            if (sessionStorage.getItem(INACTIVITY_HELP_KEY)) return;
+
+            inactivityTimer = setTimeout(() => {
+                // Only show if help is not already open
+                const helpChat = document.getElementById('helpChat');
+                if (helpChat && !helpChat.classList.contains('show')) {
+                    openHelpChat(true);  // Show beginner content
+                    sessionStorage.setItem(INACTIVITY_HELP_KEY, 'true');
+                }
+            }, INACTIVITY_TIMEOUT);
+        }
+
+        function initInactivityTimer() {
+            // Only listen to actual input events (not scroll/tap)
+            ['input', 'change'].forEach(event => {
+                document.addEventListener(event, resetInactivityTimer, { passive: true });
+            });
+            // Start timer
+            resetInactivityTimer();
         }
 
         // Wait for Firebase and DOM to be ready
@@ -8243,7 +8255,7 @@
                 ]
             },
             beginner: {
-                message: '📝 登録の流れ:\n① ユーザー名を入力\n② 武将・装備をタップして状態を登録\n③ 右下の💾ボタンで保存\n\n💡 入力のヒント:\n• 全部入力しなくてOK！分かる範囲だけでも保存できます\n• 後からいつでも上書き更新できます\n• 一度登録した武将・装備データは、2軍以降を作る時に自動で引き継がれます\n\n保存したデータは「一覧画面」で全メンバー分を比較できます！',
+                message: 'まずは、1軍のデータを入力します。\n※基本事項や武将の所持状況は、2軍以降にも引き継がれます。\n\n①ユーザー名を入力し、兵種・どの軍団かを選択\n②卒兵数や所属チーム等、その他基本事項を入力\n③右下の[保存]ボタンで保存',
                 jump: 'basicSection',
                 jumpLabel: '▶ 基本情報へジャンプ',
                 options: [
@@ -8348,7 +8360,7 @@
         let helpCurrentTopic = 'main';
         let helpInitialized = false;
 
-        function openHelpChat() {
+        function openHelpChat(showBeginner = false) {
             document.getElementById('helpChatOverlay').classList.add('show');
             document.getElementById('helpChat').classList.add('show');
             const floatingMenu = document.getElementById('floatingMenu');
@@ -8356,7 +8368,8 @@
             // Show initial content only on first open
             if (!helpInitialized) {
                 helpInitialized = true;
-                showHelpContent('main');
+                // Show beginner content for first-time visitors or inactivity prompt
+                showHelpContent(showBeginner ? 'beginner' : 'main');
             }
         }
 
