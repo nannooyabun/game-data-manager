@@ -699,34 +699,57 @@
         }
 
         .general-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.25rem;
+            padding: 0.25rem;
+            background: var(--bg-input);
+            border-radius: 8px;
         }
 
         .general-item {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 0.5rem;
             background: var(--bg-card);
-            padding: 0.4rem 0.6rem;
-            border-radius: 6px;
-            border: 2px solid var(--border-color);
+            padding: 0.3rem 0.2rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
             transition: all 0.2s ease;
+            min-height: 50px;
         }
 
         .general-item .general-name {
-            flex: 1;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             cursor: pointer;
-            padding: 0.2rem 0.4rem;
+            padding: 0.1rem 0.2rem;
             border-radius: 4px;
             transition: all 0.2s ease;
             user-select: none;
+            text-align: center;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .general-item .general-name:hover {
             background: var(--bg-input);
+        }
+
+        /* Mobile: 4列固定 */
+        @media (max-width: 600px) {
+            .general-grid {
+                gap: 0.2rem;
+                padding: 0.2rem;
+            }
+            .general-item {
+                padding: 0.25rem 0.15rem;
+                min-height: 50px;
+            }
+            .general-item .general-name {
+                font-size: 0.7rem;
+            }
         }
 
         /* State: Owned (所持) */
@@ -810,6 +833,47 @@
 
         .general-item.deputy .status-badge::after {
             content: '副将';
+        }
+
+        /* State: Hidden (非表示・入力不要) */
+        .general-item.hidden-general {
+            opacity: 0.35;
+            background: var(--bg-input);
+            border-style: dashed;
+        }
+
+        .general-item.hidden-general .general-name {
+            color: var(--text-muted);
+            text-decoration: line-through;
+            cursor: default;
+        }
+
+        .general-item.hidden-general .general-name:hover {
+            background: transparent;
+        }
+
+        .general-item.hidden-general .hidden-label {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            margin-top: 0.1rem;
+        }
+
+        .general-item.hidden-general .general-level-input {
+            display: none;
+        }
+
+        .general-item.hidden-general .status-badge {
+            display: none;
+        }
+
+        /* Highlight effect for jump */
+        .general-item.highlight {
+            animation: highlightPulse 2s ease-out;
+        }
+
+        @keyframes highlightPulse {
+            0% { box-shadow: 0 0 0 3px var(--accent-gold); }
+            100% { box-shadow: 0 0 0 0 transparent; }
         }
 
         .general-item input[type="number"] {
@@ -1455,6 +1519,21 @@
             background: var(--bg-input);
             color: var(--text-primary);
             font-size: 0.75rem;
+        }
+
+        .search-result-item.hidden-general {
+            opacity: 0.4;
+        }
+
+        .search-result-item.hidden-general label::after {
+            content: '(入力不要)';
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            margin-left: 0.3rem;
+        }
+
+        .search-level-select {
+            width: 45px;
         }
 
         .search-results-actions {
@@ -2650,13 +2729,24 @@
                             <button class="bulk-btn" onclick="bulkSetSearchResults('formed')">選択を編成ON</button>
                             <button class="bulk-btn" onclick="bulkSetSearchResults('none')" style="color: var(--text-muted);">選択を未所持</button>
                         </div>
+                        <div class="search-results-actions" style="margin-top: 0.5rem;">
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);">守護霊Lv:</span>
+                            <select id="bulkLevelSelect" style="padding: 0.2rem; font-size: 0.8rem;">
+                                <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+                                <option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                                <option value="9">9</option><option value="10">10</option><option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                            <button class="bulk-btn" onclick="bulkSetSearchLevel()">選択を一括設定</button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Display Mode Toggle -->
                 <div style="margin: 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
                     <label class="toggle-switch" style="display: inline-flex; align-items: center; cursor: pointer; gap: 0.5rem;">
-                        <input type="checkbox" id="showByIndexOrder" onchange="toggleGeneralDisplayMode()" style="display: none;">
+                        <input type="checkbox" id="showByIndexOrder" onchange="toggleGeneralDisplayMode()" style="display: none;" checked>
                         <span class="toggle-slider" style="width: 40px; height: 20px; background: var(--border-color); border-radius: 10px; position: relative; transition: background 0.3s;"></span>
                         <span style="font-size: 0.85rem; color: var(--text-secondary);">武将図鑑順表示</span>
                     </label>
@@ -3295,7 +3385,7 @@
         let cachedGeneralMasterData = null;  // General master data with rally limits, notes, categories
         let cachedGeneralTags = { tagCategories: {}, tags: {} };  // Tag definitions
         let cachedHiddenUsers = {};  // Users hidden from searches and lists
-        let showByIndexOrder = false;  // Toggle for index order display
+        let showByIndexOrder = true;  // Toggle for index order display (default: 図鑑番号順)
         let selectedTagFilters = [];  // Currently selected tag IDs for filtering
         let tagFilterMode = 'AND';  // 'AND' or 'OR'
 
@@ -3360,17 +3450,17 @@
             });
         }
 
-        // Get generals sorted by index number from master data
+        // Get generals sorted by index number from master data (includes hidden generals for grid display)
         function getGeneralsInIndexOrder() {
             const allCustomGenerals = cachedCustomGenerals || [];
             const masterGenerals = cachedGeneralMasterData?.generals ? Object.keys(cachedGeneralMasterData.generals) : [];
             const allGeneralSet = new Set([...generals, ...allCustomGenerals, ...masterGenerals]);
 
-            // Filter out hidden generals
-            const visibleGenerals = [...allGeneralSet].filter(g => !isHiddenGeneral(g));
+            // Include all generals (hidden ones will be displayed with grayed-out style)
+            const allGenerals = [...allGeneralSet];
 
             // Sort by indexNo from master data
-            return visibleGenerals.sort((a, b) => {
+            return allGenerals.sort((a, b) => {
                 const indexA = cachedGeneralMasterData?.generals?.[a]?.indexNo ?? 9999;
                 const indexB = cachedGeneralMasterData?.generals?.[b]?.indexNo ?? 9999;
                 return indexA - indexB;
@@ -3568,8 +3658,14 @@
 
             // Show latest 1 always
             const first = updates[0];
-            const firstCatId = `category-${first.category.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            latest.innerHTML = `<span class="update-info-link" onclick="jumpToCategory('${firstCatId}')">${first.name} (${first.category})</span>`;
+            if (showByIndexOrder) {
+                // Index order mode: jump to general directly
+                latest.innerHTML = `<span class="update-info-link" onclick="jumpToGeneral('${first.name}')">${first.name}</span>`;
+            } else {
+                // Category mode: jump to category
+                const firstCatId = `category-${first.category.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                latest.innerHTML = `<span class="update-info-link" onclick="jumpToCategory('${firstCatId}')">${first.name} (${first.category})</span>`;
+            }
 
             // Show rest in collapsible
             if (updates.length > 1) {
@@ -3579,8 +3675,12 @@
                 toggle.onclick = () => toggleUpdateInfo();
 
                 const restHtml = rest.map(u => {
-                    const catId = `category-${u.category.replace(/[^a-zA-Z0-9]/g, '_')}`;
-                    return `<span class="update-info-link" onclick="jumpToCategory('${catId}')">${u.name} (${u.category})</span>`;
+                    if (showByIndexOrder) {
+                        return `<span class="update-info-link" onclick="jumpToGeneral('${u.name}')">${u.name}</span>`;
+                    } else {
+                        const catId = `category-${u.category.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                        return `<span class="update-info-link" onclick="jumpToCategory('${catId}')">${u.name} (${u.category})</span>`;
+                    }
                 }).join(' / ');
                 more.innerHTML = restHtml + ' <span class="update-info-toggle" onclick="toggleUpdateInfo()">[閉じる ▲]</span>';
             } else {
@@ -3611,6 +3711,19 @@
             const el = document.getElementById(catId);
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // Jump to specific general (for index order mode)
+        function jumpToGeneral(generalName) {
+            const index = getGeneralIndex(generalName);
+            if (index === -1) return;
+            const el = document.getElementById(`generalItem_${index}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Highlight effect
+                el.classList.add('highlight');
+                setTimeout(() => el.classList.remove('highlight'), 2000);
             }
         }
 
@@ -5286,6 +5399,22 @@
             if (!loadedFromUrl) {
                 showToast('データを同期しました', 'success');
             }
+
+            // Check for first visit and show help
+            checkFirstVisit();
+        }
+
+        // First visit check - show help automatically for new users
+        const FIRST_VISIT_KEY = 'gameDataManager_firstVisit';
+
+        function checkFirstVisit() {
+            if (!localStorage.getItem(FIRST_VISIT_KEY)) {
+                // First visit - show help automatically after a short delay
+                setTimeout(() => {
+                    openHelpChat();
+                }, 800);
+                localStorage.setItem(FIRST_VISIT_KEY, 'true');
+            }
         }
 
         // Wait for Firebase and DOM to be ready
@@ -5673,11 +5802,15 @@
 
             const generalItemHtml = (g) => {
                 const index = globalIndex++;
-                const indexNo = cachedGeneralMasterData?.generals?.[g]?.indexNo;
-                const indexLabel = showByIndexOrder && indexNo !== undefined ? `<span style="color: var(--text-muted); font-size: 0.7rem; margin-right: 0.3rem;">${indexNo}.</span>` : '';
+                const isHidden = isHiddenGeneral(g);
+                const hiddenClass = isHidden ? ' hidden-general' : '';
+                const hiddenLabel = isHidden ? '<span class="hidden-label">入力不要</span>' : '';
+                const onclickAttr = isHidden ? '' : `onclick="toggleGeneralState(${index}); updateFormationCount();"`;
+
                 return `
-                    <div class="general-item" id="generalItem_${index}" data-general="${g}" data-state="0">
-                        <span class="general-name" onclick="toggleGeneralState(${index}); updateFormationCount();">${indexLabel}${g}</span>
+                    <div class="general-item${hiddenClass}" id="generalItem_${index}" data-general="${g}" data-state="0">
+                        <span class="general-name" ${onclickAttr}>${g}</span>
+                        ${hiddenLabel}
                         <span class="status-badge"></span>
                         <div class="general-level-input">
                             <select id="general_${index}" onchange="updateProgress()" class="general-level-select">
@@ -7327,23 +7460,34 @@
             results.forEach((name, i) => {
                 const index = getGeneralIndex(name);
                 const stateEl = document.getElementById(`generalState_${index}`);
+                const levelEl = document.getElementById(`general_${index}`);
                 const currentState = stateEl ? parseInt(stateEl.value || '0') : 0;
+                const currentLevel = levelEl ? parseInt(levelEl.value || '0') : 0;
                 const isDeputy = isGeneralDeputy(name);
+                const isHidden = isHiddenGeneral(name);
 
                 const deputyClass = isDeputy ? ' deputy' : '';
-                const disabledAttr = isDeputy ? ' disabled' : '';
+                const hiddenClass = isHidden ? ' hidden-general' : '';
+                const disabledAttr = (isDeputy || isHidden) ? ' disabled' : '';
 
                 const tagBadges = getGeneralTagBadgesHtml(name);
 
+                const levelOptions = [0,1,2,3,4,5,6,7,8,9,10,11,12].map(v =>
+                    `<option value="${v}" ${currentLevel === v ? 'selected' : ''}>${v}</option>`
+                ).join('');
+
                 html += `
-                    <div class="search-result-item${deputyClass}" data-general="${name}" data-index="${index}">
+                    <div class="search-result-item${deputyClass}${hiddenClass}" data-general="${name}" data-index="${index}">
                         <input type="checkbox" id="searchCheck_${i}" ${disabledAttr}>
                         <label for="searchCheck_${i}">${name}</label>
                         ${tagBadges}
-                        <select onchange="setGeneralStateByName('${name}', this.value)" ${disabledAttr}>
+                        <select class="search-state-select" onchange="setGeneralStateByName('${name}', this.value)" ${disabledAttr}>
                             <option value="0" ${currentState === 0 ? 'selected' : ''}>未所持</option>
                             <option value="1" ${currentState === 1 ? 'selected' : ''}>所持</option>
                             <option value="2" ${currentState === 2 ? 'selected' : ''}>編成</option>
+                        </select>
+                        <select class="search-level-select" onchange="setGeneralLevelByName('${name}', this.value)" ${disabledAttr} title="守護霊Lv">
+                            ${levelOptions}
                         </select>
                     </div>
                 `;
@@ -7411,6 +7555,44 @@
             updateProgress();
             updateDeputyStates();
             updateFormationCount();
+        }
+
+        function setGeneralLevelByName(generalName, level) {
+            const index = getGeneralIndex(generalName);
+            if (index === -1) return;
+
+            // Don't allow setting level for hidden generals
+            if (isHiddenGeneral(generalName)) return;
+
+            const levelEl = document.getElementById(`general_${index}`);
+            if (levelEl) {
+                levelEl.value = level;
+                updateProgress();
+            }
+        }
+
+        function bulkSetSearchLevel() {
+            const level = document.getElementById('bulkLevelSelect').value;
+
+            document.querySelectorAll('#searchResultList .search-result-item').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (!checkbox || !checkbox.checked) return;
+
+                const name = item.dataset.general;
+                if (!name || isGeneralDeputy(name) || isHiddenGeneral(name)) return;
+
+                setGeneralLevelByName(name, level);
+
+                // Update the select in search results
+                const levelSelect = item.querySelector('.search-level-select');
+                if (levelSelect) levelSelect.value = level;
+            });
+
+            // Uncheck all after bulk operation
+            document.getElementById('searchSelectAll').checked = false;
+            document.querySelectorAll('#searchResultList input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
         }
 
         function closeGeneralSearch() {
