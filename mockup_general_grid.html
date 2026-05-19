@@ -503,8 +503,14 @@
         🔍 全画面で開く（デモ）
     </button>
 
-    <!-- 全画面モーダル -->
-    <div id="fullscreenModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-primary); z-index: 9999; flex-direction: column;">
+    <!-- フローティングボタン（モーダルより上に表示） -->
+    <div id="mockFloatingNav" style="position: fixed; bottom: 2rem; right: 2rem; z-index: 10001; display: flex; flex-direction: column; gap: 0.5rem;">
+        <button style="width: 50px; height: 50px; border-radius: 50%; background: var(--accent-green); color: white; border: none; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">💾</button>
+        <button style="width: 50px; height: 50px; border-radius: 50%; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">☰</button>
+    </div>
+
+    <!-- 全画面モーダル (z-index: 10000、フローティングボタンは10001で上に表示) -->
+    <div id="fullscreenModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-primary); z-index: 10000; flex-direction: column;">
 
         <!-- ヘッダー -->
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
