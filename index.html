@@ -1678,7 +1678,7 @@
             position: fixed;
             bottom: 2rem;
             right: 2rem;
-            z-index: 999;
+            z-index: 10001;
             touch-action: none;
             user-select: none;
         }
@@ -1812,7 +1812,7 @@
             position: fixed;
             top: 1rem;
             right: 1rem;
-            z-index: 998;
+            z-index: 10001;
             display: block;
         }
         .formation-badge {
@@ -1946,7 +1946,7 @@
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.5);
-            z-index: 9998;
+            z-index: 10002;
             display: none;
         }
         .help-chat-overlay.show {
@@ -1963,7 +1963,7 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            z-index: 9999;
+            z-index: 10003;
             display: none;
             flex-direction: column;
         }
@@ -2080,6 +2080,58 @@
         .comparison-level-3 {
             margin-left: 1rem;
             padding-left: 0.5rem;
+        }
+
+        /* Fullscreen Modal for General Grid */
+        .fullscreen-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-main);
+            z-index: 10000;
+            overflow-y: auto;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .fullscreen-modal.active {
+            display: block;
+        }
+        .fullscreen-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.5rem;
+            position: sticky;
+            top: 0;
+            background: var(--bg-main);
+            z-index: 1;
+            margin-bottom: 0.5rem;
+        }
+        .fullscreen-modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .fullscreen-modal-close {
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-main);
+            padding: 0.5rem;
+            line-height: 1;
+        }
+        .fullscreen-modal-close:hover {
+            color: var(--accent-gold);
+        }
+        .fullscreen-modal .general-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.25rem;
+            padding: 0.25rem;
         }
 
         /* Modal Styles */
@@ -2671,6 +2723,7 @@
                     <span>🎖️</span>
                     ②-2 武将
                     <span class="status-badge" id="generalStatus">未入力</span>
+                    <button onclick="event.stopPropagation(); openFullscreenModal()" style="margin-left: auto; padding: 0.2rem 0.5rem; font-size: 0.75rem; background: var(--accent-gold-dim); color: var(--accent-gold); border: 1px solid var(--accent-gold); border-radius: 4px; cursor: pointer;">全画面で開く</button>
                 </h3>
                 <span class="toggle-icon">▼</span>
             </div>
@@ -3245,6 +3298,15 @@
         </div>
     </div>
 
+    <!-- Fullscreen General Modal -->
+    <div id="fullscreenGeneralModal" class="fullscreen-modal">
+        <div class="fullscreen-modal-header">
+            <span class="fullscreen-modal-title">🎖️ 武将一覧（全画面）</span>
+            <button class="fullscreen-modal-close" onclick="closeFullscreenModal()">✕</button>
+        </div>
+        <div id="fullscreenGeneralContent"></div>
+    </div>
+
     <!-- Bulk Level Popup -->
     <div class="bulk-level-overlay" id="bulkLevelOverlay" onclick="closeBulkLevelPopup()"></div>
     <div class="bulk-level-popup" id="bulkLevelPopup">
@@ -3725,6 +3787,72 @@
                 el.classList.add('highlight');
                 setTimeout(() => el.classList.remove('highlight'), 2000);
             }
+        }
+
+        // ========== Fullscreen Modal Functions ==========
+
+        function openFullscreenModal() {
+            const modal = document.getElementById('fullscreenGeneralModal');
+            const content = document.getElementById('fullscreenGeneralContent');
+            const gridContainer = document.getElementById('general-grid-container');
+
+            if (gridContainer) {
+                content.innerHTML = gridContainer.innerHTML;
+                // Re-attach event listeners to the cloned content
+                content.querySelectorAll('.general-name').forEach(el => {
+                    const generalItem = el.closest('.general-item');
+                    if (generalItem && !generalItem.classList.contains('hidden-general')) {
+                        el.onclick = function() {
+                            const index = generalItem.id.replace('generalItem_', '');
+                            toggleGeneralState(index);
+                            // Sync back to original grid
+                            syncFullscreenToGrid();
+                        };
+                    }
+                });
+                content.querySelectorAll('.general-level-select').forEach(el => {
+                    el.onchange = function() {
+                        updateProgress();
+                        syncFullscreenToGrid();
+                    };
+                });
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeFullscreenModal() {
+            const modal = document.getElementById('fullscreenGeneralModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function syncFullscreenToGrid() {
+            const content = document.getElementById('fullscreenGeneralContent');
+            const gridContainer = document.getElementById('general-grid-container');
+
+            content.querySelectorAll('.general-item').forEach(item => {
+                const id = item.id;
+                const originalItem = gridContainer.querySelector('#' + id);
+                if (originalItem) {
+                    // Sync state class
+                    originalItem.className = item.className;
+                    originalItem.dataset.state = item.dataset.state;
+                    // Sync hidden state input
+                    const stateInput = item.querySelector('input[type="hidden"]');
+                    const originalStateInput = originalItem.querySelector('input[type="hidden"]');
+                    if (stateInput && originalStateInput) {
+                        originalStateInput.value = stateInput.value;
+                    }
+                    // Sync level select
+                    const levelSelect = item.querySelector('.general-level-select');
+                    const originalLevelSelect = originalItem.querySelector('.general-level-select');
+                    if (levelSelect && originalLevelSelect) {
+                        originalLevelSelect.value = levelSelect.value;
+                    }
+                }
+            });
         }
 
         // ========== Firebase Database Functions ==========
