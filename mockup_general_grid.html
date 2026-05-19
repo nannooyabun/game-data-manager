@@ -489,5 +489,137 @@
         <strong>パターンC:</strong> 番号と「(非表示)」のみ表示（最もコンパクト）
     </div>
 
+    <h2 style="margin-top: 3rem;">全画面モーダル表示</h2>
+
+    <div class="description">
+        <strong>機能説明:</strong><br>
+        ・「全画面で開く」ボタンを押すと、武将リストがフルスクリーンで表示<br>
+        ・他のセクションを隠して武将入力に集中できる<br>
+        ・スクロールで全武将を確認・入力可能<br>
+        ・「✕ 閉じる」ボタンで元の画面に戻る
+    </div>
+
+    <button onclick="document.getElementById('fullscreenModal').style.display='flex'" style="padding: 0.75rem 1.5rem; background: var(--accent-gold); color: #000; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 1rem 0;">
+        🔍 全画面で開く（デモ）
+    </button>
+
+    <!-- 全画面モーダル -->
+    <div id="fullscreenModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-primary); z-index: 9999; flex-direction: column;">
+
+        <!-- ヘッダー -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
+            <span style="font-size: 1rem; font-weight: bold; color: var(--accent-gold);">●武将図鑑順（200名）</span>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button style="padding: 0.4rem 0.8rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 0.8rem; cursor: pointer;">所持一括ON</button>
+                <button style="padding: 0.4rem 0.8rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 0.8rem; cursor: pointer;">守護霊Lv一括</button>
+                <button onclick="document.getElementById('fullscreenModal').style.display='none'" style="padding: 0.4rem 0.8rem; background: #c0392b; border: none; border-radius: 4px; color: white; font-size: 0.8rem; cursor: pointer;">✕ 閉じる</button>
+            </div>
+        </div>
+
+        <!-- グリッド本体（スクロール可能） -->
+        <div style="flex: 1; overflow-y: auto; padding: 0.5rem;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.3rem; padding: 0.3rem; background: var(--bg-input); border-radius: 8px;">
+                <!-- 武将アイテム（大きめ表示） -->
+                <div class="general-item formed" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">明智光秀</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>12</option></select></div>
+                </div>
+                <div class="general-item owned" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">徳川家康</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>8</option></select></div>
+                </div>
+                <div class="general-item hidden-general" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">豊臣秀吉</span>
+                    <span class="hidden-label">入力不要</span>
+                </div>
+                <div class="general-item formed" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">織田信長</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>10</option></select></div>
+                </div>
+                <div class="general-item owned" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">伊達政宗</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>6</option></select></div>
+                </div>
+                <div class="general-item none" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">武田信玄</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>0</option></select></div>
+                </div>
+                <div class="general-item hidden-general" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">上杉謙信</span>
+                    <span class="hidden-label">入力不要</span>
+                </div>
+                <div class="general-item owned" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">北条早雲</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>5</option></select></div>
+                </div>
+                <div class="general-item none" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">毛利元就</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>0</option></select></div>
+                </div>
+                <div class="general-item formed" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">島津義弘</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>11</option></select></div>
+                </div>
+                <div class="general-item owned" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">真田幸村</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>7</option></select></div>
+                </div>
+                <div class="general-item hidden-general" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">加藤清正</span>
+                    <span class="hidden-label">入力不要</span>
+                </div>
+                <div class="general-item none" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">黒田官兵衛</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>0</option></select></div>
+                </div>
+                <div class="general-item owned" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">本多忠勝</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>4</option></select></div>
+                </div>
+                <div class="general-item formed" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">前田利家</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>9</option></select></div>
+                </div>
+                <div class="general-item none" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">柴田勝家</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>0</option></select></div>
+                </div>
+                <!-- さらに武将を追加（スクロール確認用） -->
+                <div class="general-item owned" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">浅井長政</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>3</option></select></div>
+                </div>
+                <div class="general-item none" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">朝倉義景</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>0</option></select></div>
+                </div>
+                <div class="general-item formed" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">今川義元</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>8</option></select></div>
+                </div>
+                <div class="general-item owned" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">斎藤道三</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>5</option></select></div>
+                </div>
+                <div class="general-item none" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">長宗我部元親</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>0</option></select></div>
+                </div>
+                <div class="general-item owned" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">立花宗茂</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>6</option></select></div>
+                </div>
+                <div class="general-item formed" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">直江兼続</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>7</option></select></div>
+                </div>
+                <div class="general-item none" style="min-height: 60px; padding: 0.4rem;">
+                    <span class="general-name" style="font-size: 0.85rem;">小早川秀秋</span>
+                    <div class="general-level"><select style="font-size: 0.75rem;"><option>0</option></select></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
