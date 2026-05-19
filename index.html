@@ -8255,7 +8255,7 @@
                 ]
             },
             beginner: {
-                message: 'まずは、1軍のデータを入力します。\n※基本事項や武将の所持状況は、2軍以降にも自動で引き継がれます。\n\n📝 登録の流れ:\n①ユーザー名を入力し、兵種・どの軍団かを選択\n②卒兵数や所属チーム等、その他基本事項を入力\n③兵器、武将などの状況を登録\n　【編成】その軍団に入れている\n　【所持】軍団に入れていないが持っている\n④右下の💾ボタンで保存\n\n💡 入力のヒント:\n• 全部入力しなくてOK！分かる範囲だけでも保存できます\n• 後からいつでも上書き更新できます\n\n保存したデータは「一覧画面」で全メンバー分を比較できます！',
+                message: 'まずは、1軍のデータを入力します。\n※基本事項や武将の所持状況は、2軍以降にも自動で引き継がれます。\n\n🎬 動画で見る: https://youtube.com/shorts/Z5ulBGwGVjE\n\n📝 登録の流れ:\n①ユーザー名を入力し、兵種・どの軍団かを選択\n②卒兵数や所属チーム等、その他基本事項を入力\n③兵器、武将などの状況を登録\n　【編成】その軍団に入れている\n　【所持】軍団に入れていないが持っている\n④右下の💾ボタンで保存\n\n💡 入力のヒント:\n• 全部入力しなくてOK！分かる範囲だけでも保存できます\n• 後からいつでも上書き更新できます\n\n保存したデータは「一覧画面」で全メンバー分を比較できます！',
                 options: [
                     { label: '🔧 基本操作', action: 'general' },
                     { label: '🔫 兵器・装備の入力', action: 'equipment' },
@@ -8384,7 +8384,12 @@
             helpHistory.push(action);
             const body = document.getElementById('helpChatBody');
 
-            let html = `<div class="help-chat-message bot"><span class="bot-icon">🤖</span>${data.message.replace(/\n/g, '<br>')}</div>`;
+            // Convert URLs to clickable links and newlines to <br>
+            let messageHtml = data.message
+                .replace(/\n/g, '<br>')
+                .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color: var(--accent-gold);">$1</a>');
+
+            let html = `<div class="help-chat-message bot"><span class="bot-icon">🤖</span>${messageHtml}</div>`;
 
             if (data.jump) {
                 html += `<div class="help-chat-action" onclick="helpJumpTo('${data.jump}')">${data.jumpLabel}</div>`;
