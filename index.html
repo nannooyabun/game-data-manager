@@ -2101,8 +2101,9 @@
         }
         .fullscreen-modal-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
+            padding-top: 2.5rem;
             padding-bottom: 0.5rem;
             position: sticky;
             top: 0;
@@ -2116,19 +2117,28 @@
             color: var(--text-main);
         }
         .fullscreen-modal-close {
-            font-size: 1.5rem;
-            background: none;
-            border: none;
+            position: fixed;
+            top: 0.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 0.4rem 1.2rem;
+            font-size: 0.85rem;
             cursor: pointer;
             color: var(--text-main);
-            padding: 0.5rem;
-            line-height: 1;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         .fullscreen-modal-close:hover {
-            color: var(--accent-gold);
+            background: var(--accent-gold);
+            color: var(--bg-primary);
         }
         .fullscreen-modal .general-categories {
             display: block;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .fullscreen-modal .general-category {
             background: var(--bg-secondary);
@@ -2136,6 +2146,8 @@
             padding: 0.8rem;
             border: 1px solid var(--border-color);
             margin-bottom: 1rem;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .fullscreen-modal .general-grid {
             display: grid;
@@ -2144,6 +2156,8 @@
             padding: 0.25rem;
             background: var(--bg-input);
             border-radius: 8px;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .fullscreen-modal .general-item {
             display: flex;
@@ -3331,9 +3345,9 @@
 
     <!-- Fullscreen General Modal -->
     <div id="fullscreenGeneralModal" class="fullscreen-modal">
+        <button class="fullscreen-modal-close" onclick="closeFullscreenModal()">✕ 閉じる</button>
         <div class="fullscreen-modal-header">
             <span class="fullscreen-modal-title">🎖️ 武将一覧（全画面）</span>
-            <button class="fullscreen-modal-close" onclick="closeFullscreenModal()">✕</button>
         </div>
         <div id="fullscreenGeneralContent" class="general-categories"></div>
     </div>
