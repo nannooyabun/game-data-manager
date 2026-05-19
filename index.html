@@ -2149,10 +2149,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: var(--bg-card);
             padding: 0.3rem 0.2rem;
             border-radius: 4px;
-            border: 1px solid var(--border-color);
             min-height: 50px;
         }
         .fullscreen-modal .general-item .general-name {
@@ -3826,31 +3824,7 @@
 
         function openFullscreenModal() {
             const modal = document.getElementById('fullscreenGeneralModal');
-            const content = document.getElementById('fullscreenGeneralContent');
-            const gridContainer = document.getElementById('generalGrid');
-
-            if (gridContainer) {
-                content.innerHTML = gridContainer.innerHTML;
-                // Re-attach event listeners to the cloned content
-                content.querySelectorAll('.general-name').forEach(el => {
-                    const generalItem = el.closest('.general-item');
-                    if (generalItem && !generalItem.classList.contains('hidden-general')) {
-                        el.onclick = function() {
-                            const index = generalItem.id.replace('generalItem_', '');
-                            toggleGeneralState(index);
-                            // Sync back to original grid
-                            syncFullscreenToGrid();
-                        };
-                    }
-                });
-                content.querySelectorAll('.general-level-select').forEach(el => {
-                    el.onchange = function() {
-                        updateProgress();
-                        syncFullscreenToGrid();
-                    };
-                });
-            }
-
+            refreshFullscreenModal();
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -3861,30 +3835,49 @@
             document.body.style.overflow = '';
         }
 
-        function syncFullscreenToGrid() {
+        function refreshFullscreenModal() {
             const content = document.getElementById('fullscreenGeneralContent');
             const gridContainer = document.getElementById('generalGrid');
+            if (!gridContainer || !content) return;
 
-            content.querySelectorAll('.general-item').forEach(item => {
-                const id = item.id;
-                const originalItem = gridContainer.querySelector('#' + id);
-                if (originalItem) {
-                    // Sync state class
-                    originalItem.className = item.className;
-                    originalItem.dataset.state = item.dataset.state;
-                    // Sync hidden state input
-                    const stateInput = item.querySelector('input[type="hidden"]');
-                    const originalStateInput = originalItem.querySelector('input[type="hidden"]');
-                    if (stateInput && originalStateInput) {
-                        originalStateInput.value = stateInput.value;
-                    }
-                    // Sync level select
-                    const levelSelect = item.querySelector('.general-level-select');
-                    const originalLevelSelect = originalItem.querySelector('.general-level-select');
-                    if (levelSelect && originalLevelSelect) {
-                        originalLevelSelect.value = levelSelect.value;
-                    }
+            // Copy HTML structure
+            content.innerHTML = gridContainer.innerHTML;
+
+            // Sync select values (innerHTML doesn't preserve selected state)
+            gridContainer.querySelectorAll('.general-level-select').forEach((origSelect) => {
+                const id = origSelect.id;
+                const modalSelect = content.querySelector('#' + id);
+                if (modalSelect) {
+                    modalSelect.value = origSelect.value;
                 }
+            });
+
+            // Attach event listeners - operate on ORIGINAL grid, then refresh modal
+            content.querySelectorAll('.general-name').forEach(el => {
+                const modalItem = el.closest('.general-item');
+                if (modalItem && !modalItem.classList.contains('hidden-general')) {
+                    el.onclick = function() {
+                        const index = modalItem.id.replace('generalItem_', '');
+                        // Operate on original grid element
+                        toggleGeneralState(index);
+                        updateFormationCount();
+                        // Refresh modal to show updated state
+                        refreshFullscreenModal();
+                    };
+                }
+            });
+
+            content.querySelectorAll('.general-level-select').forEach(el => {
+                const modalSelect = el;
+                const originalId = modalSelect.id;
+                modalSelect.onchange = function() {
+                    // Update original grid's select
+                    const originalSelect = gridContainer.querySelector('#' + originalId);
+                    if (originalSelect) {
+                        originalSelect.value = modalSelect.value;
+                    }
+                    updateProgress();
+                };
             });
         }
 
