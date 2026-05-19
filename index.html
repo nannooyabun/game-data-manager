@@ -7468,7 +7468,7 @@
 
                 const deputyClass = isDeputy ? ' deputy' : '';
                 const hiddenClass = isHidden ? ' hidden-general' : '';
-                const disabledAttr = (isDeputy || isHidden) ? ' disabled' : '';
+                const disabledAttr = isDeputy ? ' disabled' : '';  // Hidden generals are editable via search
 
                 const tagBadges = getGeneralTagBadgesHtml(name);
 
