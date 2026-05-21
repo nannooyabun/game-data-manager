@@ -2639,8 +2639,8 @@
                         break;
                     default:
                         // Item column sorting
-                        if (sortColumn.startsWith('item_')) {
-                            const [_, catKey, itemId] = sortColumn.split('_');
+                        if (sortColumn.startsWith('item::')) {
+                            const [_, catKey, itemId] = sortColumn.split('::');
                             const stateOrder = { 'equipped': 2, 'owned': 1, 'none': 0 };
                             valA = stateOrder[getCellStateForSort(a, catKey, itemId)] || 0;
                             valB = stateOrder[getCellStateForSort(b, catKey, itemId)] || 0;
@@ -3797,7 +3797,7 @@
                     const rallyHtml = rallyLimit ? `<div class="item-rally">${escapeHtml(rallyLimit)}</div>` : '';
                     const notesAttr = itemNotes ? ` title="${escapeHtml(itemNotes)}"` : '';
                     const notesClass = itemNotes ? ' item-has-notes' : '';
-                    const itemSortKey = `item_${cat.key}_${item.id || item.name}`;
+                    const itemSortKey = `item::${cat.key}::${item.id || item.name}`;
                     const isSorted = sortColumn === itemSortKey;
                     const sortIconHtml = `<span class="sort-icon${isSorted ? ' active' : ''}">${isSorted ? (sortDirection === 1 ? '▲' : '▼') : '⇅'}</span>`;
                     return `<th class="${cat.colorClass}${borderClass}${notesClass} sortable-header"${notesAttr} onclick="toggleSort('${escapeJsAttr(itemSortKey)}')">${escapeHtml(item.name)}${rallyHtml}${sortIconHtml}</th>`;
@@ -3914,11 +3914,11 @@
                         <div class="view-controls-row filter-controls">
                             <span class="control-label">🔍 絞り込み:</span>
                             <div class="filter-group">
-                                <label>ユーザー</label>
+                                <label for="filterUsername">ユーザー</label>
                                 <input type="text" id="filterUsername" class="filter-input" placeholder="名前" value="${escapeHtml(filterUsername)}" oninput="updateFilter('username', this.value)">
                             </div>
                             <div class="filter-group">
-                                <label>軍団</label>
+                                <label for="filterTeamGroup">軍団</label>
                                 <select id="filterTeamGroup" class="filter-select" onchange="updateFilter('teamGroup', this.value)">
                                     <option value="">全て</option>
                                     <option value="1軍"${filterTeamGroup === '1軍' ? ' selected' : ''}>1軍</option>
@@ -3929,7 +3929,7 @@
                                 </select>
                             </div>
                             <div class="filter-group">
-                                <label>兵種</label>
+                                <label for="filterTroop">兵種</label>
                                 <select id="filterTroop" class="filter-select" onchange="updateFilter('troop', this.value)">
                                     <option value="">全て</option>
                                     <option value="馬"${filterTroop === '馬' ? ' selected' : ''}>馬</option>
@@ -3938,7 +3938,7 @@
                                 </select>
                             </div>
                             <div class="filter-group">
-                                <label>所属チーム</label>
+                                <label for="filterMembership">所属チーム</label>
                                 <select id="filterMembership" class="filter-select" onchange="updateFilter('membership', this.value)">
                                     <option value="">全て</option>
                                     ${getAllMembershipTeamNames().map(name => `<option value="${escapeHtml(name)}"${filterMembership === name ? ' selected' : ''}>${escapeHtml(name)}</option>`).join('')}
