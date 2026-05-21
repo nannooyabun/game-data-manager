@@ -2766,7 +2766,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-        import { getDatabase, ref, get, set, remove, onValue } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
+        import { getDatabase, ref, get, set, remove, onValue, update } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDu9WB_iA_2i5qL4uir8g__LmfAFTeuOYI",
@@ -2781,7 +2781,7 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
 
-        window.firebaseDB = { database, ref, get, set, remove, onValue };
+        window.firebaseDB = { database, ref, get, set, remove, onValue, update };
         window.firebaseReady = true;
         document.dispatchEvent(new Event('firebaseReady'));
     </script>
