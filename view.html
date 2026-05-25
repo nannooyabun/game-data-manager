@@ -1723,6 +1723,7 @@
                 sortColumn = column;
                 sortDirection = 1;
             }
+            saveScrollPosition();
             renderTable();
         }
 
@@ -1740,6 +1741,7 @@
             if (teamGroupSelect) teamGroupSelect.value = '';
             if (troopSelect) troopSelect.value = '';
             if (membershipSelect) membershipSelect.value = '';
+            saveScrollPosition();
             renderTable();
         }
 
@@ -1751,6 +1753,7 @@
                 case 'troop': filterTroop = value; break;
                 case 'membership': filterMembership = value; break;
             }
+            saveScrollPosition();
             renderTable();
         }
 
@@ -2641,9 +2644,9 @@
                         // Item column sorting
                         if (sortColumn.startsWith('item::')) {
                             const [_, catKey, itemId] = sortColumn.split('::');
-                            const stateOrder = { 'equipped': 2, 'owned': 1, 'none': 0 };
-                            valA = stateOrder[getCellStateForSort(a, catKey, itemId)] || 0;
-                            valB = stateOrder[getCellStateForSort(b, catKey, itemId)] || 0;
+                            const sortVal = getCellValueForSort(a, b, catKey, itemId);
+                            valA = sortVal.a;
+                            valB = sortVal.b;
                         } else {
                             return 0;
                         }
@@ -2655,15 +2658,33 @@
             });
         }
 
-        // Get cell state for sorting
-        function getCellStateForSort(entry, catKey, itemId) {
-            // Use existing getCellState logic
+        // Get cell value for sorting (handles both text and state categories)
+        function getCellValueForSort(entryA, entryB, catKey, itemId) {
             const allCats = getAllCategories();
             const cat = allCats.find(c => c.key === catKey);
-            if (!cat) return 'none';
+            if (!cat) return { a: 0, b: 0 };
             const item = cat.items.find(i => i.id === itemId || i.name === itemId);
-            if (!item) return 'none';
-            return cat.getCellState ? cat.getCellState(entry.data, item) : 'none';
+            if (!item) return { a: 0, b: 0 };
+
+            // Text category - compare text values
+            if (cat.isTextCategory && cat.getCellText) {
+                const textA = cat.getCellText(entryA.data, item) || '';
+                const textB = cat.getCellText(entryB.data, item) || '';
+                // Try numeric comparison first
+                const numA = parseFloat(textA.replace(/[^\d.-]/g, '')) || 0;
+                const numB = parseFloat(textB.replace(/[^\d.-]/g, '')) || 0;
+                if (numA !== 0 || numB !== 0) {
+                    return { a: numA, b: numB };
+                }
+                // Fall back to string comparison
+                return { a: textA, b: textB };
+            }
+
+            // State category - compare state values
+            const stateOrder = { 'equipped': 2, 'owned': 1, 'none': 0 };
+            const stateA = cat.getCellState ? cat.getCellState(entryA.data, item) : 'none';
+            const stateB = cat.getCellState ? cat.getCellState(entryB.data, item) : 'none';
+            return { a: stateOrder[stateA] || 0, b: stateOrder[stateB] || 0 };
         }
 
         // Category definitions for table columns
